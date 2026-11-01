@@ -34,6 +34,7 @@ import PredictScreen from './src/screens/PredictScreen';
 import ChartScreen from './src/screens/ChartScreen';
 import GridScreen from './src/screens/GridScreen';
 import TeamCompareScreen from './src/screens/TeamCompareScreen';
+import { MotoHome, MotoCalendar, MotoStandings, MotoEvent } from './src/screens/MotoScreens';
 import SettingsScreen from './src/screens/SettingsScreen';
 import AlertScheduler from './src/components/AlertScheduler';
 import ErrorBoundary from './src/components/ErrorBoundary';
@@ -46,6 +47,22 @@ const Stack = createNativeStackNavigator();
 const navTheme = { ...DefaultTheme, dark: true, colors: { ...DefaultTheme.colors, background: colors.bg, card: colors.bg, text: colors.fg, border: colors.line, primary: colors.accent } };
 const ICONS = { Home: 'home', Calendar: 'calendar', Standings: 'trophy', Paddock: 'people' };
 
+const MTab = createBottomTabNavigator();
+const MICONS = { Home: 'home', Calendar: 'calendar', Standings: 'trophy' };
+function MotoTabs() {
+  return (
+    <MTab.Navigator screenOptions={({ route }) => ({
+      headerShown: false, animation: 'fade', tabBarActiveTintColor: colors.accent, tabBarInactiveTintColor: colors.muted,
+      tabBarStyle: { backgroundColor: colors.bg, borderTopColor: colors.line, height: 64, paddingTop: 6, paddingBottom: 8 },
+      tabBarLabelStyle: { fontFamily: ui.lang === 'el' ? 'RobotoCondensed_600SemiBold' : 'Rajdhani_600SemiBold', fontSize: 13 },
+      tabBarLabel: tr(route.name), tabBarIcon: ({ color, size }) => <Ionicons name={MICONS[route.name]} size={size} color={color} />,
+    })}>
+      <MTab.Screen name="Home" component={MotoHome} />
+      <MTab.Screen name="Calendar" component={MotoCalendar} />
+      <MTab.Screen name="Standings" component={MotoStandings} />
+    </MTab.Navigator>
+  );
+}
 function Tabs() {
   return (
     <Tab.Navigator screenOptions={({ route }) => ({
@@ -69,10 +86,17 @@ function Shell() {
   // Changing the language rebuilds the navigation tree so every screen and title is drawn again in the new language.
   const { prefs } = usePrefs();
   return (
-          <NavigationContainer key={prefs.opts.lang === 'el' ? 'el' : 'en'} theme={navTheme}>
+          <NavigationContainer key={`${prefs.opts.lang === 'el' ? 'el' : 'en'}-${prefs.opts.sport === 'motogp' ? 'mg' : 'f1'}`} theme={navTheme}>
             <StatusBar style="light" />
             <AlertScheduler />
-            <Stack.Navigator screenOptions={detail}>
+            {prefs.opts.sport === 'motogp' ? (
+              <Stack.Navigator screenOptions={detail}>
+                <Stack.Screen name="Tabs" component={MotoTabs} options={{ headerShown: false }} />
+                <Stack.Screen name="MotoEvent" component={MotoEvent} options={({ route }) => ({ title: route.params.event.short || route.params.event.name })} />
+                <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: tr('Settings') }} />
+              </Stack.Navigator>
+            ) : (
+              <Stack.Navigator screenOptions={detail}>
               <Stack.Screen name="Tabs" component={Tabs} options={{ headerShown: false }} />
               <Stack.Screen name="RaceDetail" component={RaceDetailScreen} options={({ route }) => ({ title: tr(shortName(route.params.meeting.meeting_name)) })} />
               <Stack.Screen name="Round" component={RoundScreen} options={({ route }) => ({ title: tr(`Round ${route.params.meeting.round}`) })} />
@@ -88,7 +112,8 @@ function Shell() {
               <Stack.Screen name="Chart" component={ChartScreen} options={{ title: tr('Season chart') }} />
               <Stack.Screen name="Grid" component={GridScreen} options={{ title: tr('Next season grid') }} />
               <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: tr('Settings') }} />
-            </Stack.Navigator>
+              </Stack.Navigator>
+            )}
           </NavigationContainer>
   );
 }

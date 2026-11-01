@@ -11,6 +11,27 @@ async function step(name, fn) {
 }
 const need = (r, label) => { if (r.status !== 200) throw new Error(`${label}: HTTP ${r.status}${r.status === 401 || r.status === 403 ? ' (OpenF1 may block free requests while a session is live)' : r.status === 429 ? ' (rate limited, try again in a minute)' : ''}`); return r; };
 
+const MG = 'https://api.motogp.pulselive.com/motogp/v1';
+async function motoChecks(push) {
+  let season = null;
+  push(await step('MotoGP seasons', async () => {
+    const r = need(await liveJSON(`${MG}/results/seasons`), 'seasons'); const l = Array.isArray(r.json) ? r.json : r.json?.classification;
+    if (!Array.isArray(l) || !l.length || !('year' in l[0])) throw new Error('unexpected shape');
+    season = l.find((x) => x.current) || l[0]; return `${l.length} seasons, current ${season.year}`;
+  }));
+  push(await step('MotoGP events', async () => {
+    if (!season) throw new Error('no season to test with');
+    const l = need(await liveJSON(`${MG}/results/events?seasonUuid=${season.id}`), 'events').json;
+    if (!Array.isArray(l) || !l.length || !('date_start' in l[0])) throw new Error('unexpected shape'); return `${l.length} events`;
+  }));
+  push(await step('MotoGP standings', async () => {
+    if (!season) throw new Error('no season to test with');
+    const c = need(await liveJSON(`${MG}/results/categories?seasonUuid=${season.id}`), 'categories').json;
+    if (!Array.isArray(c) || !c.length) throw new Error('no categories');
+    const r = need(await liveJSON(`${MG}/results/standings?seasonUuid=${season.id}&categoryUuid=${c[0].id}`), 'standings').json;
+    const l = Array.isArray(r) ? r : r?.classification; if (!Array.isArray(l)) throw new Error('unexpected shape'); return `${l.length} riders in ${c[0].name}`;
+  }));
+}
 export async function runDiagnostics(onResult) {
   const out = []; const push = (r) => { out.push(r); onResult?.(r); return r; };
   let raceSession = null;
@@ -92,5 +113,6 @@ export async function runDiagnostics(onResult) {
     if (!Array.isArray(x) || !x.length || !('team_colour' in x[0])) throw new Error('unexpected shape');
     return `${x.length} drivers with numbers and team colours`;
   }));
+  await motoChecks(push);
   return out;
 }

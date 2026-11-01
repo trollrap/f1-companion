@@ -4,6 +4,7 @@ import { Text } from './Text';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { colors } from '../theme';
+import SportSwitch from './SportSwitch';
 import { refreshAll } from '../lib/net';
 import { usePrefs } from '../hooks/usePrefs';
 export default function Header() {
@@ -11,7 +12,7 @@ export default function Header() {
   return (
     <View style={s.top}>
       <View style={s.logo}>
-        <><View style={s.bar} /><Text style={s.word}>F1<Text style={{ color: colors.accent }}>·</Text>COMPANION</Text></>
+        <><SportSwitch /><Text style={s.word}>{prefs.opts.sport === 'motogp' ? 'MOTO' : 'F1'}<Text style={{ color: colors.accent }}>·</Text>COMPANION</Text></>
       </View>
       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
       {prefs.opts.pullRefresh !== true && <Pressable onPress={refreshAll} hitSlop={10} accessibilityLabel="Refresh" style={({ pressed }) => [s.btn, pressed && { opacity: 0.6 }]}><Ionicons name="refresh" size={22} color={colors.muted} /></Pressable>}
