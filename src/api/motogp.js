@@ -53,3 +53,29 @@ export async function lastRace(seasonId, year) {
 }
 export const flagOf = (iso) => (/^[A-Za-z]{2}$/.test(iso || '') ? String.fromCodePoint(...[...iso.toUpperCase()].map((c) => 127397 + c.charCodeAt(0))) : '🏁');
 export const mgDate = (e) => { const a = new Date(e.start), b = new Date(e.end || e.start), mo = (d) => d.toLocaleString('en-GB', { month: 'short', timeZone: 'UTC' }); return a.getUTCMonth() === b.getUTCMonth() ? `${a.getUTCDate()}–${b.getUTCDate()} ${mo(a)}` : `${a.getUTCDate()} ${mo(a)} – ${b.getUTCDate()} ${mo(b)}`; };
+
+// Alerts: MotoGP-class sessions of one event in the shape the alert planner expects.
+const ALERT = { FP1: 'Practice 1', FP2: 'Practice 2', PR: 'Practice 1', Q2: 'Qualifying', NQ: 'Qualifying', SPR: 'Sprint', RAC: 'Race' };
+export async function alertSessions(event, seasonId) {
+  const top = (await categories(seasonId))[0]; if (!top) return [];
+  const l = await sessions(event.id, top.id);
+  return l.filter((s) => ALERT[s.type] && s.date).map((s) => { const a = Date.parse(s.date); return { session_name: ALERT[s.type], date_start: new Date(a).toISOString(), date_end: new Date(a + 45 * 60000).toISOString() }; }).filter((s) => !Number.isNaN(Date.parse(s.date_start)));
+}
+// Teams / constructors table built from the rider standings (every rider's points go to his team and his bike).
+export function groupStandings(rows, key) {
+  const m = new Map();
+  rows.forEach((r) => { const k = r[key]; if (!k) return; const x = m.get(k) || { name: k, points: 0, riders: [] }; x.points += r.points || 0; x.riders.push(r.name); m.set(k, x); });
+  return [...m.values()].sort((a, b) => b.points - a.points).map((x, i) => ({ ...x, position: i + 1 }));
+}
+// Everything one rider did in a season in the top class, read from the race (and sprint) classifications.
+export async function riderSeason(seasonId, year, riderId) {
+  const evs = (await events(seasonId, year)).filter((e) => Date.parse(e.end) < Date.now()); const top = (await categories(seasonId))[0]; if (!top) return [];
+  const out = [];
+  for (const e of evs) {
+    const ss = await sessions(e.id, top.id).catch(() => []); const race = ss.find((s) => s.type === 'RAC'); if (!race) continue;
+    const rows = await classification(race.id, year).catch(() => []); const me = rows.find((r) => r.riderId === riderId);
+    const spr = ss.find((s) => s.type === 'SPR'); const sr = spr ? (await classification(spr.id, year).catch(() => [])).find((r) => r.riderId === riderId) : null;
+    out.push({ event: e, race: me || null, sprint: sr || null });
+  }
+  return out;
+}

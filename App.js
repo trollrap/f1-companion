@@ -34,7 +34,7 @@ import PredictScreen from './src/screens/PredictScreen';
 import ChartScreen from './src/screens/ChartScreen';
 import GridScreen from './src/screens/GridScreen';
 import TeamCompareScreen from './src/screens/TeamCompareScreen';
-import { MotoHome, MotoCalendar, MotoStandings, MotoEvent } from './src/screens/MotoScreens';
+import { MotoHome, MotoCalendar, MotoStandings, MotoEvent, MotoRider } from './src/screens/MotoScreens';
 import SettingsScreen from './src/screens/SettingsScreen';
 import AlertScheduler from './src/components/AlertScheduler';
 import ErrorBoundary from './src/components/ErrorBoundary';
@@ -93,6 +93,7 @@ function Shell() {
               <Stack.Navigator screenOptions={detail}>
                 <Stack.Screen name="Tabs" component={MotoTabs} options={{ headerShown: false }} />
                 <Stack.Screen name="MotoEvent" component={MotoEvent} options={({ route }) => ({ title: route.params.event.short || route.params.event.name })} />
+                <Stack.Screen name="MotoRider" component={MotoRider} options={({ route }) => ({ title: route.params.rider.name })} />
                 <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: tr('Settings') }} />
               </Stack.Navigator>
             ) : (

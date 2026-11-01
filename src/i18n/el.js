@@ -61,6 +61,7 @@ export const DICT = {
   'Data check': 'Έλεγχος δεδομένων', 'Test every service from this phone': 'Δοκιμή κάθε υπηρεσίας από αυτό το κινητό', 'Check data sources': 'Έλεγχος πηγών δεδομένων', 'Back to the default settings': 'Επαναφορά στις προεπιλογές', 'Display and performance settings were reset.': 'Οι ρυθμίσεις εμφάνισης και απόδοσης επαναφέρθηκαν.', 'Reset display settings': 'Επαναφορά ρυθμίσεων εμφάνισης',
   'Times follow your device\'s timezone unless a screen is switched to track time.': 'Οι ώρες ακολουθούν τη ζώνη ώρας της συσκευής εκτός αν μια οθόνη αλλάξει σε ώρα πίστας.', '👋 Hi from trollrap!': '👋 Χαιρετίσματα από τον trollrap!', 'Every bug you find is a hidden feature. Probably.': 'Κάθε σφάλμα που βρίσκετε είναι κρυφό χαρακτηριστικό. Μάλλον.',
   'NEXT GRAND PRIX': 'ΕΠΟΜΕΝΟ ΓΚΡΑΝ ΠΡΙ', 'CHOOSE A SPORT': 'ΕΠΙΛΟΓΗ ΑΘΛΗΜΑΤΟΣ', 'Coming soon': 'Σύντομα', 'The season is over: no Grand Prix left.': 'Η σεζόν τελείωσε: δεν υπάρχει άλλο Γκραν Πρι.', 'No races are published for this season yet.': 'Δεν έχουν δημοσιευτεί αγώνες για αυτή τη σεζόν.', 'No standings published for this class yet.': 'Δεν υπάρχει δημοσιευμένη βαθμολογία για αυτή την κατηγορία.', 'No session results are published yet.': 'Δεν έχουν δημοσιευτεί αποτελέσματα συνεδριών.', Next: 'Επόμενο', 'Qualifying 1': 'Κατατακτήριες 1', 'Qualifying 2': 'Κατατακτήριες 2', 'Warm up': 'Προθέρμανση', Practice: 'Ελεύθερες',
+  Riders: 'Αναβάτες', Constructors: 'Κατασκευαστές', 'Added up from the riders\' points.': 'Άθροισμα των βαθμών των αναβατών.', 'Best finish': 'Καλύτερη θέση', 'Sprint podiums': 'Βάθρα σπριντ', 'Not classified': 'Μη ταξινομημένος', 'Race results': 'Αποτελέσματα αγώνων', 'Loading the season\'s races. The first time can take several seconds.': 'Φόρτωση των αγώνων της σεζόν. Την πρώτη φορά μπορεί να πάρει μερικά δευτερόλεπτα.',
   Language: 'Γλώσσα', 'App language': 'Γλώσσα εφαρμογής', 'Names of drivers, teams and team principals stay as they are.': 'Τα ονόματα οδηγών, ομάδων και υπευθύνων δεν μεταφράζονται.', Beta: 'Beta', 'The Greek translation is in beta. Some texts may still appear in English.': 'Η ελληνική μετάφραση είναι σε beta. Κάποια κείμενα μπορεί να εμφανίζονται ακόμη στα αγγλικά.',
   'results on': 'αποτελέσματα ενεργά', 'results off': 'αποτελέσματα ανενεργά', 'Race weekend': 'Αγωνιστικό Σαββατοκύριακο',
   // rules
@@ -100,6 +101,7 @@ export const DICT = {
 // [regex, replacement with $1..]. First match wins. Applied to the whole string, then to each " · " part.
 const T = (x) => (DICT[x] !== undefined ? DICT[x] : x);
 export const PATTERNS = [
+  [/^Sprint: P(.+)$/, 'Σπριντ: P$1'], [/^−(\d+)$/, '−$1'],
   [/^Last race · (.+)$/, 'Τελευταίος αγώνας · $1'],
   [/^Round (\d+)$/, 'Αγώνας $1'], [/^R(\d+) · (.+)$/, 'Α$1 · $2'],
   [/^(\d+) pts$/, '$1 βαθμ.'], [/^\+(\d+) pts$/, '+$1 βαθμ.'], [/^(\d+) points$/, '$1 βαθμοί'],

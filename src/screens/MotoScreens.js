@@ -9,10 +9,11 @@ import SeasonSwitch from '../components/SeasonSwitch';
 import Grad from '../components/Grad';
 import Press from '../components/Press';
 import { Pill } from '../components/Badge';
-import { Countdown } from '../components/Shared';
+import { Segmented, Countdown } from '../components/Shared';
 import { useAsync } from '../hooks/useAsync';
 import { useNow } from '../hooks/useSeason';
-import { seasons, events, categories, sessions, classification, standings, lastRace, flagOf, mgDate } from '../api/motogp';
+import { seasons, events, categories, sessions, classification, standings, lastRace, flagOf, mgDate, groupStandings, riderSeason } from '../api/motogp';
+import { up } from '../lib/i18n';
 import { colors, alpha } from '../theme';
 
 // Picks the season (default: the one the service marks as current) and the class (MotoGP, Moto2, Moto3) used by every MotoGP screen.
@@ -96,20 +97,66 @@ export function MotoCalendar({ navigation }) {
   );
 }
 
-export function MotoStandings() {
-  const m = useMoto(); const [cat, setCat] = useState(null);
+export function MotoStandings({ navigation }) {
+  const m = useMoto(); const [cat, setCat] = useState(null); const [view, setView] = useState('riders');
   const cats = useAsync(() => (m.season ? categories(m.season.id) : Promise.resolve(null)), [m.season?.id]);
-  const catId = cats.v?.find((c) => c.id === cat)?.id || cats.v?.[0]?.id;
+  const catId = cats.v?.find((c) => c.id === cat)?.id || cats.v?.[0]?.id; const isTop = catId && catId === cats.v?.[0]?.id;
   const st = useAsync(() => (m.season && catId ? standings(m.season.id, catId) : Promise.resolve(null)), [m.season?.id, catId]);
-  const top = st.v?.[0]?.points || 0;
+  const rows = useMemo(() => (!st.v ? null : view === 'riders' ? st.v : groupStandings(st.v, view === 'teams' ? 'team' : 'bike')), [st.v, view]);
+  const top = rows?.[0]?.points || 0;
   return (
-    <Screen>
+    <Screen swipe={{ index: ['riders', 'teams', 'bikes'].indexOf(view), count: 3, onIndex: (i) => setView(['riders', 'teams', 'bikes'][i]) }}>
       {m.years.length > 0 && <SeasonSwitch year={m.season?.year} years={m.years} max={m.years[0]} onChange={(y) => { setCat(null); m.setYear(y); }} />}
       {cats.v?.length > 0 && <Dropdown value={catId} options={cats.v.map((c) => [c.id, c.name])} onChange={setCat} />}
+      <Segmented value={view} onChange={setView} items={[['riders', 'Riders'], ['teams', 'Teams'], ['bikes', 'Constructors']]} />
       {(m.ss.loading || cats.loading || st.loading) && <Skeleton rows={6} />}
       {(m.ss.error || cats.error || st.error) && <ErrorNote error={m.ss.error || cats.error || st.error} onRetry={() => { m.ss.reload(); cats.reload(); st.reload(); }} />}
-      {st.v && !st.v.length && <Note>No standings published for this class yet.</Note>}
-      {st.v?.map((r, i) => <Row key={`${r.riderId}${i}`} r={{ ...r, right: String(r.points), rightSub: i > 0 ? `−${top - r.points}` : 'Leader' }} />)}
+      {rows && !rows.length && <Note>No standings published for this class yet.</Note>}
+      {rows?.map((r, i) => (
+        <Row key={`${r.riderId || r.name}${i}`} r={view === 'riders' ? { ...r, right: String(r.points), rightSub: i > 0 ? `−${top - r.points}` : 'Leader' } : { position: r.position, name: r.name, team: r.riders.join(' · '), right: String(r.points), rightSub: i > 0 ? `−${top - r.points}` : 'Leader' }}
+          onPress={view === 'riders' && r.riderId && isTop ? () => navigation.navigate('MotoRider', { rider: r, season: m.season }) : undefined} />))}
+      {view !== 'riders' && rows?.length ? <Note>Added up from the riders' points.</Note> : null}
+    </Screen>
+  );
+}
+
+export function MotoRider({ route }) {
+  const { rider, season } = route.params; const now = useNow(60000);
+  const res = useAsync(() => riderSeason(season.id, season.year, rider.riderId), [rider.riderId]);
+  const list = res.v || []; const races = list.filter((x) => x.race);
+  const fin = races.map((x) => x.race.position).filter((p) => Number.isFinite(Number(p)) && p != null).map(Number);
+  const stat = [['Position', rider.position ?? '—'], ['Points', rider.points ?? '—'], ['Wins', fin.filter((p) => p === 1).length], ['Podiums', fin.filter((p) => p <= 3).length], ['Best finish', fin.length ? `P${Math.min(...fin)}` : '—'], ['Races', races.length],
+    ['Sprint podiums', list.filter((x) => x.sprint && Number(x.sprint.position) <= 3).length], ['Not classified', races.length - fin.length]];
+  return (
+    <Screen header={false}>
+      <Grad color={colors.accent} from={0.5} to={0.05} border={0.4} style={{ padding: 16 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <View style={{ flex: 1 }}>
+            <Text style={s.eyebrow}>{`${rider.iso ? flagOf(rider.iso) + ' ' : ''}${season.year}`}</Text>
+            <Text style={s.title} numberOfLines={2}>{rider.name}</Text>
+            <Text style={s.sub}>{[rider.team, rider.bike].filter(Boolean).join(' · ')}</Text>
+          </View>
+          {rider.number != null ? <Text style={{ fontFamily: 'display', fontWeight: '800', fontSize: 56, color: 'rgba(255,255,255,0.85)' }}>{rider.number}</Text> : null}
+        </View>
+      </Grad>
+      <Card>
+        <Eyebrow>{`${season.year} season`}</Eyebrow>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
+          {stat.map(([k, v]) => <View key={k} style={s.stat}><Text style={s.statK}>{up(k)}</Text><Text style={s.statV}>{String(v)}</Text></View>)}
+        </View>
+        {res.loading && <Note>Loading the season's races. The first time can take several seconds.</Note>}
+        {res.error && <Note>{`Results unavailable: ${res.error}`}</Note>}
+      </Card>
+      {races.length > 0 && (
+        <Card>
+          <Eyebrow>Race results</Eyebrow>
+          <View style={{ marginTop: 8 }}>{[...races].reverse().map((x) => (
+            <View key={x.event.id} style={s.row}>
+              <View style={s.pos}><Text style={s.posT}>{x.race.position ?? '–'}</Text></View>
+              <View style={{ flex: 1 }}><Text style={s.name} numberOfLines={1}>{`${flagOf(x.event.iso)} ${x.event.short || x.event.name}`}</Text><Text style={s.sub}>{x.sprint ? `Sprint: P${x.sprint.position ?? '–'}` : mgDate(x.event)}</Text></View>
+              <Text style={s.right}>{x.race.points != null && x.race.points !== '' ? `${x.race.points} pts` : x.race.status || ''}</Text>
+            </View>))}</View>
+        </Card>)}
     </Screen>
   );
 }
@@ -145,6 +192,7 @@ export function MotoEvent({ route }) {
   );
 }
 const s = StyleSheet.create({
+  stat: { width: '31.5%', backgroundColor: colors.surface2, borderWidth: 1, borderColor: colors.line, borderRadius: 12, padding: 10 }, statK: { color: colors.muted, fontFamily: 'label', fontSize: 9, letterSpacing: 1.2 }, statV: { color: colors.fg, fontSize: 22, fontWeight: '800', marginTop: 2 },
   eyebrow: { color: 'rgba(255,255,255,0.8)', fontFamily: 'label', fontSize: 11, letterSpacing: 2, fontWeight: '700' },
   title: { color: colors.fg, fontSize: 24, fontWeight: '800', fontStyle: 'italic' }, sub: { color: colors.muted, fontSize: 14 },
   name: { color: colors.fg, fontSize: 18, fontWeight: '700' }, right: { color: colors.fg, fontSize: 16, fontWeight: '700' },
