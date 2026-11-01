@@ -1,0 +1,53 @@
+{
+  "expo": {
+    "name": "F1 Companion",
+    "slug": "f1-companion",
+    "version": "1.3.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#0A0506",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.f1companion.app"
+    },
+    "android": {
+      "package": "com.f1companion.app",
+      "versionCode": 10300,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/app/adaptive-icon.png",
+        "backgroundColor": "#0A0506"
+      },
+      "permissions": [
+        "SCHEDULE_EXACT_ALARM",
+        "USE_EXACT_ALARM",
+        "RECEIVE_BOOT_COMPLETED"
+      ]
+    },
+    "plugins": [
+      "expo-font",
+      [
+        "expo-notifications",
+        {
+          "color": "#E10600"
+        }
+      ]
+    ],
+    "icon": "./assets/app/icon.png",
+    "splash": {
+      "image": "./assets/app/icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0A0506"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "4b842ba8-89bf-43a1-87f3-43da42bd0735"
+      }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/4b842ba8-89bf-43a1-87f3-43da42bd0735"
+    }
+  }
+}
