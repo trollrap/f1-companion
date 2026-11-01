@@ -15,6 +15,7 @@ import Grad from '../components/Grad';
 import Press from '../components/Press';
 import { SprintBadge, Pill } from '../components/Badge';
 import Schedule from '../components/Schedule';
+import NextSession from '../components/NextSession';
 import Strategy from '../components/Strategy';
 import { sessionResults, driverStandings } from '../api/jolpica';
 import { norm } from '../lib/names';
@@ -30,21 +31,28 @@ import { dateRange, shortName, flag } from '../lib/time';
 const KIND = { Race: 'results', Qualifying: 'qualifying', Sprint: 'sprint' };
 export default function RoundScreen({ route, navigation }) {
   const { meeting } = route.params; const now = useNow(60000); const outline = useOutline(meeting.circuit_key); const { prefs } = usePrefs(); const [gapMode, setGapMode] = useState(prefs.opts.gap === 'ahead' ? 'ahead' : 'leader'); const tc = useTeamColor(); const favs = useFavs(); const meta = usePaddockMeta();
-  const stand = useAsync(() => driverStandings(YEAR), []);
+  const year = meeting.year || YEAR; const stand = useAsync(() => driverStandings(year), [year]);
   // Practice rows come from OpenF1 (no Jolpica id). Match them to the standings by car number, then surname.
   // A reserve driver is not in the standings: open a profile from the name alone (it shows what exists for that driver).
   const matchTiming = (r) => stand.v?.find((x) => String(meta?.drivers?.[x.driverId]?.number) === String(r.number)) || stand.v?.find((x) => norm(x.last) === norm(r.last)) || null;
   const openTiming = (r) => { const m = matchTiming(r); navigation.navigate('Driver', m ? { ...driverParams(m), color: r.color } : { driverId: norm(r.last).replace(/[^a-z0-9]+/g, '_'), name: r.driver, first: r.first, last: r.last, teamId: null, team: r.team, color: r.color }); };
   const done = Date.parse(meeting.date_end) < now;
-  const [showStrat, setShowStrat] = useState(false); const [sessions, setSessions] = useState([]); const [sel, setSel] = useState(null); const [res, setRes] = useState({ loading: true });
-  useEffect(() => { sessionsOf(meeting).then(setSessions).catch(() => {}); }, []);
+  const [showStrat, setShowStrat] = useState(false); const [sessions, setSessions] = useState([]); const [sel, setSel] = useState(route.params.session || null); const [res, setRes] = useState({ loading: true });
+  // Old seasons only publish the race date, so the weekend is rebuilt from what the results archive holds: race, qualifying (since 1994) and a sprint when there was one.
+  useEffect(() => {
+    sessionsOf(meeting).then((l) => {
+      if (l.length || year >= YEAR) { setSessions(l); return; }
+      const end = meeting.date_end, mk = (n) => ({ session_name: n, date_start: meeting.date_start, date_end: end, end_estimated: true });
+      setSessions([...(year >= 1994 ? [mk('Qualifying')] : []), ...(meeting.has_sprint ? [mk('Sprint')] : []), mk('Race')]);
+    }).catch(() => {});
+  }, []);
   // Results can be opened for every session that has finished, even while the weekend is still going.
   const ended = sessions.filter((x) => Date.parse(x.date_end) < now);
   const names = ended.map((x) => x.session_name); const cur = sel && names.includes(sel) ? sel : names.includes('Race') ? 'Race' : names.at(-1);
   useEffect(() => {
     if (!cur) return; setRes({ loading: true });
     const kind = KIND[cur];
-    if (kind) { sessionResults(YEAR, meeting.round, kind).then((v) => setRes({ v })).catch((e) => setRes({ error: String(e.message || e) })); return; }
+    if (kind) { sessionResults(year, meeting.round, kind).then((v) => (v ? setRes({ v }) : setRes({ note: 'No results are archived for this session.' }))).catch((e) => setRes({ error: String(e.message || e) })); return; }
     const sess = sessions.find((x) => x.session_name === cur);
     if (!sess) { setRes({ note: 'This session is not in the schedule data.' }); return; }
     sessionClassification(sess.session_key).then((v) => setRes({ timing: v })).catch((e) => setRes({ error: String(e.message || e) }));
@@ -70,6 +78,7 @@ export default function RoundScreen({ route, navigation }) {
         <View style={{ marginTop: 8 }}><Pill color={done ? colors.good : colors.accent}>{done ? 'Completed' : ended.length ? 'In progress' : 'Upcoming'}</Pill></View>
         {outline ? <View pointerEvents="none" style={{ position: 'absolute', right: 8, top: 6, bottom: 6, justifyContent: 'center' }}><TrackMap pts={outline} width={132} height={92} stroke={2.6} /></View> : null}
       </Grad>
+      {!done && sessions.length > 0 && <NextSession sessions={sessions} now={now} off={null} />}
       {ended.length > 0 && (
         <Card>
           <Eyebrow>Results</Eyebrow>

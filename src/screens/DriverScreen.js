@@ -1,10 +1,11 @@
+import { isGreek, longDateEl } from '../lib/time';
 import React, { useState } from 'react';
 import { View, Pressable, ScrollView, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Skeleton from '../components/Skeleton';
 import { Text } from '../components/Text';
 import Screen, { ErrorNote, Card, Eyebrow, Note } from '../components/Screen';
-import { StatGrid, StarButton, Segmented, TeamBadge } from '../components/Shared';
+import { StatGrid, ExpandStats, StarButton, Segmented, TeamBadge } from '../components/Shared';
 import Grad, { Scrim } from '../components/Grad';
 import { Pill } from '../components/Badge';
 import { RaceCard, SeasonRow } from '../components/RaceRows';
@@ -12,7 +13,7 @@ import { useAsync } from '../hooks/useAsync';
 import { useFavs } from '../hooks/useFavs';
 import { useSeason } from '../hooks/useSeason';
 import { useTeamColor, usePaddockMeta } from '../hooks/useTeams';
-import { driverInfo, driverSeasonResults, driverSeasonQuali, driverCareer, driverTitles, driverStandings, driverSeasons } from '../api/jolpica';
+import { driverTeamsList, driverInfo, driverSeasonResults, driverSeasonQuali, driverCareer, driverTitles, driverStandings, driverSeasons } from '../api/jolpica';
 import SeasonSwitch from '../components/SeasonSwitch';
 import { clinched } from '../lib/champion';
 import { engineerOf } from '../data/engineers';
@@ -24,7 +25,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { colors, alpha } from '../theme';
 
 const ageOn = (born) => { const b = new Date(born), n = new Date(); let a = n.getUTCFullYear() - b.getUTCFullYear(); if (n < new Date(Date.UTC(n.getUTCFullYear(), b.getUTCMonth(), b.getUTCDate()))) a--; return a; };
-const longDate = (iso) => new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+const longDate = (iso) => isGreek() ? longDateEl(iso) : new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
 const dash = (v) => (v == null ? '—' : String(v));
 
 export default function DriverScreen({ route, navigation }) {
@@ -44,6 +45,7 @@ export default function DriverScreen({ route, navigation }) {
   }, [driverId, year]);
   const career = useAsync(() => driverCareer(driverId, YEAR), [driverId]);
   const titles = useAsync(() => driverTitles(driverId, YEAR), [driverId]);
+  const teamsList = useAsync(() => driverTeamsList(driverId), [driverId]);
   const standAll = useAsync(() => driverStandings(year), [year]);
   const stand = { v: standAll.v ? standAll.v.find((x) => x.driverId === driverId) || null : standAll.v, loading: standAll.loading };
   React.useEffect(() => { navigation.setOptions({ headerRight: () => <StarButton on={favs.isDriver(driverId)} onPress={() => favs.toggleDriver(driverId)} label="Favourite" /> }); }, [favs.drivers]);
@@ -51,7 +53,7 @@ export default function DriverScreen({ route, navigation }) {
   // The team he drove for in the viewed season (the current team when it is this season).
   const sTeamId = (isCur ? teamId : null) || rows.at(-1)?.teamId || stand.v?.teamId || teamId, sTeam = (isCur ? team : null) || rows.at(-1)?.team || stand.v?.team || team;
   const i = info.v, S = season.v?.stats, C = career.v, st = stand.v, color = (isCur && route.params.color) || tc(sTeamId), photo = driverPhoto(driverId), eng = engineerPhoto(driverId), numImg = numberImage(driverId);
-  const number = meta?.drivers?.[driverId]?.number ?? i?.number, code = meta?.drivers?.[driverId]?.code || i?.code;
+  const number = isCur ? (meta?.drivers?.[driverId]?.number ?? i?.number) : (st?.permNumber ?? i?.number), code = (isCur && meta?.drivers?.[driverId]?.code) || st?.code || i?.code;
   const champion = !!standAll.v && standAll.v.length > 1 && standAll.v[0].driverId === driverId && (isCur ? clinched(standAll.v, 'driver', season0.races?.length, season0.races) : true);
   const engName = isCur ? engineerOf(driverId) : null;
   // A reserve or test driver has no Grand Prix record: show the card and a note instead of empty tabs.
@@ -84,18 +86,18 @@ export default function DriverScreen({ route, navigation }) {
       </Grad>
 
       {noHistory ? <Card><Eyebrow>No race record</Eyebrow><Note>No Formula 1 race results were found for this driver. Reserve and test drivers only appear in practice sessions.</Note></Card> : (<>
-        <Pressable onPress={() => navigation.navigate('Compare', { a: { driverId, name, first: nm.first, last: nm.last, teamId: sTeamId, team: sTeam } })} style={({ pressed }) => [s.btn, pressed && { opacity: 0.85 }]}>
+        <Pressable onPress={() => navigation.navigate('Compare', { a: { driverId, name, first: nm.first, last: nm.last, teamId: sTeamId, team: sTeam }, year: isCur ? undefined : year })} style={({ pressed }) => [s.btn, pressed && { opacity: 0.85 }]}>
           <Ionicons name="git-compare" size={18} color={colors.accent} /><Text style={s.btnText}>Compare with another driver</Text>
         </Pressable>
         <Segmented value={tab} onChange={setTab} items={[['season', `${year}`], ['career', 'Career'], ['profile', 'Profile']]} />
 
-        {tab === 'season' && (seasons.v || []).length > 1 ? <SeasonSwitch compact year={year} years={[...new Set([...(activeNow ? [YEAR] : []), ...(seasons.v || [])])].sort((a, b) => b - a)} onChange={setPick} caption={sTeam ? `${sTeam} · tap to view another season` : 'tap to view another season'} /> : null}
+        {tab === 'season' && (seasons.v || []).length > 1 ? <SeasonSwitch compact year={year} years={[...new Set([...(activeNow ? [YEAR] : []), ...(seasons.v || [])])].sort((a, b) => b - a)} onChange={setPick} /> : null}
         {tab === 'season' && (
           <Card>
             <Eyebrow>{`${year} season`}</Eyebrow>
             {(season.loading || stand.loading) && <Skeleton />}
             {season.error && <ErrorNote error={season.error} onRetry={season.reload} />}
-            {S && <StatGrid cols={3} items={[
+            {S && <ExpandStats cols={3} items={[
               ['Position', st ? `P${st.position}` : '—'], ['Points', dash(st?.points)], ['Wins', String(S.wins)],
               ['Podiums', String(S.podiums)], ['Poles', dash(S.poles)], ['Fast laps', String(S.fastest)],
               ['Races', String(S.races)], ['In points', String(S.pointsFinishes)], ['DNF / NC', String(S.notClassified)],
@@ -124,12 +126,13 @@ export default function DriverScreen({ route, navigation }) {
           </View>
         )}
 
-        {tab === 'season' && isCur && (eng || teamLogo(teamId)) ? (
-          <Grad color={color} from={0.6} to={0.06} dir="h" radius={18} border={0.4} style={{ height: 150 }}>
-            {eng ? <Image source={eng} resizeMode="cover" resizeMethod="resize" fadeDuration={0} style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 150, height: 150 }} />
-              : <Image source={teamLogo(teamId)} resizeMode="contain" resizeMethod="resize" fadeDuration={0} style={{ position: 'absolute', right: 16, top: 15, width: 120, height: 120, opacity: 0.3 }} />}
-            {eng ? <Scrim dir="h" from={0.55} to={0} style={{ right: '25%' }} /> : null}
-            <View style={{ padding: 14, gap: 6 }}><Eyebrow>Race engineer</Eyebrow>{engName ? <Text style={{ color: colors.fg, fontSize: 20, fontWeight: '700', maxWidth: '58%' }}>{engName}</Text> : null}</View>
+        {tab === 'season' && isCur && (eng || engName) ? (
+          <Grad color={color} from={0.5} to={0.05} dir="h" radius={14} border={0.35} style={{ height: eng ? 96 : 60 }}>
+            {eng ? <Image source={eng} resizeMode="cover" resizeMethod="resize" fadeDuration={0} style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 96, height: 96 }} /> : null}
+            <View style={{ flex: 1, paddingHorizontal: 14, justifyContent: 'center' }}>
+              <Text style={{ color: 'rgba(255,255,255,0.7)', fontFamily: 'label', fontSize: 10, letterSpacing: 1.6 }}>RACE ENGINEER</Text>
+              {engName ? <Text style={{ color: colors.fg, fontSize: 18, fontWeight: '700', maxWidth: '70%' }} numberOfLines={1}>{engName}</Text> : null}
+            </View>
           </Grad>) : null}
 
         {tab === 'career' && (
@@ -140,6 +143,16 @@ export default function DriverScreen({ route, navigation }) {
             {C && <StatGrid cols={3} items={[['Seasons', dash(C.seasons)], ['Races', dash(C.races)], ['Wins', dash(C.wins)], ['Podiums', dash(C.podiums)], ['Poles', dash(C.poles)], ['Fast laps', dash(C.fastest)], ['Titles', titles.loading ? '…' : dash(titles.v)], ['Points', dash(C.points)], ['First year', dash(C.first)]]} />}
           </Card>
         )}
+        {tab === 'career' && (teamsList.v || []).length > 0 && (
+          <Card>
+            <Eyebrow>Teams</Eyebrow>
+            {teamsList.v.map((x) => (
+              <Pressable key={x.teamId + x.from} onPress={() => navigation.navigate('Team', { teamId: x.teamId, name: x.name, year: x.to })} style={({ pressed }) => [{ flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 10, opacity: pressed ? 0.7 : 1 }]}>
+                <TeamBadge teamId={x.teamId} name={x.name} size={34} />
+                <View style={{ flex: 1 }}><Text style={{ color: colors.fg, fontSize: 18, fontWeight: '700' }} numberOfLines={1}>{x.name}</Text><Text style={{ color: colors.muted, fontSize: 14 }}>{x.from === x.to ? `${x.from}` : `${x.from} – ${x.to === YEAR ? 'now' : x.to}`}{x.races ? ` · ${x.races} races` : ''}</Text></View>
+                <Ionicons name="chevron-forward" size={16} color={colors.muted} />
+              </Pressable>))}
+          </Card>)}
 
         {tab === 'profile' && (
           <Card>

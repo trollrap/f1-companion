@@ -19,7 +19,7 @@ export function scheduleSessions(s) {
 }
 export function scheduleToMeeting(s) {
   const sessions = scheduleSessions(s), L = s.Circuit.Location;
-  return { meeting_key: `j${s.round}`, meeting_name: s.raceName, location: L.locality, country_name: L.country, country_code: NAME3[L.country] || '',
+  return { meeting_key: `j${s.round}`, year: Number(s.season), meeting_name: s.raceName, location: L.locality, country_name: L.country, country_code: NAME3[L.country] || '',
     circuit_short_name: s.Circuit.circuitName, round: s.round, has_sprint: !!s.Sprint, sessions,
     date_start: sessions[0]?.date_start || `${s.date}T00:00:00Z`, date_end: sessions.at(-1)?.date_end || `${s.date}T23:59:59Z` };
 }

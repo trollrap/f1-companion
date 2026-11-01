@@ -1,3 +1,4 @@
+import { up } from '../lib/i18n';
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Pressable, Animated, Easing, Modal, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -20,7 +21,7 @@ export default function SeasonSwitch({ year, onChange, min = 1950, max, years: l
             <Text style={{ fontFamily: 'display', fontStyle: 'italic', fontWeight: '800', fontSize: compact ? 22 : 30, color: colors.fg, letterSpacing: 1 }}>{year}</Text>
             <Ionicons name="chevron-down" size={20} color={colors.accent} />
           </View>
-          <Text style={{ color: !caption && year === YEAR_OF(max) ? colors.accent : colors.muted, fontSize: 12, letterSpacing: 2, fontWeight: '700' }} numberOfLines={1}>{caption ? String(caption).toUpperCase() : year === YEAR_OF(max) ? 'CURRENT SEASON' : year > YEAR_OF(max) ? 'UPCOMING' : 'TAP TO CHANGE SEASON'}</Text>
+          <Text style={{ color: !caption && year === YEAR_OF(max) ? colors.accent : colors.muted, fontSize: 12, letterSpacing: 2, fontWeight: '700' }} numberOfLines={1}>{caption ? up(String(caption)) : year === YEAR_OF(max) ? 'CURRENT SEASON' : year > YEAR_OF(max) ? 'UPCOMING' : 'TAP TO CHANGE SEASON'}</Text>
         </Animated.View>
       </Pressable>
       <Modal visible={open} transparent animationType="none" onRequestClose={() => close()} statusBarTranslucent>

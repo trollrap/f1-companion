@@ -1,4 +1,6 @@
 import { Platform } from 'react-native';
+import { tr } from './i18n';
+import { ui } from './motion';
 import Constants from 'expo-constants';
 import { requireOptionalNativeModule } from 'expo-modules-core';
 import { hm, shortName } from './time';
@@ -28,13 +30,13 @@ export const notificationsAvailable = () => !!mod();
 export async function ensurePermission() {
   const n = mod(); if (!n) return false;
   try {
-    if (Platform.OS === 'android') await n.setNotificationChannelAsync('sessions', { name: 'Session alerts', importance: n.AndroidImportance.HIGH }).catch(() => {});
+    if (Platform.OS === 'android') await n.setNotificationChannelAsync('sessions', { name: tr('Session alerts'), importance: n.AndroidImportance.HIGH }).catch(() => {});
     const cur = await n.getPermissionsAsync();
     if (cur.granted) return true;
     return (await n.requestPermissionsAsync()).granted;
   } catch { return false; }
 }
-const leadText = (m) => (m === 0 ? 'now' : m >= 1440 ? `in ${m / 1440} day` : m >= 60 ? `in ${m / 60} h` : `in ${m} min`);
+const leadText = (m) => (ui.lang === 'el' ? (m === 0 ? 'τώρα' : m >= 1440 ? `σε ${m / 1440} ημέρα` : m >= 60 ? `σε ${m / 60} ώρ.` : `σε ${m} λεπτά`) : (m === 0 ? 'now' : m >= 1440 ? `in ${m / 1440} day` : m >= 60 ? `in ${m / 60} h` : `in ${m} min`));
 // Every alert the preferences ask for: one per enabled session and per chosen lead time, only in the future.
 export function plannedAlerts(sessions, prefs, now = Date.now()) {
   const out = [];
@@ -52,7 +54,7 @@ export async function scheduleSessionAlerts(meeting, sessions, prefs) {
   if (!wanted.length || !(await ensurePermission())) return 0;
   for (const a of wanted) {
     await n.scheduleNotificationAsync({
-      content: { title: `${a.session.session_name} · ${shortName(meeting.meeting_name)}`, body: a.lead ? `Starts ${leadText(a.lead)} (${hm(a.start)})` : `Starting now (${hm(a.start)})` },
+      content: { title: `${tr(a.session.session_name)} · ${tr(shortName(meeting.meeting_name))}`, body: ui.lang === 'el' ? (a.lead ? `Ξεκινά ${leadText(a.lead)} (${hm(a.start)})` : `Ξεκινά τώρα (${hm(a.start)})`) : (a.lead ? `Starts ${leadText(a.lead)} (${hm(a.start)})` : `Starting now (${hm(a.start)})`) },
       trigger: { type: n.SchedulableTriggerInputTypes.DATE, date: new Date(a.at), channelId: 'sessions' },
     });
   }
@@ -68,6 +70,6 @@ export async function notifyNow(title, body) {
 export async function sendTestNotification() {
   const n = mod(); if (!n) return 'unavailable';
   if (!(await ensurePermission())) return 'denied';
-  await n.scheduleNotificationAsync({ content: { title: 'F1 Companion', body: 'Alerts are working.' }, trigger: { type: n.SchedulableTriggerInputTypes.TIME_INTERVAL, seconds: 5, channelId: 'sessions' } });
+  await n.scheduleNotificationAsync({ content: { title: 'F1 Companion', body: tr('Alerts are working.') }, trigger: { type: n.SchedulableTriggerInputTypes.TIME_INTERVAL, seconds: 5, channelId: 'sessions' } });
   return 'ok';
 }

@@ -10,6 +10,8 @@ import Reveal from './Reveal';
 import Swipe from './Swipe';
 import { colors } from '../theme';
 import { refreshAll, useOffline } from '../lib/net';
+import { usePrefs } from '../hooks/usePrefs';
+import { up } from '../lib/i18n';
 
 // Slides in under the header when the data servers cannot be reached twice in a row. Tapping it retries.
 function OfflineBanner() {
@@ -32,7 +34,7 @@ function OfflineBanner() {
 // Children inside <>...</> are lifted out so every block gets the same gap.
 const flat = (ch) => React.Children.toArray(ch).flatMap((c) => (c && c.type === React.Fragment ? flat(c.props.children) : [c]));
 export default function Screen({ children, header = true, refreshable = true, scrollRef, swipe }) {
-  const [refreshing, setRefreshing] = useState(false);
+  const [refreshing, setRefreshing] = useState(false); const { prefs: pp } = usePrefs(); const canPull = refreshable && pp.opts.pullRefresh === true;
   const pull = async () => { setRefreshing(true); try { await refreshAll(); } finally { setRefreshing(false); } };
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={header ? ['top'] : []}>
@@ -40,12 +42,12 @@ export default function Screen({ children, header = true, refreshable = true, sc
       <OfflineBanner />
       {swipe ? <Swipe {...swipe}>
       <ScrollView ref={scrollRef} contentContainerStyle={s.body} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled"
-        refreshControl={refreshable ? <RefreshControl refreshing={refreshing} onRefresh={pull} tintColor={colors.accent} colors={[colors.accent]} progressBackgroundColor={colors.surface2} /> : undefined}>
+        refreshControl={canPull ? <RefreshControl refreshing={refreshing} onRefresh={pull} tintColor={colors.accent} colors={[colors.accent]} progressBackgroundColor={colors.surface2} /> : undefined}>
         {flat(children).map((c, i) => <Reveal key={c.key ?? i} index={i}>{c}</Reveal>)}
       </ScrollView>
       </Swipe> : (
       <ScrollView ref={scrollRef} contentContainerStyle={s.body} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled"
-        refreshControl={refreshable ? <RefreshControl refreshing={refreshing} onRefresh={pull} tintColor={colors.accent} colors={[colors.accent]} progressBackgroundColor={colors.surface2} /> : undefined}>
+        refreshControl={canPull ? <RefreshControl refreshing={refreshing} onRefresh={pull} tintColor={colors.accent} colors={[colors.accent]} progressBackgroundColor={colors.surface2} /> : undefined}>
         {flat(children).map((c, i) => <Reveal key={c.key ?? i} index={i}>{c}</Reveal>)}
       </ScrollView>
       )}
@@ -62,7 +64,7 @@ export function Card({ style, children, onPress }) {
 export const Eyebrow = ({ children, right, color }) => (
   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
     <View style={{ width: 3, height: 13, borderRadius: 2, backgroundColor: colors.accent }} />
-    <Text style={[s.eyebrow, color && { color }]}>{String(children).toUpperCase()}</Text>
+    <Text style={[s.eyebrow, color && { color }]}>{up(String(children))}</Text>
     {right ? <View style={{ marginLeft: 'auto', flexDirection: 'row', alignItems: 'center' }}>{typeof right === 'string' ? <Text style={s.more}>{right}</Text> : right}<Ionicons name="chevron-forward" size={16} color={colors.muted} /></View> : null}
   </View>
 );

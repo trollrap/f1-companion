@@ -1,11 +1,14 @@
+import { up } from '../lib/i18n';
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Pressable } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { weekendAt } from '../lib/weekend';
 import { Text } from '../components/Text';
 import Svg, { Path } from 'react-native-svg';
 import Screen, { Card, Eyebrow, Note } from '../components/Screen';
 import Grad from '../components/Grad';
 import { circuitFor } from '../data/circuits';
-import { fetchOutline } from '../api/openf1';
+import { fetchOutline, YEAR } from '../api/openf1';
 import { flag } from '../lib/time';
 import { colors } from '../theme';
 
@@ -19,6 +22,9 @@ function Outline({ pts }) {
 }
 export default function CircuitScreen({ route, navigation }) {
   const { meeting } = route.params; const c = circuitFor(meeting); const [pts, setPts] = useState(null); const [failed, setFailed] = useState(false);
+  const [miss, setMiss] = useState('');
+  // Opens the race weekend of a given year at this circuit (optionally on a chosen session).
+  const open = async (year, session) => { setMiss(''); try { const m = await weekendAt(c, Number(year)); if (m) navigation.push('Round', { meeting: m, session }); else setMiss(`No ${year} race weekend was found for this circuit.`); } catch { setMiss('Could not load that weekend. Check your connection.'); } };
   useEffect(() => { navigation.setOptions({ title: c ? c.name : meeting.circuit_short_name }); fetchOutline(meeting.circuit_key).then((p) => (p ? setPts(p) : setFailed(true))).catch(() => setFailed(true)); }, []);
   return (
     <Screen header={false}>
@@ -28,16 +34,21 @@ export default function CircuitScreen({ route, navigation }) {
       </Grad>
       {c && (
         <View style={s.grid}>
-          {c.stats.map(([k, v]) => <View key={k} style={s.stat}><Text style={s.k}>{k.toUpperCase()}</Text><Text style={s.v}>{v}</Text></View>)}
+          {c.stats.map(([k, v]) => /^\d{4}$/.test(String(v)) && /first/i.test(k)
+            ? <Pressable key={k} onPress={() => open(v, 'Race')} style={({ pressed }) => [s.stat, pressed && { opacity: 0.7 }]}><Text style={s.k}>{up(k)}</Text><Text style={s.v}>{v}</Text><Text style={s.link}>View the race result <Ionicons name="chevron-forward" size={12} /></Text></Pressable>
+            : <View key={k} style={s.stat}><Text style={s.k}>{up(k)}</Text><Text style={s.v}>{v}</Text></View>)}
           {c.lapRecord && (
             // Same size as the other boxes. Only when the count is odd does it take a full row, so no empty slot is left.
-            <View style={[s.stat, (c.stats.length + 1) % 2 === 1 && { width: '100%' }]}>
-              <Text style={s.k}>{(c.lapRecordLabel || 'Lap record').toUpperCase()}</Text>
+            <Pressable onPress={() => open(c.lapRecord.year, 'Race')} style={({ pressed }) => [s.stat, (c.stats.length + 1) % 2 === 1 && { width: '100%' }, pressed && { opacity: 0.7 }]}>
+              <Text style={s.k}>{up(c.lapRecordLabel || 'Lap record')}</Text>
               <Text style={s.v}>{c.lapRecord.time}</Text>
               <Text style={s.sub} numberOfLines={2}>{c.lapRecord.driver} · {c.lapRecord.year}</Text>
-            </View>)}
+              <Text style={s.link}>View that weekend <Ionicons name="chevron-forward" size={12} /></Text>
+            </Pressable>)}
         </View>
       )}
+      {miss ? <Note>{miss}</Note> : null}
+      {meeting.year && meeting.year < YEAR ? <Note>{`Shown with today's track details. The ${meeting.year} layout may have been different.`}</Note> : null}
       {c && c.facts.length > 0 && <Card><Eyebrow>Notable details</Eyebrow>{c.facts.map(([t, x]) => <Text key={t} style={s.fact}><Text style={{ fontWeight: '700', color: colors.fg }}>{t}. </Text>{x}</Text>)}</Card>}
       {c && <Card><Eyebrow>About</Eyebrow><Text style={s.fact}>{c.about}</Text></Card>}
     </Screen>
@@ -46,5 +57,5 @@ export default function CircuitScreen({ route, navigation }) {
 const s = StyleSheet.create({
   place: { color: colors.muted, fontSize: 16, marginBottom: 6 }, grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   stat: { width: '48.5%', backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line, borderRadius: 14, padding: 12 }, k: { color: colors.muted, fontFamily: 'label', fontSize: 10, letterSpacing: 1.5 },
-  v: { color: colors.fg, fontSize: 22, fontWeight: '700', marginTop: 2 }, sub: { color: colors.muted, fontSize: 14 }, fact: { color: '#CDD0D8', fontSize: 17, marginTop: 10 },
+  v: { color: colors.fg, fontSize: 22, fontWeight: '700', marginTop: 2 }, sub: { color: colors.muted, fontSize: 14 }, link: { color: colors.accent, fontSize: 13, fontWeight: '700', marginTop: 4 }, fact: { color: '#CDD0D8', fontSize: 17, marginTop: 10 },
 });

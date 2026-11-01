@@ -14,6 +14,6 @@ export const principals = {
   haas: [P('Ayao Komatsu', 'Team Principal'), P('Gene Haas', 'Founder & Chairman')],
   audi: WHEATLEY, sauber: WHEATLEY,
   alpine: [P('Flavio Briatore', 'Executive Advisor'), P('Steve Nielsen', 'Managing Director')],
-  cadillac: [P('Graeme Lowdon', 'Team Principal')],
+  cadillac: [P('Marcin Budkowski', 'Team Principal')],
 };
 export const principalsOf = (teamId) => principals[teamId] || [];

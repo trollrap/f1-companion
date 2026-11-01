@@ -1,21 +1,24 @@
 import React from 'react';
 import { View, Pressable, StyleSheet } from 'react-native';
 import { Text } from './Text';
-import { Image } from 'react-native';
-import { appLogo } from '../lib/media';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { colors } from '../theme';
+import { refreshAll } from '../lib/net';
+import { usePrefs } from '../hooks/usePrefs';
 export default function Header() {
-  const nav = useNavigation();
+  const nav = useNavigation(); const { prefs } = usePrefs();
   return (
     <View style={s.top}>
       <View style={s.logo}>
-        {appLogo ? <Image source={appLogo} resizeMode="contain" style={{ height: 30, aspectRatio: 1704 / 205 }} /> : <><View style={s.bar} /><Text style={s.word}>F1<Text style={{ color: colors.accent }}>·</Text>COMPANION</Text></>}
+        <><View style={s.bar} /><Text style={s.word}>F1<Text style={{ color: colors.accent }}>·</Text>COMPANION</Text></>
       </View>
+      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+      {prefs.opts.pullRefresh !== true && <Pressable onPress={refreshAll} hitSlop={10} accessibilityLabel="Refresh" style={({ pressed }) => [s.btn, pressed && { opacity: 0.6 }]}><Ionicons name="refresh" size={22} color={colors.muted} /></Pressable>}
       <Pressable onPress={() => nav.navigate('Settings')} hitSlop={10} accessibilityLabel="Settings" style={({ pressed }) => [s.btn, pressed && { opacity: 0.6 }]}>
         <Ionicons name="settings-outline" size={24} color={colors.fg} />
       </Pressable>
+      </View>
     </View>
   );
 }

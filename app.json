@@ -2,7 +2,7 @@
   "expo": {
     "name": "F1 Companion",
     "slug": "f1-companion",
-    "version": "1.3.0",
+    "version": "1.4.0",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
     "backgroundColor": "#0A0506",
@@ -12,7 +12,7 @@
     },
     "android": {
       "package": "com.f1companion.app",
-      "versionCode": 10300,
+      "versionCode": 10400,
       "adaptiveIcon": {
         "foregroundImage": "./assets/app/adaptive-icon.png",
         "backgroundColor": "#0A0506"
@@ -29,6 +29,13 @@
         "expo-notifications",
         {
           "color": "#E10600"
+        }
+      ],
+      [
+        "expo-media-library",
+        {
+          "savePhotosPermission": "Allow F1 Companion to save pictures of your comparisons and predictions.",
+          "isAccessMediaLocationEnabled": false
         }
       ]
     ],

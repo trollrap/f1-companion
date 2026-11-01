@@ -1,3 +1,4 @@
+import { up } from '../lib/i18n';
 import React, { useEffect, useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Text } from '../components/Text';
@@ -31,7 +32,7 @@ export default function RaceDetailScreen({ route }) {
             <Text style={s.meta}>{placeLine(meeting)}</Text><Text style={s.meta}>{dateRange(meeting)}</Text>
           </View>
         </View>
-        {t && (<><Text style={[s.meta, { marginTop: 12, letterSpacing: 2, fontSize: 11 }]}>{t.label.toUpperCase()}</Text><Countdown ms={t.target - now} large /></>)}
+        {t && (<><Text style={[s.meta, { marginTop: 12, letterSpacing: 2, fontSize: 11 }]}>{up(t.label)}</Text><Countdown ms={t.target - now} large /></>)}
       </Grad>
       <Card>
         <Eyebrow>Weekend schedule</Eyebrow>

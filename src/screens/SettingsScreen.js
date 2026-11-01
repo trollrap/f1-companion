@@ -46,6 +46,21 @@ export default function SettingsScreen() {
   const on = SESSION_TYPES.filter((t) => prefs.types[t]).length;
   return (
     <Screen header={false}>
+      <Section icon="language-outline" title="Language" summary={o.lang === 'el' ? 'Ελληνικά · Beta' : 'English'}>
+        {[['en', 'English', null], ['el', 'Ελληνικά', 'BETA']].map(([k, label, tag]) => {
+          const on = (o.lang === 'el' ? 'el' : 'en') === k;
+          return (
+            <Pressable key={k} onPress={() => setOpt('lang', k)} style={({ pressed }) => [s.row, { paddingVertical: 12 }, pressed && { opacity: 0.7 }]} accessibilityRole="radio" accessibilityState={{ selected: on }}>
+              <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                <Text style={[s.label, on && { color: colors.fg, fontWeight: '700' }]}>{label}</Text>
+                {tag ? <View style={{ backgroundColor: colors.accentSoft, borderColor: colors.accent, borderWidth: 1, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 1 }}><Text style={{ color: colors.accent, fontFamily: 'label', fontWeight: '700', fontSize: 10, letterSpacing: 1.2 }}>{tag}</Text></View> : null}
+              </View>
+              <Ionicons name={on ? 'radio-button-on' : 'radio-button-off'} size={22} color={on ? colors.accent : colors.muted} />
+            </Pressable>);
+        })}
+        <Note>Names of drivers, teams and team principals stay as they are.</Note>
+        {o.lang === 'el' ? <Note>The Greek translation is in beta. Some texts may still appear in English.</Note> : null}
+      </Section>
       <Section icon="notifications-outline" title="Notifications" summary={`${on} sessions · ${prefs.results ? 'results on' : 'results off'}`}>
         {!notificationsAvailable() && <Note>Alerts only work in the installed app, not in Expo Go.</Note>}
         {SESSION_TYPES.map((t) => <Sw key={t} label={t} value={prefs.types[t]} onChange={() => toggle(t)} />)}
@@ -58,6 +73,7 @@ export default function SettingsScreen() {
       <Section icon="options-outline" title="Display" summary={`${o.clock24 ? '24-hour' : '12-hour'} clock · gaps ${GAPS.find(([k]) => k === o.gap)[1].toLowerCase()}`}>
         <Sw label="24-hour clock" value={o.clock24} onChange={(v) => setOpt('clock24', v)} />
         <Sw label="Start race pages in track time" hint="Otherwise they open in your device's time." value={o.trackTime} onChange={(v) => setOpt('trackTime', v)} />
+        <Sw label="Pull down to refresh" hint="Off by default. A refresh button sits at the top instead." value={o.pullRefresh === true} onChange={(v) => setOpt('pullRefresh', v)} />
         <Sw label="Team principal on Paddock cards" value={o.padPrincipal !== false} onChange={(v) => setOpt('padPrincipal', v)} />
         <Sw label="Driver position and points on Paddock cards" value={o.padStats !== false} onChange={(v) => setOpt('padStats', v)} />
         <Text style={[s.label, { marginTop: 12, marginBottom: 8 }]}>Default gap style</Text>
@@ -82,7 +98,7 @@ export default function SettingsScreen() {
           </View>))}
       </Section>
       <Section icon="refresh-outline" title="Reset" summary="Back to the default settings">
-        <Btn onPress={() => { Object.entries(OPTS).forEach(([k, v]) => setOpt(k, v)); setMsg('Display and performance settings were reset.'); }}>Reset display settings</Btn>
+        <Btn onPress={() => { Object.entries(OPTS).filter(([k]) => k !== 'lang').forEach(([k, v]) => setOpt(k, v)); setMsg('Display and performance settings were reset.'); }}>Reset display settings</Btn>
         {msg ? <Note>{msg}</Note> : null}
       </Section>
       <Card>

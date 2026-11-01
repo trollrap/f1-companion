@@ -1,4 +1,11 @@
 import { ui } from './motion';
+// Greek names are spelled out here instead of relying on the phone's locale data.
+const EL_DAYS = ['Κυριακή', 'Δευτέρα', 'Τρίτη', 'Τετάρτη', 'Πέμπτη', 'Παρασκευή', 'Σάββατο'];
+const EL_MONTHS = ['Ιανουαρίου', 'Φεβρουαρίου', 'Μαρτίου', 'Απριλίου', 'Μαΐου', 'Ιουνίου', 'Ιουλίου', 'Αυγούστου', 'Σεπτεμβρίου', 'Οκτωβρίου', 'Νοεμβρίου', 'Δεκεμβρίου'];
+const EL_MONTHS_SHORT = ['Ιαν', 'Φεβ', 'Μαρ', 'Απρ', 'Μαΐ', 'Ιουν', 'Ιουλ', 'Αυγ', 'Σεπ', 'Οκτ', 'Νοε', 'Δεκ'];
+const EL_MONTHS_NOM = ['Ιανουάριος', 'Φεβρουάριος', 'Μάρτιος', 'Απρίλιος', 'Μάιος', 'Ιούνιος', 'Ιούλιος', 'Αύγουστος', 'Σεπτέμβριος', 'Οκτώβριος', 'Νοέμβριος', 'Δεκέμβριος'];
+const isEl = () => ui.lang === 'el';
+const noAccent = (s) => s.normalize('NFD').replace(/[\u0301\u0308]/g, '').normalize('NFC');
 // Two display modes: device time (null offset) and track time (fixed UTC offset from OpenF1 gmt_offset).
 export function parseOffset(s) {
   const m = /^([+-])?(\d+):(\d+)/.exec(s || ''); if (!m) return null;
@@ -9,10 +16,12 @@ const opts = {
 };
 export function fmt(kind, ms, off = null) {
   const o = { ...opts[kind], ...(off == null ? {} : { timeZone: 'UTC' }) };
+  if (isEl() && kind === 'day') { const d = new Date(ms + (off == null ? -new Date().getTimezoneOffset() * 60000 : off * 60000)); return EL_DAYS[(off == null ? new Date(ms).getDay() : d.getUTCDay())]; }
+  if (isEl() && kind === 'hm' && !ui.clock24) return new Intl.DateTimeFormat('en-GB', o).format(new Date(ms + (off == null ? 0 : off * 60000))).replace(/am/i, 'π.μ.').replace(/pm/i, 'μ.μ.');
   return new Intl.DateTimeFormat('en-GB', o).format(new Date(ms + (off == null ? 0 : off * 60000)));
 }
 export const hm = (ms, off) => fmt('hm', ms, off);
-export const dayName = (ms, off) => fmt('day', ms, off).toUpperCase();
+export const dayName = (ms, off) => (isEl() ? noAccent(fmt('day', ms, off).toUpperCase()) : fmt('day', ms, off).toUpperCase());
 export const dayKey = (ms, off) => fmt('key', ms, off);
 export function offLabel(off) {
   if (off == null) off = -new Date().getTimezoneOffset();
@@ -20,17 +29,17 @@ export function offLabel(off) {
 }
 const trackDate = (iso, m) => new Date(Date.parse(iso) + (parseOffset(m.gmt_offset) || 0) * 60000); // read with UTC getters
 export function dateRange(m) {
-  const a = trackDate(m.date_start, m), b = trackDate(m.date_end, m), mo = (x) => x.toLocaleString('en-GB', { month: 'long', timeZone: 'UTC' });
+  const a = trackDate(m.date_start, m), b = trackDate(m.date_end, m), mo = (x) => (isEl() ? EL_MONTHS[x.getUTCMonth()] : x.toLocaleString('en-GB', { month: 'long', timeZone: 'UTC' }));
   if (a.getUTCDate() === b.getUTCDate() && mo(a) === mo(b)) return `${a.getUTCDate()} ${mo(a)}`;
   return mo(a) === mo(b) ? `${a.getUTCDate()}–${b.getUTCDate()} ${mo(a)} ${b.getUTCFullYear()}` : `${a.getUTCDate()} ${mo(a)} – ${b.getUTCDate()} ${mo(b)} ${b.getUTCFullYear()}`;
 }
 // "23–25 Oct" or "30 Oct – 1 Nov", read in track time.
 export function shortRange(m) {
-  const a = trackDate(m.date_start, m), b = trackDate(m.date_end, m), mo = (x) => x.toLocaleString('en-GB', { month: 'short', timeZone: 'UTC' });
+  const a = trackDate(m.date_start, m), b = trackDate(m.date_end, m), mo = (x) => (isEl() ? EL_MONTHS_SHORT[x.getUTCMonth()] : x.toLocaleString('en-GB', { month: 'short', timeZone: 'UTC' }));
   if (a.getUTCDate() === b.getUTCDate() && mo(a) === mo(b)) return `${a.getUTCDate()} ${mo(a)}`;
   return mo(a) === mo(b) ? `${a.getUTCDate()}–${b.getUTCDate()} ${mo(a)}` : `${a.getUTCDate()} ${mo(a)} – ${b.getUTCDate()} ${mo(b)}`;
 }
-export const monthLabel = (m) => trackDate(m.date_start, m).toLocaleString('en-GB', { month: 'long', year: 'numeric', timeZone: 'UTC' }).toUpperCase();
+export const monthLabel = (m) => { const d = trackDate(m.date_start, m); return isEl() ? noAccent(`${EL_MONTHS_NOM[d.getUTCMonth()]} ${d.getUTCFullYear()}`.toUpperCase()) : d.toLocaleString('en-GB', { month: 'long', year: 'numeric', timeZone: 'UTC' }).toUpperCase(); };
 // "Mexico City Grand Prix" -> "Mexico", "Spanish Grand Prix" -> "Spain". Unknown names just lose the "Grand Prix".
 const GP = { 'mexico city': 'Mexico', mexican: 'Mexico', spanish: 'Spain', canadian: 'Canada', japanese: 'Japan', chinese: 'China', australian: 'Australia', british: 'Britain', italian: 'Italy', austrian: 'Austria', belgian: 'Belgium', dutch: 'Netherlands', hungarian: 'Hungary', brazilian: 'Brazil', 'são paulo': 'Brazil', 'sao paulo': 'Brazil', 'united states': 'USA', american: 'USA', 'saudi arabian': 'Saudi Arabia', french: 'France', portuguese: 'Portugal', turkish: 'Turkey', german: 'Germany', 'emilia romagna': 'Imola', 'san marino': 'Imola', russian: 'Russia', azerbaijan: 'Azerbaijan', 'qatar': 'Qatar', 'abu dhabi': 'Abu Dhabi', 'las vegas': 'Las Vegas', miami: 'Miami', monaco: 'Monaco', singapore: 'Singapore', bahrain: 'Bahrain' };
 export const shortName = (n) => { const b = String(n || '').replace(/\s*(Grand Prix|GP)\s*$/i, '').trim(); return GP[b.toLowerCase()] || b; };
@@ -43,3 +52,6 @@ const CC = { AUS:'AU',CHN:'CN',JPN:'JP',BRN:'BH',BHR:'BH',KSA:'SA',USA:'US',ITA:
 export const NAME3 = { Australia:'AUS',China:'CHN',Japan:'JPN',Bahrain:'BHR','Saudi Arabia':'KSA',USA:'USA','United States':'USA',Italy:'ITA',Monaco:'MON',Spain:'ESP',Canada:'CAN',Austria:'AUT',UK:'GBR','United Kingdom':'GBR',Belgium:'BEL',Hungary:'HUN',Netherlands:'NED',Azerbaijan:'AZE',Singapore:'SGP',Mexico:'MEX',Brazil:'BRA',Qatar:'QAT',UAE:'UAE','United Arab Emirates':'UAE',Malaysia:'MAS',Germany:'DEU',France:'FRA',Portugal:'PRT',Turkey:'TUR',Russia:'RUS',Argentina:'ARG','South Africa':'ZAF',Korea:'KOR','South Korea':'KOR',India:'IND',Switzerland:'CHE',Sweden:'SWE',Morocco:'MAR',Luxembourg:'LUX',Vietnam:'VNM' };
 export const placeLine = (m) => (m.circuit_short_name && m.circuit_short_name !== m.location ? `${m.circuit_short_name}, ${m.location}` : m.location);
 export const flag = (c) => CC[c] ? String.fromCodePoint(...[...CC[c]].map((ch) => 127397 + ch.charCodeAt(0))) : '🏁';
+
+export const longDateEl = (iso) => { const d = new Date(iso); return `${d.getUTCDate()} ${EL_MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`; };
+export const isGreek = isEl;

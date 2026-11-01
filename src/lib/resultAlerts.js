@@ -9,6 +9,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { liveJSON } from './cache';
 import { notifyNow } from './notifications';
 import { shortName } from './time';
+import { tr, setLang } from './i18n';
 
 export const TASK = 'f1-results-check';
 const BASE = 'https://api.jolpi.ca/ergast/f1/current/last';
@@ -23,7 +24,7 @@ async function prefsNow() { try { return JSON.parse(await AsyncStorage.getItem('
 
 // Returns how many notifications were sent. `force` ignores the on/off switch (used by the Settings test button).
 export async function checkResults({ force = false } = {}) {
-  const prefs = await prefsNow();
+  const prefs = await prefsNow(); setLang(prefs.opts?.lang === 'el' ? 'el' : 'en');
   if (!force && !prefs.results) return 0;
   let seen = null; try { seen = JSON.parse(await AsyncStorage.getItem(SEEN)); } catch {}
   const baseline = !Array.isArray(seen); const done = new Set(baseline ? [] : seen); let sent = 0;
@@ -37,7 +38,7 @@ export async function checkResults({ force = false } = {}) {
       done.add(id);
       if (baseline && !force) continue; // first run only records what already exists, so enabling the switch never spams old results
       if (prefs.types && prefs.types[k.type] === false) continue;
-      if (await notifyNow(`${shortName(race.raceName)} · ${k.label}`, 'Results are available.')) sent++;
+      if (await notifyNow(`${tr(shortName(race.raceName))} · ${tr(k.label)}`, tr('Results are available.'))) sent++;
     } catch {}
   }
   AsyncStorage.setItem(SEEN, JSON.stringify([...done].slice(-60))).catch(() => {});

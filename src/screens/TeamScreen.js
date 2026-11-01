@@ -5,7 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Skeleton from '../components/Skeleton';
 import { Text } from '../components/Text';
 import Screen, { ErrorNote, Card, Eyebrow, Note } from '../components/Screen';
-import { StatGrid, StarButton, DriverBox, TeamBadge } from '../components/Shared';
+import { StatGrid, ExpandStats, StarButton, DriverBox, TeamBadge } from '../components/Shared';
 import Grad, { Scrim } from '../components/Grad';
 import SeasonSwitch from '../components/SeasonSwitch';
 import { useAsync } from '../hooks/useAsync';
@@ -17,6 +17,8 @@ import { YEAR } from '../api/openf1';
 import { principalPhoto } from '../lib/media';
 import { principalsOf } from '../data/principals';
 import { clinched } from '../lib/champion';
+import { successor, NOW_NAMES } from '../data/lineage';
+import Press from '../components/Press';
 import { colors, alpha } from '../theme';
 
 const dash = (v) => (v == null ? '—' : String(v));
@@ -36,6 +38,7 @@ export default function TeamScreen({ route, navigation }) {
   }, [teamId, year]);
   React.useEffect(() => { navigation.setOptions({ headerRight: () => <StarButton on={favs.isTeam(teamId)} onPress={() => favs.toggleTeam(teamId)} label="Favourite" /> }); }, [favs.teams]);
   const C = career.v, S = season.v, st = stand.v, color = tc(teamId), photo = isCur ? principalPhoto(teamId) : null, pr = isCur ? principalsOf(teamId) : [];
+  const nowTeam = successor[teamId] && successor[teamId] !== teamId ? successor[teamId] : null; // the team that carries this one today
   const tName = st?.name || name; // the name the team raced under that year
   const champion = !!table.v && table.v.length > 1 && table.v[0].teamId === teamId && (isCur ? clinched(table.v, 'constructor', season0.races?.length, season0.races) : true);
   return (
@@ -56,7 +59,14 @@ export default function TeamScreen({ route, navigation }) {
           </View>
         </View>
       </Grad>
-      {(seasons.v || []).length > 1 ? <SeasonSwitch compact year={year} years={seasons.v} onChange={setYear} caption={isCur ? 'tap to view another season' : `${tName} · tap to view another season`} /> : null}
+      {(seasons.v || []).length > 1 ? <SeasonSwitch compact year={year} years={seasons.v} onChange={setYear} /> : null}
+      {nowTeam ? (
+        <Press onPress={() => navigation.push('Team', { teamId: nowTeam, name: NOW_NAMES[nowTeam] || nowTeam })}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 4 }}>
+            <Ionicons name="swap-horizontal" size={16} color={colors.accent} />
+            <Text style={{ color: colors.muted, fontSize: 14, flex: 1 }}>{`Raced as ${tName}${isCur ? '' : ` in ${year}`}. Today this team is ${NOW_NAMES[nowTeam] || nowTeam}.`}</Text>
+          </View>
+        </Press>) : null}
       <View>
         <Eyebrow>{isCur ? 'Drivers' : `Drivers · ${year}`}</Eyebrow>
         {drivers.loading && <Skeleton rows={2} />}
@@ -80,10 +90,15 @@ export default function TeamScreen({ route, navigation }) {
               </Grad>))}
           </View>
         </View>) : null}
+      <Press onPress={() => navigation.navigate('TeamCompare', { a: { teamId, name: tName }, year: isCur ? undefined : year })}>
+        <View style={{ height: 48, borderRadius: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: colors.accentSoft, borderWidth: 1, borderColor: colors.accent }}>
+          <Ionicons name="git-compare" size={18} color={colors.accent} /><Text style={{ color: colors.fg, fontWeight: '700', fontSize: 16 }}>Compare with another team</Text>
+        </View>
+      </Press>
       <Card>
         <Eyebrow>{`${year} season`}</Eyebrow>
         {(season.loading || stand.loading) && <Skeleton />}
-        {S && <StatGrid cols={3} items={[
+        {S && <ExpandStats cols={3} items={[
           ['Position', st ? `P${st.position}` : '—'], ['Points', dash(st?.points)], ['Wins', dash(S.wins)],
           ['Podiums', dash(S.podiums)], ['Poles', dash(S.poles)], ['Fast laps', dash(S.fastest)],
           ['Races', dash(S.races)], ['1-2 finishes', dash(S.doubles)], ['DNF / NC', dash(S.dnf)],

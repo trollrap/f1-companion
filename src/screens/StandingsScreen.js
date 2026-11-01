@@ -42,9 +42,9 @@ export default function StandingsScreen({ navigation }) {
   const won = rows.length > 0 && (cur ? rows.length > 1 && clinched(rows, teams ? 'constructor' : 'driver', season.races?.length, season.races) : true);
   return (
     <Screen swipe={{ index: teams ? 1 : 0, count: 2, onIndex: (i) => switchSeg(i ? 'teams' : 'drivers') }}>
-      <SeasonSwitch year={year} onChange={setYear} min={teams ? 1958 : 1950} max={YEAR + 1} />
+      <SeasonSwitch year={year} onChange={setYear} min={teams ? 1958 : 1950} max={YEAR} />
       <Segmented value={seg} onChange={switchSeg} items={[['drivers', 'Drivers'], ['teams', 'Teams']]} />
-      {year <= YEAR && (
+      {(
         <View style={{ flexDirection: 'row', gap: 10 }}>
           {[['Chart', 'stats-chart', 'Season chart', { kind: seg, year }], ...(cur ? [['WhatIf', 'git-branch-outline', 'What if…', undefined]] : [])].map(([r, ic, l, p]) => (
             <View key={r} style={{ flex: 1 }}>

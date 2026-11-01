@@ -14,7 +14,8 @@ export default function Schedule({ sessions, now, off }) {
     const ms = Date.parse(x.date_start), k = dayKey(ms, off);
     let g = groups.find((y) => y.k === k); if (!g) groups.push((g = { k, label: dayName(ms, off), items: [] })); g.items.push(x);
   });
-  const nextS = sessions.find((x) => Date.parse(x.date_start) > now);
+  const anyLive = sessions.some((x) => now >= Date.parse(x.date_start) && now < Date.parse(x.date_end));
+  const nextS = anyLive ? null : sessions.find((x) => Date.parse(x.date_start) > now); // the next session is only marked once the running one is over
   return (
     <View>
       {groups.map((g) => (
@@ -22,11 +23,11 @@ export default function Schedule({ sessions, now, off }) {
           <Text style={s.day}>{g.label}</Text>
           {g.items.map((x) => {
             const a = Date.parse(x.date_start), b = Date.parse(x.date_end), past = now >= b, live = now >= a && now < b, on = !!prefs.types[x.session_name];
-            const nxt = !live && x === nextS, grad = live ? [alpha(colors.good, 0.42), alpha('#0E9F6E', 0.1)] : nxt ? [alpha(colors.accent, 0.4), alpha(colors.accent, 0.06)] : null;
+            const nxt = !live && x === nextS, grad = live ? [alpha(colors.accent, 0.55), alpha('#7A0A12', 0.12)] : nxt ? [alpha(colors.accent, 0.2), alpha(colors.accent, 0.03)] : null;
             return (
-              <View key={x.date_start} style={[s.row, (live || nxt) && { borderWidth: 1, borderColor: alpha(live ? colors.good : colors.accent, 0.55) }]}>
+              <View key={x.date_start} style={[s.row, (live || nxt) && { borderWidth: 1, borderColor: alpha(colors.accent, live ? 0.9 : 0.4) }]}>
                 {grad ? <LinearGradient pointerEvents="none" colors={grad} start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }} style={StyleSheet.absoluteFill} /> : null}
-                <View style={[s.dot, live && { backgroundColor: colors.good }, nxt && { backgroundColor: colors.accent }]} />
+                <View style={[s.dot, (live || nxt) && { backgroundColor: colors.accent }]} />
                 <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   <Text style={[s.name, past && { color: colors.muted }]} numberOfLines={1}>{x.session_name}</Text>
                   {live ? <View style={s.livePill}><Text style={s.liveTxt}>LIVE</Text></View> : null}
@@ -46,7 +47,7 @@ export default function Schedule({ sessions, now, off }) {
 const s = StyleSheet.create({
   day: { color: colors.muted, fontSize: 12, letterSpacing: 2.4, fontWeight: '600', marginTop: 14, marginBottom: 4 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8, paddingLeft: 12, paddingRight: 6, borderRadius: 12, overflow: 'hidden', marginVertical: 4, borderWidth: 1, borderColor: 'transparent' },
-  livePill: { backgroundColor: colors.good, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 1 }, liveTxt: { color: '#04130A', fontSize: 10, fontWeight: '800', letterSpacing: 1.2 },
+  livePill: { backgroundColor: colors.accent, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 1 }, liveTxt: { color: '#fff', fontSize: 10, fontWeight: '800', letterSpacing: 1.2 },
   dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.muted }, name: { flexShrink: 1, color: colors.fg, fontSize: 18, fontWeight: '600' },
   time: { color: colors.fg, fontSize: 18, fontVariant: ['tabular-nums'] }, bell: { width: 34, height: 34, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
 });

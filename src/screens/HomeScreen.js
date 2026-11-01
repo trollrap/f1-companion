@@ -1,3 +1,4 @@
+import { up } from '../lib/i18n';
 import React, { useEffect, useState } from 'react';
 import { View, Pressable, StyleSheet } from 'react-native';
 import Skeleton from '../components/Skeleton';
@@ -57,7 +58,7 @@ export default function HomeScreen({ navigation }) {
               <View style={{ flex: 1 }}><Text style={s.gp}>{shortName(next.meeting_name)}</Text><Text style={s.meta}>{dateRange(next)}</Text></View>
               <Ionicons name="chevron-forward" size={20} color={colors.muted} />
             </View>
-            <Text style={[s.meta, { marginTop: 12, letterSpacing: 2, fontSize: 11 }]}>{t.label.toUpperCase()}</Text>
+            <Text style={[s.meta, { marginTop: 12, letterSpacing: 2, fontSize: 11 }]}>{up(t.label)}</Text>
             <Countdown ms={t.target - now} />
             <Pressable onPress={() => navigation.navigate('Predict')} hitSlop={6} accessibilityLabel="Predict this race" style={({ pressed }) => [{ alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 14, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 99, backgroundColor: 'rgba(0,0,0,0.3)', borderWidth: 1, borderColor: alpha(colors.accent, 0.6) }, pressed && { opacity: 0.7 }]}>
               <Ionicons name="trophy-outline" size={15} color={colors.accent} /><Text style={{ color: colors.fg, fontWeight: '700', fontSize: 14 }}>Predict</Text>

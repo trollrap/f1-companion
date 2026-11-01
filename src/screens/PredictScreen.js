@@ -1,6 +1,6 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { View, Share } from 'react-native';
-import { requireOptionalNativeModule } from 'expo-modules-core';
+import ExportBar from '../components/ExportBar';
 import PredictCard from '../components/PredictCard';
 import { useTeamColor } from '../hooks/useTeams';
 import { flag as flagOf } from '../lib/time';
@@ -39,20 +39,9 @@ export default function PredictScreen() {
   }, [past.join(',')]);
   const results = past.map((r) => ({ r, pred: P.all[r], sc: res.v ? score(P.all[r], res.v[r]?.q, res.v[r]?.rc) : null, gp: season.races?.find((x) => Number(x.round) === r) })).filter((x) => x.sc);
   const total = results.reduce((a, x) => a + x.sc.total, 0);
-  const tc = useTeamColor(); const cardRef = useRef(null); const [busy, setBusy] = useState(false);
-  const pick = (id) => { const x = d.v?.find((y) => y.driverId === id); return x ? { driverId: x.driverId, last: x.last, color: tc(x.teamId) } : null; };
-  // Shares the card as a picture when the image modules are in this build; otherwise as plain text.
-  const share = async () => {
-    setBusy(true);
-    try {
-      if (requireOptionalNativeModule('RNViewShot') && requireOptionalNativeModule('ExpoSharing')) {
-        const { captureRef } = require('react-native-view-shot'); const Sharing = require('expo-sharing');
-        const uri = await captureRef(cardRef, { format: 'png', quality: 1 });
-        if (await Sharing.isAvailableAsync()) { await Sharing.shareAsync(uri, { mimeType: 'image/png', dialogTitle: 'Share my predictions' }); return; }
-      }
-    } catch {} finally { setBusy(false); }
-    shareText();
-  };
+  const tc = useTeamColor(); const cardRef = useRef(null); const pastRef = useRef(null);
+  const pick = (id) => { const x = d.v?.find((y) => y.driverId === id); return x ? { driverId: x.driverId, first: x.first, last: x.last, teamId: x.teamId, team: x.team, color: tc(x.teamId) } : null; };
+  const [open, setOpen] = useState(null);
   const shareText = () => Share.share({ message: `My ${shortName(next.meeting_name)} GP picks\nPole: ${name(mine.pole)}\nP1: ${name(mine.podium[0])}\nP2: ${name(mine.podium[1])}\nP3: ${name(mine.podium[2])}` }).catch(() => {});
   return (
     <Screen header={false}>
@@ -65,8 +54,8 @@ export default function PredictScreen() {
             <View style={{ gap: 10, marginTop: 12 }}>
               <View><Text style={s.lab}>{poleLocked ? 'Pole (locked)' : 'Pole position'}</Text>{poleLocked ? <Text style={s.val}>{name(mine.pole)}</Text> : <Dropdown value={mine.pole} options={opts} onChange={setPole} />}</View>
               {[0, 1, 2].map((i) => (<View key={i}><Text style={s.lab}>{raceLocked ? `P${i + 1} (locked)` : `Podium P${i + 1}`}</Text>{raceLocked ? <Text style={s.val}>{name(mine.podium[i])}</Text> : <Dropdown value={mine.podium[i]} options={opts} onChange={(id) => setSlot(i, id)} />}</View>))}
-              <View ref={cardRef} collapsable={false} style={{ marginTop: 4 }}><PredictCard gp={shortName(next.meeting_name)} flag={flagOf(next.country_code)} pole={pick(mine.pole)} podium={mine.podium.map(pick)} /></View>
-              <Pressable onPress={share} disabled={busy} style={({ pressed }) => [{ height: 46, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.accentSoft, borderWidth: 1, borderColor: colors.accent }, pressed && { opacity: 0.85 }]}><Text style={{ color: colors.fg, fontWeight: '700', fontSize: 16 }}>Share my picks</Text></Pressable>
+              <View ref={cardRef} collapsable={false}><PredictCard gp={shortName(next.meeting_name)} flag={flagOf(next.country_code)} pole={pick(mine.pole)} podium={mine.podium.map(pick)} /></View>
+              <ExportBar target={cardRef} fallback={shareText} />
             </View>)}
         </Card>) : <Card><Note>The season is over: no race left to predict.</Note></Card>}
       <Card>
@@ -78,6 +67,12 @@ export default function PredictScreen() {
           <View key={r} style={{ marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.line }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}><Text style={s.val}>{gp ? shortName(gp.meeting_name) : `Round ${r}`}</Text><Text style={{ color: colors.accent, fontWeight: '800', fontSize: 18 }}>{sc.total} pts</Text></View>
             <Text style={s.sub}>{`Pole ${name(pred.pole)}${sc.pole != null ? ` (+${sc.pole})` : ' (waiting)'}`}</Text>
+            <Pressable onPress={() => setOpen(open === r ? null : r)} hitSlop={8} style={{ marginTop: 8, alignSelf: 'flex-start' }}><Text style={{ color: colors.accent, fontWeight: '700', fontSize: 15 }}>{open === r ? 'Hide picture' : 'Picture to share or save'}</Text></Pressable>
+            {open === r && (
+              <View style={{ marginTop: 10, gap: 10 }}>
+                <View ref={pastRef} collapsable={false}><PredictCard gp={gp ? shortName(gp.meeting_name) : `Round ${r}`} flag={gp ? flagOf(gp.country_code) : ''} pole={pick(pred.pole)} podium={(pred.podium || []).map(pick)} marks={{ pole: sc.pole == null ? null : sc.pole > 0, podium: [0, 1, 2].map((i) => (sc.podium[i] == null ? null : sc.podium[i] === 3)) }} /></View>
+                <ExportBar target={pastRef} />
+              </View>)}
             <Text style={s.sub}>{[0, 1, 2].map((i) => `P${i + 1} ${name(pred.podium?.[i])}${sc.podium[i] != null ? ` (+${sc.podium[i]})` : ''}`).join(' · ')}</Text>
           </View>))}
       </Card>

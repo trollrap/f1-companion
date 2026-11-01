@@ -1,5 +1,7 @@
+import { up } from '../lib/i18n';
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Pressable, StyleSheet, Animated, Image, Easing } from 'react-native';
+import { View, Pressable, StyleSheet, Animated, Image, Easing, LayoutAnimation, PanResponder } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Text } from './Text';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, alpha } from '../theme';
@@ -51,10 +53,24 @@ export function NotifPrefs({ title = 'Notifications' }) {
 // Segmented control with a sliding indicator.
 export function Segmented({ items, value, onChange }) {
   const [w, setW] = useState(0); const x = useRef(new Animated.Value(0)).current; const idx = Math.max(0, items.findIndex(([v]) => v === value));
-  const seg = w ? (w - 8) / items.length : 0;
-  useEffect(() => { Animated.timing(x, { toValue: idx * seg, duration: 200, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start(); }, [idx, seg]);
+  const seg = w ? (w - 8) / items.length : 0; const live = useRef({}); live.current = { seg, idx, n: items.length, items, onChange };
+  const drag = useRef(false);
+  useEffect(() => { if (drag.current) return; Animated.timing(x, { toValue: idx * seg, duration: 200, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start(); }, [idx, seg]);
+  // The selected box can be dragged left or right; it settles on the segment it is released over.
+  const pan = useRef(PanResponder.create({
+    onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dx) > 8 && Math.abs(g.dx) > Math.abs(g.dy) * 1.5,
+    onPanResponderGrant: () => { drag.current = true; x.stopAnimation(); },
+    onPanResponderMove: (_, g) => { const c = live.current; x.setValue(Math.max(0, Math.min((c.n - 1) * c.seg, c.idx * c.seg + g.dx))); },
+    onPanResponderRelease: (_, g) => {
+      const c = live.current; drag.current = false; const to = Math.max(0, Math.min(c.n - 1, Math.round(c.idx + g.dx / (c.seg || 1))));
+      Animated.timing(x, { toValue: to * c.seg, duration: 160, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
+      if (to !== c.idx) c.onChange(c.items[to][0]);
+    },
+    onPanResponderTerminate: () => { drag.current = false; const c = live.current; Animated.timing(x, { toValue: c.idx * c.seg, duration: 160, useNativeDriver: true }).start(); },
+    onPanResponderTerminationRequest: () => false,
+  })).current;
   return (
-    <View style={s.seg} onLayout={(e) => setW(e.nativeEvent.layout.width)}>
+    <View style={s.seg} onLayout={(e) => setW(e.nativeEvent.layout.width)} {...pan.panHandlers}>
       {seg > 0 && <Animated.View style={[s.segInd, { width: seg, transform: [{ translateX: x }] }]} />}
       {items.map(([v, l]) => (
         <Pressable key={v} onPress={() => onChange(v)} style={s.segBtn}><Text style={{ color: value === v ? colors.fg : colors.muted, fontWeight: '600', fontSize: 15 }}>{l}</Text></Pressable>
@@ -112,7 +128,7 @@ export const driverParams = (r) => ({ driverId: r.driverId, name: r.name || `${r
 // Race and sprint results from Jolpica. Tap a row to open the driver.
 export function ResultRow({ r, photo = true, index }) {
   const favs = useFavs(); const tc = useTeamColor(); const nav = useNavigation();
-  return <ResultLine pos={r.position} first={r.first} last={r.last} color={tc(r.teamId)} right={r.time} sub={`${r.points} pts`} fav={r.driverId && favs.isDriver(r.driverId)} fastest={r.fastest} index={index}
+  return <ResultLine pos={r.position} first={r.first} last={r.last} color={tc(r.teamId)} right={r.time} sub={`${r.grid > 0 ? `Started P${r.grid}` : r.grid === 0 ? 'Pit lane' : ''}${r.grid >= 0 ? ' · ' : ''}${r.points} pts`} fav={r.driverId && favs.isDriver(r.driverId)} fastest={r.fastest} index={index}
     logoId={r.teamId} photoId={photo ? r.driverId : null} onPress={r.driverId ? () => nav.navigate('Driver', driverParams(r)) : undefined} />;
 }
 export function CircuitBox({ meeting }) {
@@ -148,10 +164,25 @@ export function StatGrid({ items, cols = 2, accent }) {
     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
       {items.map(([k, v]) => (
         <View key={k} style={{ width: w, backgroundColor: colors.surface2, borderRadius: 12, paddingVertical: 10, paddingHorizontal: 12, borderWidth: 1, borderColor: colors.line }}>
-          <Text style={{ color: colors.muted, fontFamily: 'label', fontSize: 10, letterSpacing: 1.4 }} numberOfLines={1}>{k.toUpperCase()}</Text>
+          <Text style={{ color: colors.muted, fontFamily: 'label', fontSize: 10, letterSpacing: 1.4 }} numberOfLines={1}>{up(k)}</Text>
           <Text style={{ color: accent && k === accent ? colors.accent : colors.fg, fontSize: 22, fontWeight: '700', marginTop: 2, fontVariant: ['tabular-nums'] }}>{v}</Text>
         </View>
       ))}
+    </View>
+  );
+}
+// Shows the first two rows of boxes; a button over a fade below reveals the rest, and hides them again.
+export function ExpandStats({ items, cols = 3, rows = 2, accent }) {
+  const [open, setOpen] = useState(false); const n = cols * rows;
+  if (items.length <= n) return <StatGrid items={items} cols={cols} accent={accent} />;
+  const flip = () => { LayoutAnimation.configureNext(LayoutAnimation.create(220, 'easeInEaseOut', 'opacity')); setOpen(!open); };
+  return (
+    <View>
+      <StatGrid items={open ? items : items.slice(0, n)} cols={cols} accent={accent} />
+      {!open ? <LinearGradient pointerEvents="none" colors={['rgba(22,12,15,0)', 'rgba(22,12,15,0.96)']} style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 56 }} /> : null}
+      <Pressable onPress={flip} hitSlop={6} style={({ pressed }) => [{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, alignSelf: 'center', marginTop: open ? 10 : -34, paddingHorizontal: 16, height: 34, borderRadius: 17, backgroundColor: colors.accentSoft, borderWidth: 1, borderColor: colors.accent }, pressed && { opacity: 0.8 }]}>
+        <Text style={{ color: colors.fg, fontWeight: '700', fontSize: 14 }}>{open ? 'Show less' : 'Show all stats'}</Text><Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={16} color={colors.accent} />
+      </Pressable>
     </View>
   );
 }
@@ -186,31 +217,32 @@ export function TeamBadge({ teamId, name, size = 40 }) {
 // Team card for the Paddock: driver numbers and names on the left, team name and points below, big faded logo on the right.
 // No photos in it, so the whole list stays light.
 export const TeamRow = React.memo(function TeamRow({ t, lineup = [], fav, onPress, onStar }) {
-  const tc = useTeamColor(); const color = tc(t.teamId); const logo = teamLogo(t.teamId); const { prefs } = usePrefs(); const showBoss = prefs.opts.padPrincipal !== false, showStats = prefs.opts.padStats !== false; const boss = showBoss ? principalsOf(t.teamId)[0] : null, bossPhoto = principalPhoto(t.teamId);
+  const tc = useTeamColor(); const color = tc(t.teamId); const { prefs } = usePrefs(); const showBoss = prefs.opts.padPrincipal !== false, showStats = prefs.opts.padStats !== false; const boss = showBoss ? principalsOf(t.teamId)[0] : null, bossPhoto = principalPhoto(t.teamId);
   return (
     <Press onPress={onPress} scale={0.985}>
       <Grad color={color} from={0.8} to={0.1} dir="h" radius={18} border={fav ? 0.9 : 0.45} style={[{ padding: 14 }, fav && { borderColor: colors.gold }]}>
-        {logo ? <Image source={logo} resizeMode="contain" resizeMethod="resize" fadeDuration={0} style={{ position: 'absolute', right: 96, top: 8, width: 90, height: 90, opacity: 0.3 }} /> : null}
         {boss ? (
           <View pointerEvents="none" style={{ position: 'absolute', right: 12, bottom: 12, width: 84, alignItems: 'center' }}>
             {bossPhoto ? <Image source={bossPhoto} resizeMode="cover" resizeMethod="resize" fadeDuration={0} style={{ width: 64, height: 64, borderRadius: 14, backgroundColor: alpha('#000000', 0.25) }} /> : null}
             <Text style={{ color: 'rgba(255,255,255,0.65)', fontSize: 10, letterSpacing: 1, marginTop: 4 }}>TEAM PRINCIPAL</Text>
             <Text style={{ color: colors.fg, fontSize: 12, fontWeight: '700', textAlign: 'center' }} numberOfLines={2}>{boss.name}</Text>
           </View>) : null}
-        <View style={{ gap: 8 }}>
+        <View style={{ gap: 6, marginRight: boss ? 92 : 0 }}>
           {lineup.map((d) => (
-            <View key={d.driverId} style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-              <Text style={{ width: 44, textAlign: 'right', fontFamily: 'display', fontWeight: '800', fontSize: 24, color: colors.fg, fontStyle: 'italic' }}>{d.number ?? ''}</Text>
-              <View style={{ width: 2, height: 30, borderRadius: 1, backgroundColor: alpha('#FFFFFF', 0.55) }} />
-              <View style={{ flexShrink: 1 }}>
-                <Text style={{ color: 'rgba(255,255,255,0.75)', fontSize: 12, lineHeight: 14, letterSpacing: 0.6 }} numberOfLines={1}>{String(d.first || '').toUpperCase()}</Text>
-                <Text style={{ color: colors.fg, fontSize: 19, lineHeight: 21, fontWeight: '700', letterSpacing: 0.4 }} numberOfLines={1}>{String(d.last || '').toUpperCase()}</Text>
-              </View>
-              {showStats && d.pos ? <View style={{ marginLeft: 4, backgroundColor: 'rgba(0,0,0,0.28)', borderRadius: 8, paddingHorizontal: 7, paddingVertical: 3 }}><Text style={{ color: colors.fg, fontSize: 12, fontWeight: '700' }}>{`P${d.pos} · ${d.pts}`}</Text></View> : null}
+            <View key={d.driverId} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Text style={{ width: 32, textAlign: 'right', fontFamily: 'display', fontWeight: '800', fontSize: 18, color: colors.fg, fontStyle: 'italic' }}>{d.number ?? ''}</Text>
+              <View style={{ width: 2, height: 20, borderRadius: 1, backgroundColor: alpha('#FFFFFF', 0.55) }} />
+              <Text style={{ color: colors.fg, fontSize: 14, fontWeight: '700', letterSpacing: 0.3, flexShrink: 1 }} numberOfLines={1}>{`${d.first || ''} ${String(d.last || '').toUpperCase()}`.trim()}</Text>
+              {showStats && d.pos ? <View style={{ backgroundColor: 'rgba(0,0,0,0.28)', borderRadius: 7, paddingHorizontal: 6, paddingVertical: 2 }}><Text style={{ color: colors.fg, fontSize: 11, fontWeight: '700' }}>{`P${d.pos} · ${d.pts}`}</Text></View> : null}
             </View>))}
         </View>
-        <Text style={{ color: colors.fg, fontSize: 26, fontWeight: '700', marginTop: 12, marginRight: boss ? 92 : 0 }} numberOfLines={1}>{t.name}</Text>
-        <Text style={{ color: 'rgba(255,255,255,0.75)', fontSize: 17, marginRight: boss ? 92 : 0 }}>P{t.position} · {t.points} pts</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 12, marginRight: boss ? 92 : 0 }}>
+          <TeamBadge teamId={t.teamId} name={t.name} size={44} />
+          <View style={{ flex: 1 }}>
+            <Text style={{ color: colors.fg, fontSize: 24, fontWeight: '700' }} numberOfLines={1}>{t.name}</Text>
+            <Text style={{ color: 'rgba(255,255,255,0.75)', fontSize: 16 }}>P{t.position} · {t.points} pts</Text>
+          </View>
+        </View>
         {onStar ? <View style={{ position: 'absolute', top: 10, right: 10 }}><StarButton small on={fav} onPress={onStar} label={`Favourite ${t.name}`} /></View> : null}
       </Grad>
     </Press>

@@ -17,16 +17,21 @@ export default function LineChart({ series, rounds, height = 240 }) {
   const idxAt = (x) => { const { lo: a, hi: b, L: l, innerW: iw, n: nn } = st.current; return Math.max(0, Math.min(nn - 1, Math.round(a + ((x - l) / iw) * (b - a)))); };
   const pan = useRef(PanResponder.create({
     onStartShouldSetPanResponder: () => true, onMoveShouldSetPanResponder: () => true,
-    onPanResponderGrant: (e) => { st.current.d0 = null; if (e.nativeEvent.touches.length === 1) setHit(idxAt(e.nativeEvent.locationX)); },
+    onPanResponderGrant: (e) => { const c = st.current; c.d0 = null; c.px = e.nativeEvent.pageX; c.win0 = [c.lo, c.hi]; c.panning = false; if (e.nativeEvent.touches.length === 1) setHit(idxAt(e.nativeEvent.locationX)); },
     onPanResponderMove: (e) => {
       const t = e.nativeEvent.touches;
       if (t.length >= 2) {
         const d = Math.abs(t[0].pageX - t[1].pageX), cx = (t[0].locationX + t[1].locationX) / 2; setHit(null);
         if (st.current.d0 && d > 8) { const f = st.current.d0 / d; if (Math.abs(1 - f) > 0.02) { zoom(f, st.current.lo + ((cx - st.current.L) / st.current.innerW) * (st.current.hi - st.current.lo)); st.current.d0 = d; } }
         else st.current.d0 = d;
-      } else { st.current.d0 = null; setHit(idxAt(t[0].locationX)); }
+      } else {
+        const c = st.current; c.d0 = null; const dx = t[0].pageX - c.px, zoomedNow = c.win0[1] - c.win0[0] < c.n - 1 - 0.01;
+        // Zoomed in: a sideways drag moves the window to other rounds. Otherwise the finger reads the race under it.
+        if (zoomedNow && (c.panning || Math.abs(dx) > 10)) { c.panning = true; setHit(null); const len = c.win0[1] - c.win0[0]; const sh = -(dx / c.innerW) * len; setWin(clamp(c.win0[0] + sh, c.win0[0] + sh + len)); }
+        else setHit(idxAt(t[0].locationX));
+      }
     },
-    onPanResponderRelease: () => { st.current.d0 = null; },
+    onPanResponderRelease: () => { st.current.d0 = null; st.current.panning = false; },
     onPanResponderTerminationRequest: () => false,
   })).current;
   const vis = useMemo(() => series.map((s) => ({ ...s, v: s.values.slice(Math.floor(lo), Math.ceil(hi) + 1) })), [series, lo, hi]);
@@ -42,7 +47,7 @@ export default function LineChart({ series, rounds, height = 240 }) {
   return (
     <View>
       <View style={{ flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-        <Text style={{ color: colors.muted, fontSize: 13, flex: 1 }}>{tip == null ? 'Slide a finger along the chart · pinch to zoom' : ' '}</Text>
+        <Text style={{ color: colors.muted, fontSize: 13, flex: 1 }}>{tip == null ? zoomed ? 'Drag sideways to move to other rounds · tap a point to read it' : 'Slide a finger along the chart · pinch to zoom' : ' '}</Text>
         <Btn icon="remove" label="Zoom out" off={!zoomed} onPress={() => zoom(1.6)} />
         <Btn icon="add" label="Zoom in" off={hi - lo <= Math.min(3, n - 1)} onPress={() => zoom(1 / 1.6)} />
         <Btn icon="scan-outline" label="Reset zoom" off={!zoomed} onPress={() => { setWin([0, Math.max(1, n - 1)]); setHit(null); }} />

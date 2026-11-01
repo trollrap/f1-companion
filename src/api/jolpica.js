@@ -58,7 +58,7 @@ export async function winnersByRound(year) {
     if (d.RaceTable.Races.every((r) => r.Results.length === 1 && r.Results[0].position === '1')) races = d.RaceTable.Races.map((r) => ({ round: r.round, r: r.Results[0] }));
   } catch {}
   if (!races) races = (await pageAll(`/${year}/results.json`, resultRows, ttlFor(year, HOUR))).filter((x) => x.r.position === '1').map((x) => ({ round: x.race.round, r: x.r }));
-  const out = {}; races.forEach((x) => { out[Number(x.round)] = { last: x.r.Driver.familyName, teamId: x.r.Constructor?.constructorId, team: x.r.Constructor?.name }; });
+  const out = {}; races.forEach((x) => { out[Number(x.round)] = { last: x.r.Driver.familyName, code: x.r.Driver.code || String(x.r.Driver.familyName).slice(0, 3).toUpperCase(), teamId: x.r.Constructor?.constructorId, team: x.r.Constructor?.name }; });
   return out;
 }
 // The full schedule with every session start (UTC). Used for round numbers, sprint weekends and as a fallback for OpenF1.
@@ -165,6 +165,16 @@ export async function driverSeasons(id) {
   const rows = await pageAll(`/drivers/${id}/results.json`, resultRows, DAY, 10);
   return [...new Set(rows.map((x) => Number(x.race.season)))].sort((a, b) => b - a);
 }
+// Teams a driver raced for, oldest first, with the first and last season and the number of races (same pages as driverCareer, so cached).
+export async function driverTeamsList(id) {
+  const rows = await pageAll(`/drivers/${id}/results.json`, resultRows, DAY, 10);
+  const out = [];
+  [...rows].sort((a, b) => Number(a.race.season) - Number(b.race.season) || Number(a.race.round) - Number(b.race.round)).forEach((x) => {
+    const tid = x.r.Constructor?.constructorId, y = Number(x.race.season), last = out[out.length - 1];
+    if (last && last.teamId === tid) { last.to = y; last.races++; } else out.push({ teamId: tid, name: x.r.Constructor?.name, from: y, to: y, races: 1 });
+  });
+  return out.reverse();
+}
 // The drivers who raced for each team in the latest Grand Prix: the real current line-up. Reserve drivers never appear here.
 // Falls back to the standings before the first race of a season.
 export async function lineups(year) {
@@ -216,4 +226,14 @@ export async function entryList(year) {
   const cs = (await get(`/${year}/constructors.json?limit=100`, 10 * MIN)).ConstructorTable.Constructors;
   const out = await Promise.all(cs.map(async (c) => ({ teamId: c.constructorId, name: c.name, drivers: await settle(teamDrivers(year, c.constructorId)) || [] })));
   return out.filter((x) => x.drivers.length);
+}
+
+// Everyone who ever raced / every team that ever entered (for search). Big lists, so they are kept for a month.
+export async function allDrivers() {
+  const rows = await pageAll('/drivers.json', (d) => d.DriverTable.Drivers, 30 * DAY, 12);
+  return rows.map((d) => ({ driverId: d.driverId, name: `${d.givenName} ${d.familyName}`, first: d.givenName, last: d.familyName, code: d.code, number: d.permanentNumber, nationality: d.nationality }));
+}
+export async function allConstructors() {
+  const rows = await pageAll('/constructors.json', (d) => d.ConstructorTable.Constructors, 30 * DAY, 6);
+  return rows.map((c) => ({ teamId: c.constructorId, name: c.name, nationality: c.nationality }));
 }

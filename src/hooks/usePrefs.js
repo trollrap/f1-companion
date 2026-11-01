@@ -1,11 +1,12 @@
+import { setLang } from '../lib/i18n';
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { setUi } from '../lib/motion';
 
 export const SESSION_TYPES = ['Practice 1', 'Practice 2', 'Practice 3', 'Sprint Qualifying', 'Sprint', 'Qualifying', 'Race'];
 export const LEADS = [[0, 'At start'], [5, '5 min'], [15, '15 min'], [30, '30 min'], [60, '1 hour'], [120, '2 hours']];
-export const OPTS = { clock24: true, gap: 'leader', trackTime: false, photos: true, reduceMotion: false, padPrincipal: true, padStats: true };
-const sync = (p) => setUi({ clock24: p.opts.clock24 !== false, photos: p.opts.photos !== false, reduceMotion: !!p.opts.reduceMotion });
+export const OPTS = { clock24: true, gap: 'leader', trackTime: false, photos: true, reduceMotion: false, padPrincipal: true, padStats: true, pullRefresh: false, lang: 'en' };
+const sync = (p) => { setLang(p.opts.lang === 'el' ? 'el' : 'en'); setUi({ clock24: p.opts.clock24 !== false, photos: p.opts.photos !== false, reduceMotion: !!p.opts.reduceMotion, lang: p.opts.lang === 'el' ? 'el' : 'en' }); };
 const DEFAULT = { opts: OPTS, results: false, leads: [15], types: { 'Practice 1': false, 'Practice 2': false, 'Practice 3': false, 'Sprint Qualifying': true, Sprint: true, Qualifying: true, Race: true } };
 
 const Ctx = createContext(null);

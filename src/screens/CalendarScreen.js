@@ -48,7 +48,8 @@ export default function CalendarScreen({ navigation }) {
   if (cur && season.status !== 'ready') return <Screen scrollRef={scroller}><Skeleton /></Screen>;
   const w = win.v || {};
   // The weekend in progress is marked as such; the next race is marked only once that weekend is over.
-  const upKey = cur ? (races || []).find((r) => Date.parse(r.date_end) >= now && Date.parse(r.date_start) > now)?.meeting_key : null;
+  const anyLive = cur && (races || []).some((r) => Date.parse(r.date_end) >= now && Date.parse(r.date_start) <= now);
+  const upKey = cur && !anyLive ? (races || []).find((r) => Date.parse(r.date_end) >= now && Date.parse(r.date_start) > now)?.meeting_key : null;
   return (
     <Screen scrollRef={scroller}>
       <SeasonSwitch year={year} onChange={setYear} max={YEAR + 1} />
@@ -69,7 +70,7 @@ export default function CalendarScreen({ navigation }) {
               </View>
               <View style={{ alignItems: 'flex-end', minWidth: 64 }}>
                 {!cur ? (wn ? <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}><Ionicons name="trophy" size={13} color={colors.gold} /><Text style={[s.sub, { color: colors.gold, fontWeight: '700' }]}>{wn.last}</Text></View> : null)
-                  : done ? <Ionicons name="checkmark-circle" size={20} color={colors.good} /> : live ? <Pill color={colors.good}>Live</Pill> : isNext ? <Pill color={colors.accent}>Next</Pill> : <Text style={s.sub}>{`In ${Math.max(daysUntil(r.date_end), 0)} d`}</Text>}
+                  : done ? <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>{wn?.code ? <View style={s.code}><Text style={s.codeT}>{wn.code}</Text></View> : null}<Ionicons name="checkmark-circle" size={20} color={colors.good} /></View> : live ? <Pill color={colors.accent}>In progress</Pill> : isNext ? <Pill color={colors.accent}>Next</Pill> : <Text style={s.sub}>{`In ${Math.max(daysUntil(r.date_end), 0)} d`}</Text>}
               </View>
             </>);
             const map = pts ? (
@@ -78,9 +79,8 @@ export default function CalendarScreen({ navigation }) {
               </View>) : null;
             const card = wcol
               ? <Grad color={wcol} from={0.42} to={0.05} dir="h" radius={16} border={0.4} style={s.card}>{map}{body}</Grad>
-              : <View style={[s.card, s.plain, isNext && { borderColor: colors.accent, backgroundColor: colors.accentSoft }, live && { borderColor: colors.good, backgroundColor: alpha(colors.good, 0.12) }]}>{map}{body}</View>;
-            if (!cur) return <View key={r.meeting_key}>{card}</View>;
-            return <Press key={r.meeting_key} scale={0.98} onPress={() => navigation.navigate('Round', { meeting: r })}>{card}</Press>;
+              : <View style={[s.card, s.plain, isNext && { borderColor: colors.accent, backgroundColor: colors.accentSoft }, live && { borderColor: colors.accent, backgroundColor: alpha(colors.accent, 0.14) }]}>{map}{body}</View>;
+            return <Press key={r.meeting_key} scale={0.98} onPress={() => navigation.navigate('Round', { meeting: r.year ? r : { ...r, year: YEAR } })}>{card}</Press>;
           })}
         </View>))}
     </Screen>
@@ -92,5 +92,6 @@ const s = StyleSheet.create({
   plain: { backgroundColor: colors.surface, borderColor: colors.line, borderWidth: 1, borderRadius: 16, overflow: 'hidden' },
   map: { position: 'absolute', right: 0, top: 0, bottom: 0, width: 150, alignItems: 'flex-end', justifyContent: 'center' },
   rn: { width: 46, height: 46, borderRadius: 13, backgroundColor: colors.surface2, alignItems: 'center', justifyContent: 'center' }, rb: { color: colors.fg, fontSize: 17, fontWeight: '800' },
+  code: { backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 }, codeT: { color: colors.fg, fontSize: 12, fontWeight: '800', letterSpacing: 1 },
   nm: { color: colors.fg, fontSize: 18, fontWeight: '700', flexShrink: 1 }, sub: { color: colors.muted, fontSize: 14 },
 });
