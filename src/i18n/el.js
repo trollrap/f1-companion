@@ -64,6 +64,7 @@ export const DICT = {
   Riders: 'Αναβάτες', Constructors: 'Κατασκευαστές', 'Added up from the riders\' points.': 'Άθροισμα των βαθμών των αναβατών.', 'Best finish': 'Καλύτερη θέση', 'Sprint podiums': 'Βάθρα σπριντ', 'Not classified': 'Μη ταξινομημένος', 'Race results': 'Αποτελέσματα αγώνων', 'Loading the season\'s races. The first time can take several seconds.': 'Φόρτωση των αγώνων της σεζόν. Την πρώτη φορά μπορεί να πάρει μερικά δευτερόλεπτα.',
   Scores: 'Αποτελέσματα', Tables: 'Βαθμολογίες', Match: 'Αγώνας', Today: 'Σήμερα', 'All leagues': 'Όλα τα πρωταθλήματα', 'No matches on this day.': 'Δεν υπάρχουν αγώνες αυτή την ημέρα.', 'No table is published for this competition.': 'Δεν υπάρχει δημοσιευμένη βαθμολογία.', 'Key events': 'Βασικά γεγονότα', Statistics: 'Στατιστικά', 'No further details are published for this match yet.': 'Δεν υπάρχουν άλλες λεπτομέρειες για τον αγώνα.', 'Details are not available right now.': 'Οι λεπτομέρειες δεν είναι διαθέσιμες.', 'Full time': 'Τελικό', FT: 'ΤΛ', 'Super League Greece': 'Super League Ελλάδας', 'Premier League': 'Premier League', 'Champions League': 'Champions League', 'Europa League': 'Europa League',
   'My teams': 'Οι ομάδες μου', 'Remind me at kick-off': 'Υπενθύμιση στην έναρξη', 'Reminder on': 'Υπενθύμιση ενεργή', 'Reminder removed.': 'Η υπενθύμιση αφαιρέθηκε.', 'You will get a reminder at kick-off.': 'Θα λάβετε υπενθύμιση στην έναρξη.', 'This match has already started.': 'Ο αγώνας έχει ήδη ξεκινήσει.', 'Kick-off now': 'Ξεκινά τώρα', 'Weekend schedule ': 'Πρόγραμμα', Live: 'Ζωντανά', 'Times follow your device\'s timezone. Shown for the class selected below.': 'Οι ώρες ακολουθούν τη ζώνη ώρας της συσκευής. Για την κατηγορία που επιλέγεται παρακάτω.',
+  'Search riders and teams': 'Αναζήτηση αναβατών και ομάδων',
   Language: 'Γλώσσα', 'App language': 'Γλώσσα εφαρμογής', 'Names of drivers, teams and team principals stay as they are.': 'Τα ονόματα οδηγών, ομάδων και υπευθύνων δεν μεταφράζονται.', Beta: 'Beta', 'The Greek translation is in beta. Some texts may still appear in English.': 'Η ελληνική μετάφραση είναι σε beta. Κάποια κείμενα μπορεί να εμφανίζονται ακόμη στα αγγλικά.',
   'results on': 'αποτελέσματα ενεργά', 'results off': 'αποτελέσματα ανενεργά', 'Race weekend': 'Αγωνιστικό Σαββατοκύριακο',
   // rules
@@ -103,6 +104,7 @@ export const DICT = {
 // [regex, replacement with $1..]. First match wins. Applied to the whole string, then to each " · " part.
 const T = (x) => (DICT[x] !== undefined ? DICT[x] : x);
 export const PATTERNS = [
+  [/^(.+) standings$/, 'Βαθμολογία $1'],
   [/^Sprint: P(.+)$/, 'Σπριντ: P$1'], [/^−(\d+)$/, '−$1'],
   [/^Last race · (.+)$/, 'Τελευταίος αγώνας · $1'],
   [/^Round (\d+)$/, 'Αγώνας $1'], [/^R(\d+) · (.+)$/, 'Α$1 · $2'],

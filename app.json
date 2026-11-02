@@ -2,7 +2,7 @@
   "expo": {
     "name": "F1 Companion",
     "slug": "f1-companion",
-    "version": "1.6.1",
+    "version": "1.7.0",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
     "backgroundColor": "#0A0506",
@@ -12,7 +12,7 @@
     },
     "android": {
       "package": "com.f1companion.app",
-      "versionCode": 10601,
+      "versionCode": 10700,
       "adaptiveIcon": {
         "foregroundImage": "./assets/app/adaptive-icon.png",
         "backgroundColor": "#0A0506"
@@ -55,6 +55,12 @@
     },
     "updates": {
       "url": "https://u.expo.dev/4b842ba8-89bf-43a1-87f3-43da42bd0735"
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single",
+      "favicon": "./assets/app/icon.png",
+      "backgroundColor": "#0A0506"
     }
   }
 }

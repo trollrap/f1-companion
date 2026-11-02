@@ -34,7 +34,7 @@ import PredictScreen from './src/screens/PredictScreen';
 import ChartScreen from './src/screens/ChartScreen';
 import GridScreen from './src/screens/GridScreen';
 import TeamCompareScreen from './src/screens/TeamCompareScreen';
-import { MotoHome, MotoCalendar, MotoStandings, MotoEvent, MotoRider } from './src/screens/MotoScreens';
+import { MotoHome, MotoCalendar, MotoStandings, MotoEvent, MotoRider, MotoPaddock } from './src/screens/MotoScreens';
 import { FootScores, FootTable, FootMatch } from './src/screens/FootScreens';
 import SettingsScreen from './src/screens/SettingsScreen';
 import AlertScheduler from './src/components/AlertScheduler';
@@ -49,7 +49,7 @@ const navTheme = { ...DefaultTheme, dark: true, colors: { ...DefaultTheme.colors
 const ICONS = { Home: 'home', Calendar: 'calendar', Standings: 'trophy', Paddock: 'people' };
 
 const MTab = createBottomTabNavigator();
-const MICONS = { Home: 'home', Calendar: 'calendar', Standings: 'trophy' };
+const MICONS = { Home: 'home', Calendar: 'calendar', Standings: 'trophy', Paddock: 'people' };
 function MotoTabs() {
   return (
     <MTab.Navigator screenOptions={({ route }) => ({
@@ -61,6 +61,7 @@ function MotoTabs() {
       <MTab.Screen name="Home" component={MotoHome} />
       <MTab.Screen name="Calendar" component={MotoCalendar} />
       <MTab.Screen name="Standings" component={MotoStandings} />
+      <MTab.Screen name="Paddock" component={MotoPaddock} />
     </MTab.Navigator>
   );
 }
@@ -139,11 +140,21 @@ function Shell() {
           </NavigationContainer>
   );
 }
+// On a PC browser the phone layout is shown as a centred column with room around it, so nothing is stretched across a wide monitor.
+function WebFrame({ children }) {
+  if (Platform.OS !== 'web') return children;
+  return (
+    <View style={{ flex: 1, backgroundColor: '#050203', alignItems: 'center' }}>
+      <View style={{ flex: 1, width: '100%', maxWidth: 560, backgroundColor: colors.bg, overflow: 'hidden', borderLeftWidth: 1, borderRightWidth: 1, borderColor: 'rgba(255,255,255,0.06)' }}>{children}</View>
+    </View>
+  );
+}
 export default function App() {
   const [fontsLoaded, fontError] = useFonts({ Rajdhani_400Regular, Rajdhani_500Medium, Rajdhani_600SemiBold, Rajdhani_700Bold, ChakraPetch_500Medium, ChakraPetch_600SemiBold, ChakraPetch_700Bold, Exo2_700Bold, Exo2_800ExtraBold, Exo2_700Bold_Italic, Exo2_800ExtraBold_Italic, RobotoCondensed_400Regular, RobotoCondensed_500Medium, RobotoCondensed_600SemiBold, RobotoCondensed_700Bold, RobotoCondensed_800ExtraBold });
   if (!fontsLoaded && !fontError) return <View style={{ flex: 1, backgroundColor: colors.bg }} />; // brief blank while fonts load; a font error falls back to system fonts
   return (
     <ErrorBoundary>
+    <WebFrame>
     <SafeAreaProvider>
       <PrefsProvider>
         <SeasonProvider>
@@ -155,6 +166,7 @@ export default function App() {
         </SeasonProvider>
       </PrefsProvider>
     </SafeAreaProvider>
+    </WebFrame>
     </ErrorBoundary>
   );
 }

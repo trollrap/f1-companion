@@ -15,7 +15,11 @@ import { useAsync } from '../hooks/useAsync';
 import { useNow } from '../hooks/useSeason';
 import { seasons, events, categories, sessions, classification, standings, lastRace, flagOf, mgDate, groupStandings, riderSeason } from '../api/motogp';
 import { up } from '../lib/i18n';
-import { colors, alpha } from '../theme';
+import { useMotoFavs } from '../hooks/useMotoFavs';
+import { StarButton } from '../components/Shared';
+import { SearchBox } from './CompareScreen';
+import { matches } from '../lib/search';
+import { colors, alpha, teamColor } from '../theme';
 
 // Picks the season (default: the one the service marks as current) and the class (MotoGP, Moto2, Moto3) used by every MotoGP screen.
 function useMoto(initialYear) {
@@ -25,8 +29,8 @@ function useMoto(initialYear) {
   const season = ss.v?.find((s) => s.year === pick) || cur || null;
   return { ss, season, years: (ss.v || []).map((s) => s.year), setYear: setPick, isCur: !!season && season.id === cur?.id };
 }
-const Row = ({ r, index, onPress }) => (
-  <Pressable onPress={onPress} disabled={!onPress} style={({ pressed }) => [s.row, pressed && { opacity: 0.7 }]}>
+const Row = ({ r, index, onPress, fav }) => (
+  <Pressable onPress={onPress} disabled={!onPress} style={({ pressed }) => [s.row, fav && { borderLeftWidth: 3, borderLeftColor: colors.gold, paddingLeft: 8 }, pressed && { opacity: 0.7 }]}>
     <View style={[s.pos, r.position === 1 && { backgroundColor: alpha(colors.gold, 0.2), borderColor: colors.gold }]}><Text style={s.posT}>{r.position ?? '–'}</Text></View>
     <View style={{ flex: 1 }}>
       <Text style={s.name} numberOfLines={1}>{r.name || '—'}</Text>
@@ -38,7 +42,10 @@ const Row = ({ r, index, onPress }) => (
 const raceRight = (r) => ({ right: r.position === 1 ? r.time || '' : r.gap ? `+${String(r.gap).replace(/^\+/, '')}` : r.status || '', rightSub: r.points != null && r.points !== '' ? `${r.points} pts` : '' });
 
 export function MotoHome({ navigation }) {
-  const m = useMoto(); const now = useNow(1000);
+  const mf = useMotoFavs(); const m = useMoto(); const now = useNow(1000);
+  const cats = useAsync(() => (m.season ? categories(m.season.id) : Promise.resolve(null)), [m.season?.id]);
+  const st = useAsync(() => (m.season && cats.v?.[0] ? standings(m.season.id, cats.v[0].id) : Promise.resolve(null)), [m.season?.id, cats.v?.[0]?.id]);
+  const mine = (st.v || []).filter((r) => mf.has(r.riderId));
   const evs = useAsync(() => (m.season ? events(m.season.id, m.season.year) : Promise.resolve(null)), [m.season?.id]);
   const last = useAsync(() => (m.season ? lastRace(m.season.id, m.season.year) : Promise.resolve(null)), [m.season?.id]);
   const next = evs.v?.find((e) => Date.parse(e.end) >= now) || null; const live = next && now >= Date.parse(next.start);
@@ -59,6 +66,21 @@ export function MotoHome({ navigation }) {
           </Grad>
         </Press>)}
       {evs.v && !next && <Card><Note>The season is over: no Grand Prix left.</Note></Card>}
+      {mine.length > 0 && (<>
+        <Eyebrow>Your riders</Eyebrow>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>{mine.slice(0, 4).map((r) => (
+          <View key={r.riderId} style={{ width: '48%' }}><Press onPress={() => navigation.navigate('MotoRider', { rider: r, season: m.season })}>
+            <Grad color={teamColor(r.team)} from={0.6} to={0.08} radius={18} border={0.9} style={{ height: 120, padding: 12, justifyContent: 'space-between', borderColor: colors.gold }}>
+              <Text style={{ color: colors.fg, fontFamily: 'display', fontWeight: '800', fontSize: 26 }}>{`P${r.position}`}</Text>
+              <View><Text style={s.sub} numberOfLines={1}>{r.name.split(' ')[0]}</Text><Text style={{ color: colors.fg, fontSize: 19, fontWeight: '700' }} numberOfLines={1}>{r.name.split(' ').slice(1).join(' ')}</Text><Text style={s.sub}>{`${r.points} pts`}</Text></View>
+            </Grad>
+          </Press></View>))}</View>
+      </>)}
+      {st.v?.length > 0 && (
+        <Card onPress={() => navigation.navigate('Standings')}>
+          <Eyebrow right="Full standings">{`${cats.v?.[0]?.name || 'MotoGP'} standings`}</Eyebrow>
+          <View style={{ marginTop: 8 }}>{st.v.slice(0, 5).map((r, i) => <Row key={r.riderId || i} fav={mf.has(r.riderId)} r={{ ...r, right: String(r.points), rightSub: i > 0 ? `−${st.v[0].points - r.points}` : 'Leader' }} />)}</View>
+        </Card>)}
       {last.loading && <Skeleton rows={3} />}
       {last.v && (
         <Card>
@@ -99,7 +121,7 @@ export function MotoCalendar({ navigation }) {
 }
 
 export function MotoStandings({ navigation }) {
-  const m = useMoto(); const [cat, setCat] = useState(null); const [view, setView] = useState('riders');
+  const mf = useMotoFavs(); const m = useMoto(); const [cat, setCat] = useState(null); const [view, setView] = useState('riders');
   const cats = useAsync(() => (m.season ? categories(m.season.id) : Promise.resolve(null)), [m.season?.id]);
   const catId = cats.v?.find((c) => c.id === cat)?.id || cats.v?.[0]?.id; const isTop = catId && catId === cats.v?.[0]?.id;
   const st = useAsync(() => (m.season && catId ? standings(m.season.id, catId) : Promise.resolve(null)), [m.season?.id, catId]);
@@ -114,15 +136,16 @@ export function MotoStandings({ navigation }) {
       {(m.ss.error || cats.error || st.error) && <ErrorNote error={m.ss.error || cats.error || st.error} onRetry={() => { m.ss.reload(); cats.reload(); st.reload(); }} />}
       {rows && !rows.length && <Note>No standings published for this class yet.</Note>}
       {rows?.map((r, i) => (
-        <Row key={`${r.riderId || r.name}${i}`} r={view === 'riders' ? { ...r, right: String(r.points), rightSub: i > 0 ? `−${top - r.points}` : 'Leader' } : { position: r.position, name: r.name, team: r.riders.join(' · '), right: String(r.points), rightSub: i > 0 ? `−${top - r.points}` : 'Leader' }}
+        <Row key={`${r.riderId || r.name}${i}`} fav={view === 'riders' && mf.has(r.riderId)} r={view === 'riders' ? { ...r, right: String(r.points), rightSub: i > 0 ? `−${top - r.points}` : 'Leader' } : { position: r.position, name: r.name, team: r.riders.join(' · '), right: String(r.points), rightSub: i > 0 ? `−${top - r.points}` : 'Leader' }}
           onPress={view === 'riders' && r.riderId && isTop ? () => navigation.navigate('MotoRider', { rider: r, season: m.season }) : undefined} />))}
       {view !== 'riders' && rows?.length ? <Note>Added up from the riders' points.</Note> : null}
     </Screen>
   );
 }
 
-export function MotoRider({ route }) {
-  const { rider, season } = route.params; const now = useNow(60000);
+export function MotoRider({ route, navigation }) {
+  const { rider, season } = route.params; const mf = useMotoFavs();
+  React.useEffect(() => { navigation.setOptions({ headerRight: () => <StarButton on={mf.has(rider.riderId)} onPress={() => mf.toggle(rider.riderId)} label="Favourite" /> }); }, [mf.ids]);
   const res = useAsync(() => riderSeason(season.id, season.year, rider.riderId), [rider.riderId]);
   const list = res.v || []; const races = list.filter((x) => x.race);
   const fin = races.map((x) => x.race.position).filter((p) => Number.isFinite(Number(p)) && p != null).map(Number);
@@ -158,6 +181,47 @@ export function MotoRider({ route }) {
               <Text style={s.right}>{x.race.points != null && x.race.points !== '' ? `${x.race.points} pts` : x.race.status || ''}</Text>
             </View>))}</View>
         </Card>)}
+    </Screen>
+  );
+}
+
+export function MotoPaddock({ navigation }) {
+  const mf = useMotoFavs(); const m = useMoto(); const [seg, setSeg] = useState('riders'); const [q, setQ] = useState('');
+  const cats = useAsync(() => (m.season ? categories(m.season.id) : Promise.resolve(null)), [m.season?.id]);
+  const [cat, setCat] = useState(null); const catId = cats.v?.find((c) => c.id === cat)?.id || cats.v?.[0]?.id; const isTop = catId && catId === cats.v?.[0]?.id;
+  const st = useAsync(() => (m.season && catId ? standings(m.season.id, catId) : Promise.resolve(null)), [m.season?.id, catId]);
+  const rows = (st.v || []).filter((r) => !q.trim() || matches(q, r.name, r.team, r.bike));
+  const teams = useMemo(() => groupStandings(rows, 'team'), [rows]);
+  const open = (r) => isTop && r.riderId && navigation.navigate('MotoRider', { rider: r, season: m.season });
+  const box = (r) => (
+    <View key={r.riderId || r.name} style={{ width: '48.5%' }}><Press onPress={() => open(r)}>
+      <Grad color={teamColor(r.team)} from={0.6} to={0.08} radius={18} border={mf.has(r.riderId) ? 0.9 : 0.4} style={[{ height: 130 }, mf.has(r.riderId) && { borderColor: colors.gold }]}>
+        {r.number != null ? <Text style={{ position: 'absolute', right: 6, bottom: -10, fontFamily: 'display', fontWeight: '800', fontSize: 78, color: 'rgba(255,255,255,0.13)' }}>{r.number}</Text> : null}
+        <View style={{ flex: 1, padding: 12, justifyContent: 'space-between' }}>
+          <Text style={{ fontFamily: 'display', fontWeight: '800', fontSize: 24, color: colors.fg }}>{r.number ?? ''}</Text>
+          <View><Text style={s.sub} numberOfLines={1}>{r.name.split(' ')[0]}</Text><Text style={{ color: colors.fg, fontSize: 19, fontWeight: '700' }} numberOfLines={1}>{r.name.split(' ').slice(1).join(' ')}</Text></View>
+        </View>
+      </Grad>
+    </Press></View>);
+  return (
+    <Screen swipe={{ index: seg === 'teams' ? 1 : 0, count: 2, onIndex: (i) => setSeg(i ? 'teams' : 'riders') }}>
+      <Segmented value={seg} onChange={setSeg} items={[['riders', 'Riders'], ['teams', 'Teams']]} />
+      <SearchBox value={q} onChange={setQ} placeholder="Search riders and teams" />
+      {cats.v?.length > 1 && <Dropdown value={catId} options={cats.v.map((c) => [c.id, c.name])} onChange={setCat} />}
+      {(m.ss.loading || cats.loading || st.loading) && <Skeleton rows={5} />}
+      {(m.ss.error || cats.error || st.error) && <ErrorNote error={m.ss.error || cats.error || st.error} onRetry={() => { m.ss.reload(); cats.reload(); st.reload(); }} />}
+      {st.v && !rows.length && <Note>Nothing found.</Note>}
+      {seg === 'riders' && teams.map((tm) => (
+        <View key={tm.name} style={{ gap: 8 }}>
+          <Text style={{ color: colors.muted, fontFamily: 'label', fontSize: 12, letterSpacing: 2.2 }}>{tm.name.toUpperCase()}</Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>{rows.filter((r) => r.team === tm.name).map(box)}</View>
+        </View>))}
+      {seg === 'teams' && teams.map((tm) => (
+        <Grad key={tm.name} color={teamColor(tm.name)} from={0.75} to={0.1} dir="h" radius={18} border={0.45} style={{ padding: 14 }}>
+          <View style={{ gap: 4 }}>{rows.filter((r) => r.team === tm.name).map((r) => <Text key={r.name} style={{ color: colors.fg, fontSize: 15, fontWeight: '700' }}>{`${r.number != null ? r.number + '  ' : ''}${r.name}`}</Text>)}</View>
+          <Text style={{ color: colors.fg, fontSize: 24, fontWeight: '700', marginTop: 10 }} numberOfLines={1}>{tm.name}</Text>
+          <Text style={{ color: 'rgba(255,255,255,0.75)', fontSize: 16 }}>{`P${tm.position} · ${tm.points} pts`}</Text>
+        </Grad>))}
     </Screen>
   );
 }
