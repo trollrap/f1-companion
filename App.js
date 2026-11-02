@@ -35,6 +35,7 @@ import ChartScreen from './src/screens/ChartScreen';
 import GridScreen from './src/screens/GridScreen';
 import TeamCompareScreen from './src/screens/TeamCompareScreen';
 import { MotoHome, MotoCalendar, MotoStandings, MotoEvent, MotoRider } from './src/screens/MotoScreens';
+import { FootScores, FootTable, FootMatch } from './src/screens/FootScreens';
 import SettingsScreen from './src/screens/SettingsScreen';
 import AlertScheduler from './src/components/AlertScheduler';
 import ErrorBoundary from './src/components/ErrorBoundary';
@@ -63,6 +64,20 @@ function MotoTabs() {
     </MTab.Navigator>
   );
 }
+const FTab = createBottomTabNavigator();
+function FootTabs() {
+  return (
+    <FTab.Navigator screenOptions={({ route }) => ({
+      headerShown: false, animation: 'fade', tabBarActiveTintColor: colors.accent, tabBarInactiveTintColor: colors.muted,
+      tabBarStyle: { backgroundColor: colors.bg, borderTopColor: colors.line, height: 64, paddingTop: 6, paddingBottom: 8 },
+      tabBarLabelStyle: { fontFamily: ui.lang === 'el' ? 'RobotoCondensed_600SemiBold' : 'Rajdhani_600SemiBold', fontSize: 13 },
+      tabBarLabel: tr(route.name), tabBarIcon: ({ color, size }) => <Ionicons name={route.name === 'Scores' ? 'football' : 'list'} size={size} color={color} />,
+    })}>
+      <FTab.Screen name="Scores" component={FootScores} />
+      <FTab.Screen name="Tables" component={FootTable} />
+    </FTab.Navigator>
+  );
+}
 function Tabs() {
   return (
     <Tab.Navigator screenOptions={({ route }) => ({
@@ -86,10 +101,16 @@ function Shell() {
   // Changing the language rebuilds the navigation tree so every screen and title is drawn again in the new language.
   const { prefs } = usePrefs();
   return (
-          <NavigationContainer key={`${prefs.opts.lang === 'el' ? 'el' : 'en'}-${prefs.opts.sport === 'motogp' ? 'mg' : 'f1'}`} theme={navTheme}>
+          <NavigationContainer key={`${prefs.opts.lang === 'el' ? 'el' : 'en'}-${prefs.opts.sport === 'motogp' ? 'mg' : prefs.opts.sport === 'football' ? 'fb' : 'f1'}`} theme={navTheme}>
             <StatusBar style="light" />
             <AlertScheduler />
-            {prefs.opts.sport === 'motogp' ? (
+            {prefs.opts.sport === 'football' ? (
+              <Stack.Navigator screenOptions={detail}>
+                <Stack.Screen name="Tabs" component={FootTabs} options={{ headerShown: false }} />
+                <Stack.Screen name="FootMatch" component={FootMatch} options={{ title: tr('Match') }} />
+                <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: tr('Settings') }} />
+              </Stack.Navigator>
+            ) : prefs.opts.sport === 'motogp' ? (
               <Stack.Navigator screenOptions={detail}>
                 <Stack.Screen name="Tabs" component={MotoTabs} options={{ headerShown: false }} />
                 <Stack.Screen name="MotoEvent" component={MotoEvent} options={({ route }) => ({ title: route.params.event.short || route.params.event.name })} />

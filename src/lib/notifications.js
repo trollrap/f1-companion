@@ -49,7 +49,8 @@ export function plannedAlerts(sessions, prefs, now = Date.now()) {
 // Replaces every scheduled alert with the ones the preferences ask for. Permission is requested only when something is enabled.
 export async function scheduleSessionAlerts(meeting, sessions, prefs) {
   const n = mod(); if (!n) return 0;
-  await n.cancelAllScheduledNotificationsAsync();
+  // clear only session alerts: football kickoff alerts (identifier foot-...) stay
+  try { const all = await n.getAllScheduledNotificationsAsync(); await Promise.all(all.filter((x) => !String(x.identifier).startsWith('foot-')).map((x) => n.cancelScheduledNotificationAsync(x.identifier))); } catch { await n.cancelAllScheduledNotificationsAsync(); }
   const wanted = plannedAlerts(sessions, prefs);
   if (!wanted.length || !(await ensurePermission())) return 0;
   for (const a of wanted) {
@@ -73,3 +74,15 @@ export async function sendTestNotification() {
   await n.scheduleNotificationAsync({ content: { title: 'F1 Companion', body: tr('Alerts are working.') }, trigger: { type: n.SchedulableTriggerInputTypes.TIME_INTERVAL, seconds: 5, channelId: 'sessions' } });
   return 'ok';
 }
+
+// Football: a reminder at kick-off for one match. Returns 'ok', 'past', 'denied' or 'unavailable'.
+export async function scheduleKickoff(id, title, whenMs) {
+  const n = mod(); if (!n) return 'unavailable';
+  if (whenMs <= Date.now() + 5000) return 'past';
+  if (!(await ensurePermission())) return 'denied';
+  await n.cancelScheduledNotificationAsync(`foot-${id}`).catch(() => {});
+  await n.scheduleNotificationAsync({ identifier: `foot-${id}`, content: { title, body: tr('Kick-off now') }, trigger: { type: n.SchedulableTriggerInputTypes.DATE, date: new Date(whenMs), channelId: 'sessions' } });
+  return 'ok';
+}
+export async function cancelKickoff(id) { const n = mod(); if (n) await n.cancelScheduledNotificationAsync(`foot-${id}`).catch(() => {}); }
+export async function hasKickoff(id) { const n = mod(); if (!n) return false; try { return (await n.getAllScheduledNotificationsAsync()).some((x) => x.identifier === `foot-${id}`); } catch { return false; } }

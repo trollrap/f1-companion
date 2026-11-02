@@ -32,6 +32,17 @@ async function motoChecks(push) {
     const l = Array.isArray(r) ? r : r?.classification; if (!Array.isArray(l)) throw new Error('unexpected shape'); return `${l.length} riders in ${c[0].name}`;
   }));
 }
+async function footChecks(push) {
+  const ES = 'https://site.api.espn.com/apis';
+  push(await step('Football scores', async () => {
+    const d = need(await liveJSON(`${ES}/site/v2/sports/soccer/eng.1/scoreboard`), 'scoreboard').json;
+    if (!d || !Array.isArray(d.events)) throw new Error('unexpected shape'); return `${d.events.length} matches in the current window`;
+  }));
+  push(await step('Football table', async () => {
+    const d = need(await liveJSON(`${ES}/v2/sports/soccer/eng.1/standings`), 'standings').json; const e = d?.children?.[0]?.standings?.entries;
+    if (!Array.isArray(e) || !e.length || !Array.isArray(e[0].stats)) throw new Error('unexpected shape'); return `${e.length} teams`;
+  }));
+}
 export async function runDiagnostics(onResult) {
   const out = []; const push = (r) => { out.push(r); onResult?.(r); return r; };
   let raceSession = null;
@@ -114,5 +125,6 @@ export async function runDiagnostics(onResult) {
     return `${x.length} drivers with numbers and team colours`;
   }));
   await motoChecks(push);
+  await footChecks(push);
   return out;
 }

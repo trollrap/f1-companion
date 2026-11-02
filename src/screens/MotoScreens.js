@@ -10,6 +10,7 @@ import Grad from '../components/Grad';
 import Press from '../components/Press';
 import { Pill } from '../components/Badge';
 import { Segmented, Countdown } from '../components/Shared';
+import { hm, dayName } from '../lib/time';
 import { useAsync } from '../hooks/useAsync';
 import { useNow } from '../hooks/useSeason';
 import { seasons, events, categories, sessions, classification, standings, lastRace, flagOf, mgDate, groupStandings, riderSeason } from '../api/motogp';
@@ -178,6 +179,15 @@ export function MotoEvent({ route }) {
         <Text style={s.sub}>{[event.circuit, event.place, event.country].filter(Boolean).join(' · ')}</Text>
         <View style={{ marginTop: 8 }}><Pill color={done ? colors.good : colors.accent}>{done ? 'Completed' : Date.parse(event.start) <= now ? 'In progress' : 'Upcoming'}</Pill></View>
       </Grad>
+      {ss.v?.length > 0 && (
+        <Card>
+          <Eyebrow>Weekend schedule</Eyebrow>
+          <View style={{ marginTop: 8 }}>{ss.v.filter((x) => x.date && !Number.isNaN(Date.parse(x.date))).map((x) => {
+            const a = Date.parse(x.date), over = a < now, live = a <= now && now < a + 45 * 60000;
+            return (<View key={x.id} style={s.row}><View style={{ flex: 1 }}><Text style={[s.name, over && !live && { color: colors.muted }]}>{x.name}</Text><Text style={s.sub}>{`${dayName(a, null)} · ${hm(a, null)}`}</Text></View>{live ? <Pill color={colors.accent} solid>Live</Pill> : over ? <Ionicons name="checkmark-circle" size={18} color={colors.good} /> : null}</View>);
+          })}</View>
+          <Note>Times follow your device's timezone. Shown for the class selected below.</Note>
+        </Card>)}
       <Card>
         <Eyebrow>Results</Eyebrow>
         {cats.v?.length > 0 && <View style={{ marginTop: 12 }}><Dropdown value={catId} options={cats.v.map((c) => [c.id, c.name])} onChange={(v) => { setSel(null); setCat(v); }} /></View>}

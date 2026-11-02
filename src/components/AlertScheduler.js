@@ -10,7 +10,7 @@ export default function AlertScheduler() {
   const season = useSeason(); const { prefs } = usePrefs();
   const moto = prefs.opts.sport === 'motogp';
   useEffect(() => {
-    if (moto) return;
+    if (moto || prefs.opts.sport === 'football') return;
     if (season.status !== 'ready' || !season.next) return;
     scheduleSessionAlerts(season.next, season.sessions, prefs).catch(() => {});
   }, [moto, season.status, season.next?.meeting_key, season.sessions, prefs]);
