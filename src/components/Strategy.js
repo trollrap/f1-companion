@@ -1,5 +1,5 @@
 import React from 'react';
-import { View } from 'react-native';
+import { View, Pressable } from 'react-native';
 import Skeleton from './Skeleton';
 import { Text } from './Text';
 import { Card, Eyebrow, Note } from './Screen';
@@ -8,16 +8,19 @@ import { raceStints } from '../api/openf1';
 import { colors } from '../theme';
 
 export const TYRE = { SOFT: ['#E10600', '#fff', 'S'], MEDIUM: ['#FFD12E', '#14161A', 'M'], HARD: ['#F2F2F2', '#14161A', 'H'], INTERMEDIATE: ['#3DD16C', '#08210F', 'I'], WET: ['#3B82F6', '#fff', 'W'], UNKNOWN: ['#6B7280', '#fff', '?'] };
-// One bar per driver: every tyre stint of the race, drawn to scale. Finishing order from the top.
-export default function Strategy({ sessionKey }) {
+// One bar per driver: every tire stint of the race, drawn to scale. Finishing order from the top.
+export default function Strategy({ sessionKey, onHide }) {
   const st = useAsync(() => raceStints(sessionKey), [sessionKey]);
   const d = st.v;
   return (
     <Card>
-      <Eyebrow>Tyre strategy</Eyebrow>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Eyebrow>Tire strategy</Eyebrow>
+        {onHide ? <Pressable onPress={onHide} hitSlop={10} accessibilityRole="button"><Text style={{ color: colors.accent, fontWeight: '700', fontSize: 15 }}>Hide</Text></Pressable> : null}
+      </View>
       {st.loading && <Skeleton />}
       {st.error && <Note>Strategy data is not available for this race yet.</Note>}
-      {d && !d.rows.length && <Note>No tyre data was published for this race.</Note>}
+      {d && !d.rows.length && <Note>No tire data was published for this race.</Note>}
       {d && d.rows.length > 0 && (
         <View style={{ marginTop: 12, gap: 6 }}>
           {d.rows.map((r) => (

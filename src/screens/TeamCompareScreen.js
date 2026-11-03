@@ -29,12 +29,12 @@ export default function TeamCompareScreen({ route }) {
   const sb = useAsync(() => (b ? constructorSeasonsList(b.teamId) : Promise.resolve(null)), [b?.teamId]);
   const common = useMemo(() => (b && sa.v && sb.v ? sa.v.filter((y) => sb.v.includes(y)) : null), [b, sa.v, sb.v]);
   const cyear = pickYear && common?.includes(pickYear) ? pickYear : common?.includes(year0) ? year0 : common?.[0] ?? null;
-  const hasSeason = !!common?.length, mode = hasSeason ? tab : 'career';
+  const hasSeason = !!common?.length, mode = !common ? 'wait' : hasSeason ? tab : 'career';
   const stA = useAsync(() => (cyear ? constructorSeason(cyear, a.teamId) : Promise.resolve(null)), [a.teamId, cyear]);
   const stB = useAsync(() => (b && cyear ? constructorSeason(cyear, b.teamId) : Promise.resolve(null)), [b?.teamId, cyear]);
   const table = useAsync(() => (cyear ? constructorStandings(cyear) : Promise.resolve(null)), [cyear]);
-  const cA = useAsync(() => constructorCareer(a.teamId, YEAR), [a.teamId]); const cB = useAsync(() => (b ? constructorCareer(b.teamId, YEAR) : Promise.resolve(null)), [b?.teamId]);
-  const tA = useAsync(() => constructorTitles(a.teamId, YEAR), [a.teamId]); const tB = useAsync(() => (b ? constructorTitles(b.teamId, YEAR) : Promise.resolve(null)), [b?.teamId]);
+  const wantC = mode === 'career'; const cA = useAsync(() => (wantC ? constructorCareer(a.teamId, YEAR) : Promise.resolve(null)), [a.teamId, wantC]); const cB = useAsync(() => (b && wantC ? constructorCareer(b.teamId, YEAR) : Promise.resolve(null)), [b?.teamId, wantC]);
+  const wantT = mode === 'career'; const tA = useAsync(() => (wantT ? constructorTitles(a.teamId, YEAR) : Promise.resolve(null)), [a.teamId, wantT]); const tB = useAsync(() => (b && wantT ? constructorTitles(b.teamId, YEAR) : Promise.resolve(null)), [b?.teamId, wantT]);
   const colA = tc(a.teamId), colB = b ? tc(b.teamId) : colors.muted;
   const hero = (t, col, side) => (
     <Grad color={col} from={0.62} to={0.08} style={{ flex: 1, height: 120 }}>
@@ -77,13 +77,14 @@ export default function TeamCompareScreen({ route }) {
   const ready = stA.v && stB.v, A = stA.v, B = stB.v, ca = cA.v, cb = cB.v;
   const posA = table.v?.find((x) => x.teamId === a.teamId), posB = table.v?.find((x) => x.teamId === b.teamId);
   const R = (label, x, y, lower) => <Row key={label} label={label} a={x} b={y} lower={lower} ca={colA} cb={colB} />;
-  const tabs = hasSeason ? [['season', `${cyear} season`], ['career', 'Career']] : null;
+  const tabs = hasSeason ? [['season', `${cyear} season`], ['career', 'History']] : null;
   return (
     <Screen header={false} swipe={tabs ? { index: mode === 'career' ? 1 : 0, count: 2, onIndex: (i) => setTab(i ? 'career' : 'season') } : undefined}>
       <View ref={shotRef} collapsable={false} style={{ gap: 10, padding: 10, borderRadius: 20, backgroundColor: colors.bg, borderWidth: 1, borderColor: alpha(colors.accent, 0.35) }}>
-        <LinearGradient pointerEvents="none" colors={['#2A1318', '#0A0506']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, borderRadius: 20 }} />
+        <LinearGradient pointerEvents="none" colors={[colors.cardA, colors.deep]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, borderRadius: 20 }} />
         <View style={{ flexDirection: 'row', gap: 8 }}>{hero(a, colA, 'left')}{hero(b, colB, 'right')}</View>
-        <Text style={{ color: colors.muted, fontFamily: 'label', fontSize: 11, letterSpacing: 2, textAlign: 'center' }}>{mode === 'career' ? 'CAREER' : `${cyear} SEASON`} · F1 COMPANION</Text>
+        <Text style={{ color: colors.muted, fontFamily: 'label', fontSize: 11, letterSpacing: 2, textAlign: 'center' }}>{mode === 'career' ? 'HISTORY' : `${cyear} SEASON`} · F1 COMPANION</Text>
+        {mode === 'wait' && <Skeleton rows={5} />}
         {mode === 'season' && (<View>
           {(stA.loading || stB.loading) && <Skeleton rows={5} />}
           {ready && (<>
@@ -93,7 +94,7 @@ export default function TeamCompareScreen({ route }) {
           </>)}
         </View>)}
         {mode === 'career' && (<View>
-          {(cA.loading || cB.loading) && <Skeleton rows={5} />}
+          {(cA.loading || cB.loading || !(cA.v && cB.v)) && !(ca && cb) && <Skeleton rows={5} />}
           {ca && cb && (<>
             {R('Wins', dash(ca.wins), dash(cb.wins))}{R('Poles', dash(ca.poles), dash(cb.poles))}{R('Titles', tA.loading ? '…' : dash(tA.v), tB.loading ? '…' : dash(tB.v))}{R('Seasons', dash(ca.seasons), dash(cb.seasons))}{R('First year', dash(ca.first), dash(cb.first), true)}
           </>)}

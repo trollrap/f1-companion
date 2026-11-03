@@ -1,6 +1,6 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { View, PanResponder, Pressable } from 'react-native';
-import Svg, { G, Line, Polyline, Circle, Rect, Defs, ClipPath, Text as SvgText } from 'react-native-svg';
+import Svg, { Line, Polyline, Circle, Text as SvgText } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
 import { Text } from './Text';
 import { colors, alpha } from '../theme';
@@ -9,6 +9,7 @@ import { colors, alpha } from '../theme';
 export default function LineChart({ series, rounds, height = 240 }) {
   const [w, setW] = useState(0); const n = rounds.length;
   const [win, setWin] = useState([0, Math.max(1, n - 1)]); const [hit, setHit] = useState(null);
+  useEffect(() => { setWin([0, Math.max(1, n - 1)]); setHit(null); }, [n]);
   const lo = Math.max(0, Math.min(win[0], n - 1)), hi = Math.min(n - 1, Math.max(win[1], Math.min(n - 1, lo + 1)));
   const L = 34, R = 12, T = 12, B = 24, span = Math.max(1, hi - lo), innerW = Math.max(1, w - L - R);
   const st = useRef({}); st.current = { lo, hi, n, innerW, L, w };
@@ -35,9 +36,10 @@ export default function LineChart({ series, rounds, height = 240 }) {
     onPanResponderTerminationRequest: () => false,
   })).current;
   const vis = useMemo(() => series.map((s) => ({ ...s, v: s.values.slice(Math.floor(lo), Math.ceil(hi) + 1) })), [series, lo, hi]);
-  const max = Math.max(10, ...vis.flatMap((s) => s.v));
+  const max = Math.max(10, ...vis.flatMap((s) => s.v).filter((v) => Number.isFinite(v)));
   const step = max <= 30 ? 5 : max <= 60 ? 10 : max <= 150 ? 25 : max <= 300 ? 50 : max <= 600 ? 100 : 200, top = Math.ceil(max / step) * step;
-  const x = (i) => L + ((i - lo) / span) * innerW, y = (v) => T + (1 - v / top) * (height - T - B);
+  const fin = (n) => (Number.isFinite(n) ? n : 0);
+  const x = (i) => fin(L + ((i - lo) / span) * innerW), y = (v) => fin(T + (1 - v / top) * (height - T - B)), xi = (i) => x(i) - L;
   const ticks = []; for (let v = 0; v <= top; v += step) ticks.push(v);
   const count = Math.floor(hi) - Math.ceil(lo) + 1, every = count > 16 ? 3 : count > 9 ? 2 : 1;
   const zoomed = hi - lo < n - 1 - 0.01;
@@ -55,20 +57,20 @@ export default function LineChart({ series, rounds, height = 240 }) {
       <View onLayout={(e) => setW(e.nativeEvent.layout.width)} style={{ height }} {...pan.panHandlers}>
         {w > 0 && (
           <Svg width={w} height={height}>
-            <Defs><ClipPath id="clip"><Rect x={L} y={0} width={innerW} height={height} /></ClipPath></Defs>
             {ticks.map((v) => (<React.Fragment key={v}><Line x1={L} x2={w - R} y1={y(v)} y2={y(v)} stroke={colors.line} strokeWidth={1} /><SvgText x={L - 6} y={y(v) + 4} fontSize={10} fill={colors.muted} textAnchor="end">{v}</SvgText></React.Fragment>))}
             {rounds.map((r, i) => (i >= Math.ceil(lo - 0.001) && i <= hi + 0.001 && ((i - Math.ceil(lo)) % every === 0 || i === n - 1) ? <SvgText key={r.round} x={x(i)} y={height - 6} fontSize={10} fill={tip === i ? colors.fg : colors.muted} textAnchor="middle">{r.round}</SvgText> : null))}
-            <G clipPath="url(#clip)">
-              {tip != null ? <Line x1={x(tip)} x2={x(tip)} y1={T} y2={height - B} stroke={alpha('#FFFFFF', 0.35)} strokeWidth={1} /> : null}
+            {/* an inner Svg clips the lines to the plot area (a ClipPath here crashed some Android builds) */}
+            <Svg x={L} y={0} width={innerW} height={height}>
+              {tip != null ? <Line x1={xi(tip)} x2={xi(tip)} y1={T} y2={height - B} stroke={alpha('#FFFFFF', 0.35)} strokeWidth={1} /> : null}
               {series.map((s) => (
                 <React.Fragment key={s.id}>
-                  <Polyline points={s.values.map((v, i) => `${x(i)},${y(v)}`).join(' ')} fill="none" stroke={s.color} strokeWidth={2.4} strokeDasharray={s.dash ? '6 4' : undefined} strokeLinejoin="round" strokeLinecap="round" />
-                  {tip != null && s.values[tip] != null ? <Circle cx={x(tip)} cy={y(s.values[tip])} r={4.5} fill={s.color} stroke="#0A0506" strokeWidth={1.5} /> : s.values.length && tip == null && hi >= s.values.length - 1 ? <Circle cx={x(s.values.length - 1)} cy={y(s.values[s.values.length - 1])} r={3.5} fill={s.color} /> : null}
+                  {s.values.length > 1 ? <Polyline points={s.values.map((v, i) => `${xi(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ')} fill="none" stroke={s.color} strokeWidth={2.4} strokeDasharray={s.dash ? [6, 4] : undefined} strokeLinejoin="round" strokeLinecap="round" /> : null}
+                  {tip != null && s.values[tip] != null ? <Circle cx={xi(tip)} cy={y(s.values[tip])} r={4.5} fill={s.color} stroke={colors.deep} strokeWidth={1.5} /> : s.values.length && tip == null && hi >= s.values.length - 1 ? <Circle cx={xi(s.values.length - 1)} cy={y(s.values[s.values.length - 1])} r={3.5} fill={s.color} /> : null}
                 </React.Fragment>))}
-            </G>
+            </Svg>
           </Svg>)}
         {tip != null && w > 0 ? (
-          <View pointerEvents="none" style={{ position: 'absolute', top: 6, [x(tip) > w / 2 ? 'left' : 'right']: 40, backgroundColor: 'rgba(14,8,10,0.94)', borderColor: colors.line, borderWidth: 1, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 8, maxWidth: '62%' }}>
+          <View pointerEvents="none" style={{ position: 'absolute', top: 6, [x(tip) > w / 2 ? 'left' : 'right']: 40, backgroundColor: alpha(colors.deep, 0.94), borderColor: colors.line, borderWidth: 1, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 8, maxWidth: '62%' }}>
             <Text style={{ color: colors.fg, fontWeight: '800', fontSize: 14 }} numberOfLines={1}>{`R${rounds[tip].round} · ${String(rounds[tip].name || '').replace(' Grand Prix', '')}`}</Text>
             {rows.slice(0, 6).map(({ s, v }) => (
               <View key={s.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 3 }}>

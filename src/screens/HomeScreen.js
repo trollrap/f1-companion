@@ -1,6 +1,6 @@
 import { up } from '../lib/i18n';
 import React, { useEffect, useState } from 'react';
-import { View, Pressable, StyleSheet } from 'react-native';
+import { View, Pressable, StyleSheet, LayoutAnimation } from 'react-native';
 import Skeleton from '../components/Skeleton';
 import { Text } from '../components/Text';
 import { Ionicons } from '@expo/vector-icons';
@@ -11,7 +11,9 @@ import Grad, { Scrim } from '../components/Grad';
 import { SprintBadge } from '../components/Badge';
 import { useSeason, useNow } from '../hooks/useSeason';
 import { useAsync } from '../hooks/useAsync';
-import { driverStandings } from '../api/jolpica';
+import { driverStandings, constructorStandings } from '../api/jolpica';
+import { usePrefs } from '../hooks/usePrefs';
+import { TeamBadge } from '../components/Shared';
 import LastSession from '../components/LastSession';
 import { YEAR } from '../api/openf1';
 import { colors, alpha } from '../theme';
@@ -31,6 +33,8 @@ export default function HomeScreen({ navigation }) {
   const season = useSeason(); const now = useNow();
   const favs = useFavs(); const tc = useTeamColor();
   const stand = useAsync(() => driverStandings(YEAR), []);
+  const tstand = useAsync(() => constructorStandings(YEAR), []);
+  const { prefs } = usePrefs(); const [mineView, setMineView] = useState(prefs.opts.homeFirst === 'teams' ? 'teams' : 'drivers');
   const [slow, setSlow] = useState(false);
   useEffect(() => { if (season.status !== 'loading') { setSlow(false); return; } const t = setTimeout(() => setSlow(true), 8000); return () => clearTimeout(t); }, [season.status]);
   if (season.status === 'loading') return (
@@ -41,11 +45,14 @@ export default function HomeScreen({ navigation }) {
   );
   if (season.status === 'error') return <Screen><Card><Text style={s.big}>Couldn't load the season</Text><ErrorNote error={season.error} onRetry={season.reload} /></Card></Screen>;
   const { next, sessions, total } = season; const t = next && targetOf(next, sessions, now);
-  const rows = stand.v || []; const mine = rows.filter((r) => favs.isDriver(r.driverId));
+  const rows = stand.v || []; const mine = rows.filter((r) => favs.isDriver(r.driverId)); const mineT = (tstand.v || []).filter((r) => favs.isTeam(r.teamId));
+  // The card shows the chosen kind; when only one kind has favourites it shows that one. The swap button appears when both exist.
+  const both = mine.length > 0 && mineT.length > 0; const showTeams = mineT.length > 0 && (mineView === 'teams' || mine.length === 0);
   const openDriver = (r) => navigation.navigate('Driver', { driverId: r.driverId, name: r.name, first: r.first, last: r.last, teamId: r.teamId, team: r.team });
   return (
     <Screen>
       <UpdateBanner />
+      {prefs.opts.name ? <Text style={{ color: colors.muted, fontSize: 17 }}>{`Hi, ${prefs.opts.name} 👋`}</Text> : null}
       {next ? (
         <Pressable onPress={() => navigation.navigate('RaceDetail', { meeting: next })} style={({ pressed }) => pressed && { transform: [{ scale: 0.99 }] }}>
           <Grad color={colors.accent} from={0.34} to={0.04} border={0.45} style={{ padding: 14 }}>
@@ -67,22 +74,39 @@ export default function HomeScreen({ navigation }) {
         </Pressable>
       ) : <Card><Text style={s.big}>Season complete</Text></Card>}
 
-      {mine.length > 0 && (
+      {(mine.length > 0 || mineT.length > 0) && (
         <View>
-          <Eyebrow>Your drivers</Eyebrow>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingTop: 10 }}>
-            {mine.map((r) => { const photo = driverPhoto(r.driverId); return (
-              <Pressable key={r.driverId} onPress={() => openDriver(r)} style={({ pressed }) => pressed && { opacity: 0.85 }}>
-                <Grad color={tc(r.teamId)} from={0.6} to={0.08} radius={16} style={{ width: 170, height: 148 }}>
-                  {photo ? <Image source={photo} resizeMode="cover" resizeMethod="resize" fadeDuration={0} style={{ position: 'absolute', right: -14, bottom: -12, width: 156, height: 156 }} /> : null}
-                  {photo ? <Scrim dir="v" from={0} to={0.82} style={{ top: '35%' }} /> : null}
-                  <View style={{ flex: 1, padding: 12, justifyContent: 'space-between' }}>
-                    <Text style={{ fontFamily: 'display', fontWeight: '800', fontSize: 30, color: colors.fg }}>P{r.position}</Text>
-                    <View><DriverName first={r.first} last={r.last} size={19} /><Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 14 }}>{r.points} pts</Text></View>
-                  </View>
-                </Grad>
-              </Pressable>); })}
-          </ScrollView>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Eyebrow>{showTeams ? 'Your teams' : 'Your drivers'}</Eyebrow>
+            {both ? <Pressable onPress={() => { LayoutAnimation.configureNext(LayoutAnimation.create(220, 'easeInEaseOut', 'opacity')); setMineView(showTeams ? 'drivers' : 'teams'); }} hitSlop={10} accessibilityRole="button" accessibilityLabel={showTeams ? 'Show your drivers' : 'Show your teams'} style={({ pressed }) => [{ flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, height: 30, borderRadius: 15, backgroundColor: colors.accentSoft, borderWidth: 1, borderColor: colors.accent }, pressed && { opacity: 0.7 }]}><Ionicons name="swap-horizontal" size={15} color={colors.accent} /><Text style={{ color: colors.fg, fontWeight: '700', fontSize: 13 }}>{showTeams ? 'Drivers' : 'Teams'}</Text></Pressable> : null}
+          </View>
+          {showTeams ? (
+            <ScrollView key="teams" horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingTop: 10 }}>
+              {mineT.map((r) => (
+                <Pressable key={r.teamId} onPress={() => navigation.navigate('Team', { teamId: r.teamId, name: r.name })} style={({ pressed }) => pressed && { opacity: 0.85 }}>
+                  <Grad color={tc(r.teamId)} from={0.6} to={0.08} radius={16} style={{ width: 170, height: 148 }}>
+                    <View style={{ flex: 1, padding: 12, justifyContent: 'space-between' }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}><Text style={{ fontFamily: 'display', fontWeight: '800', fontSize: 30, color: colors.fg }}>P{r.position}</Text><TeamBadge teamId={r.teamId} name={r.name} size={44} /></View>
+                      <View><Text style={{ color: colors.fg, fontSize: 19, fontWeight: '700' }} numberOfLines={1}>{r.name}</Text><Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 14 }}>{r.points} pts</Text></View>
+                    </View>
+                  </Grad>
+                </Pressable>))}
+            </ScrollView>
+          ) : (
+            <ScrollView key="drivers" horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingTop: 10 }}>
+              {mine.map((r) => { const photo = driverPhoto(r.driverId); return (
+                <Pressable key={r.driverId} onPress={() => openDriver(r)} style={({ pressed }) => pressed && { opacity: 0.85 }}>
+                  <Grad color={tc(r.teamId)} from={0.6} to={0.08} radius={16} style={{ width: 170, height: 148 }}>
+                    {photo ? <Image source={photo} resizeMode="cover" resizeMethod="resize" fadeDuration={0} style={{ position: 'absolute', right: -14, bottom: -12, width: 156, height: 156 }} /> : null}
+                    {photo ? <Scrim dir="v" from={0} to={0.82} style={{ top: '35%' }} /> : null}
+                    <View style={{ flex: 1, padding: 12, justifyContent: 'space-between' }}>
+                      <Text style={{ fontFamily: 'display', fontWeight: '800', fontSize: 30, color: colors.fg }}>P{r.position}</Text>
+                      <View><DriverName first={r.first} last={r.last} size={19} /><Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 14 }}>{r.points} pts</Text></View>
+                    </View>
+                  </Grad>
+                </Pressable>); })}
+            </ScrollView>
+          )}
         </View>
       )}
 

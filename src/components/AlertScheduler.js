@@ -5,6 +5,7 @@ import { alertSessions, currentSeason, events as motoEvents } from '../api/motog
 import { usePrefs } from '../hooks/usePrefs';
 import { scheduleSessionAlerts } from '../lib/notifications';
 import { checkResults, syncResultTask } from '../lib/resultAlerts';
+import { checkNews } from '../lib/newsAlerts';
 // Keeps the device's scheduled alerts in step with the next race and the user's preferences, on every launch.
 export default function AlertScheduler() {
   const season = useSeason(); const { prefs } = usePrefs();
@@ -27,11 +28,13 @@ export default function AlertScheduler() {
   }, [moto, prefs]);
   // Results alerts: background task on or off with the switch, plus a check at launch and whenever the app comes back to the front.
   useEffect(() => {
-    syncResultTask(prefs.results);
-    if (!prefs.results) return undefined;
-    checkResults().catch(() => {});
-    const sub = AppState.addEventListener('change', (st) => { if (st === 'active') checkResults().catch(() => {}); });
+    const anyNews = Object.values(prefs.opts?.newsAlerts || {}).some(Boolean);
+    syncResultTask(prefs.results || anyNews);
+    if (!prefs.results && !anyNews) return undefined;
+    const run = () => { checkResults().catch(() => {}); checkNews().catch(() => {}); };
+    run();
+    const sub = AppState.addEventListener('change', (st) => { if (st === 'active') run(); });
     return () => sub.remove();
-  }, [prefs.results]);
+  }, [prefs.results, JSON.stringify(prefs.opts?.newsAlerts || {})]);
   return null;
 }

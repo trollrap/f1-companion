@@ -8,7 +8,7 @@ import { colors, alpha } from '../theme';
 
 export const finishText = (r) => (classified(r) ? `P${r.position}` : r.positionText === 'D' ? 'DSQ' : 'DNF');
 const finishColor = (r) => (r.position === 1 && classified(r) ? colors.gold : classified(r) && r.position <= 3 ? colors.accent : classified(r) ? colors.fg : colors.muted);
-const gridText = (r) => `Grid: ${r.grid || 'Pit'}${r.fastest ? ' · FL' : ''}`;
+const gridText = (r) => `Grid: ${r.grid > 0 ? r.grid : r.grid === 0 ? 'Pit' : '–'}${r.fastest ? ' · FL' : ''}`;
 const shortRace = (r) => shortName(r.race);
 
 // Small card for the "last 5 races" strip.

@@ -16,6 +16,6 @@ const need = ['SCHEDULE_EXACT_ALARM', 'USE_EXACT_ALARM', 'RECEIVE_BOOT_COMPLETED
 e.android.permissions = [...new Set([...(e.android.permissions || []), ...need])];
 e.plugins = e.plugins || [];
 if (!e.plugins.some((x) => (Array.isArray(x) ? x[0] : x) === 'expo-media-library')) e.plugins.push(['expo-media-library', { savePhotosPermission: 'Allow F1 Companion to save pictures of your comparisons and predictions.', isAccessMediaLocationEnabled: false }]);
-e.web = Object.assign({ bundler: 'metro', output: 'single', favicon: './assets/app/icon.png', backgroundColor: '#0A0506' }, e.web || {}); // PC version: npm run web / npm run build:web
+if (!e.plugins.some((x) => (Array.isArray(x) ? x[0] : x) === 'expo-image-picker')) e.plugins.push(['expo-image-picker', { photosPermission: 'Allow F1 Companion to use a photo for your driver profile and fantasy team logos.' }]);
 fs.writeFileSync(file, JSON.stringify(app, null, 2) + '\n');
 console.log(`app.json: version ${e.version}, versionCode ${e.android.versionCode}`);

@@ -16,13 +16,14 @@ async function pageAll(path, rowsOf, ttl = DAY, maxPages = 8) {
   if (pages > 1) { const rest = await Promise.all(Array.from({ length: pages - 1 }, (_, i) => get(q((i + 1) * 100), ttl))); rest.forEach((d) => rows.push(...rowsOf(d))); }
   return rows;
 }
+const N = (v, d = null) => { const x = Number(v); return v == null || v === '' || !Number.isFinite(x) ? d : x; };
 const resultRows = (d) => d.RaceTable.Races.flatMap((race) => race.Results.map((r) => ({ race, r })));
 const qualiRows = (d) => d.RaceTable.Races.flatMap((race) => race.QualifyingResults.map((r) => ({ race, r })));
 
 const mapRow = (r) => ({
   position: Number(r.position), positionText: r.positionText, driver: `${r.Driver.givenName} ${r.Driver.familyName}`, first: r.Driver.givenName, last: r.Driver.familyName, code: r.Driver.code,
-  driverId: r.Driver.driverId, team: r.Constructor?.name, teamId: r.Constructor?.constructorId, grid: Number(r.grid),
-  time: r.Time?.time ?? r.status, points: Number(r.points), fastest: r.FastestLap?.rank === '1', status: r.status,
+  driverId: r.Driver.driverId, team: r.Constructor?.name, teamId: r.Constructor?.constructorId, grid: N(r.grid, -1),
+  time: r.Time?.time ?? r.status, points: N(r.points, 0), fastest: r.FastestLap?.rank === '1', status: r.status,
 });
 export async function lastRace(year) {
   const d = await get(`/${year}/last/results.json`, ttlFor(year, 10 * MIN));
@@ -69,8 +70,8 @@ export async function jolpicaSchedule(year) {
 
 /* ---------- drivers and teams ---------- */
 const seasonRow = (race, r) => ({
-  round: Number(race.round), race: race.raceName, country: race.Circuit?.Location?.country, date: race.date, grid: Number(r.grid), position: Number(r.position), positionText: r.positionText,
-  points: Number(r.points), status: r.status, fastest: r.FastestLap?.rank === '1', teamId: r.Constructor?.constructorId, team: r.Constructor?.name,
+  round: Number(race.round), race: race.raceName, country: race.Circuit?.Location?.country, date: race.date, grid: N(r.grid, -1), position: N(r.position, 99), positionText: r.positionText,
+  points: N(r.points, 0), status: r.status, fastest: r.FastestLap?.rank === '1', teamId: r.Constructor?.constructorId, team: r.Constructor?.name,
 });
 export async function driverInfo(id) {
   const d = (await get(`/drivers/${id}.json`, 7 * 24 * HOUR)).DriverTable.Drivers[0];
@@ -101,22 +102,17 @@ const settle = async (p) => { try { return await p; } catch { return null; } };
 const sprintRows = (d) => d.RaceTable.Races.flatMap((race) => (race.SprintResults || []).map((r) => ({ race, r })));
 const sumPts = (rows) => Math.round(rows.reduce((a, x) => a + Number(x.r.points || 0), 0) * 10) / 10;
 
-// World champions by season. One call when the server supports the position filter on standings, otherwise one call per past season.
-// Uses only the current-season-free years, so a title in progress is never counted.
-export function champions(kind /* driver | constructor */, year) {
-  const route = kind === 'driver' ? 'driverstandings' : 'constructorstandings', first = kind === 'driver' ? 1950 : 1958;
-  const pick = (l) => (kind === 'driver' ? l.DriverStandings?.find((x) => x.position === '1')?.Driver.driverId : l.ConstructorStandings?.find((x) => x.position === '1')?.Constructor.constructorId);
-  return memo(`champions:${kind}:${year}`, 7 * DAY, async () => {
-    try {
-      const lists = (await get(`/${route}/1.json?limit=100`, 7 * DAY)).StandingsTable.StandingsLists;
-      const out = lists.filter((l) => Number(l.season) < year).map((l) => ({ season: Number(l.season), id: pick(l) }));
-      if (out.length >= year - first - 3 && out.every((x) => x.id)) return out; // looks complete
-    } catch {}
-    const out = [];
-    for (let y = first; y < year; y++) { const l = (await get(`/${y}/${route}.json`, 90 * DAY)).StandingsTable.StandingsLists[0]; if (l) out.push({ season: y, id: pick(l) }); }
-    return out;
-  });
+// Titles. One small request per driver or team: the seasons they finished first in the standings ("/drivers/<id>/driverstandings/1").
+// (The old "all champions in one request" call answered HTTP 400, and the per-season fallback queued about 70 requests in front of every other
+// screen. Titles now run as background requests that never block anything a screen is waiting for.) A figure that cannot load is a dash.
+const lowGet = (path, ttl) => cachedJSON(`${BASE}${path}`, ttl, { low: true }).then((j) => j.MRData);
+async function titleCount(path, year) {
+  const d = await lowGet(path, 7 * DAY);
+  return d.StandingsTable.StandingsLists.filter((l) => Number(l.season) < year).length;
 }
+// Past seasons only: a title in progress is never counted.
+export async function driverTitles(id, year) { return settle(titleCount(`/drivers/${id}/driverstandings/1.json`, year)); }
+export async function constructorTitles(id, year) { return settle(titleCount(`/constructors/${id}/constructorstandings/1.json`, year)); }
 
 export async function driverCareer(id, year) {
   const scope = `/drivers/${id}`;
@@ -136,9 +132,6 @@ export async function driverCareer(id, year) {
     points: rows && sprint ? Math.round((sumPts(rows) + sumPts(sprint)) * 10) / 10 : null,
   };
 }
-// Titles load separately (they can need many requests the first time) so the rest of the career appears right away.
-export async function driverTitles(id, year) { const c = await settle(champions('driver', year)); return c ? c.filter((x) => x.id === id).length : null; }
-export async function constructorTitles(id, year) { const c = await settle(champions('constructor', year)); return c ? c.filter((x) => x.id === id).length : null; }
 // Team totals. A figure the server cannot give is null and shown as a dash, never a guess.
 export async function constructorCareer(id, year) {
   const scope = `/constructors/${id}`;
@@ -187,8 +180,7 @@ export async function lineups(year) {
 // One team's season so far, from both cars' results. A figure that fails to load is null and shows as a dash.
 export async function constructorSeason(year, id) {
   const scope = `/${year}/constructors/${id}`;
-  const rows = await settle(pageAll(`${scope}/results.json`, resultRows, ttlFor(year, 10 * MIN), 3));
-  const quali = await settle(pageAll(`${scope}/qualifying.json`, qualiRows, ttlFor(year, 30 * MIN), 2));
+  const [rows, quali] = await Promise.all([settle(pageAll(`${scope}/results.json`, resultRows, ttlFor(year, 10 * MIN), 3)), settle(pageAll(`${scope}/qualifying.json`, qualiRows, ttlFor(year, 30 * MIN), 2))]);
   const ok = (x) => !Number.isNaN(Number(x.r.positionText));
   const rounds = rows ? [...new Set(rows.map((x) => x.race.round))] : null;
   return {

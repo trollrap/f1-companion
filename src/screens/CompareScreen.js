@@ -129,7 +129,7 @@ export default function CompareScreen({ route }) {
   return (
     <Screen header={false} swipe={tabs ? { index: mode === 'career' ? 1 : 0, count: 2, onIndex: (i) => setTab(i ? 'career' : 'season') } : undefined}>
       <View ref={shotRef} collapsable={false} style={{ gap: 10, padding: 10, borderRadius: 20, backgroundColor: colors.bg, borderWidth: 1, borderColor: alpha(colors.accent, 0.35) }}>
-        <LinearGradient pointerEvents="none" colors={['#2A1318', '#0A0506']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, borderRadius: 20 }} />
+        <LinearGradient pointerEvents="none" colors={[colors.cardA, colors.deep]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, borderRadius: 20 }} />
         <View style={{ flexDirection: 'row', alignItems: 'stretch', gap: 8 }}>{hero(a, colA, 'left')}{hero(b, colB, 'right')}</View>
         <Text style={{ color: colors.muted, fontFamily: 'label', fontSize: 11, letterSpacing: 2, textAlign: 'center' }}>{mode === 'career' ? 'CAREER' : `${cyear} SEASON`} · F1 COMPANION</Text>
         {mode === 'season' && (

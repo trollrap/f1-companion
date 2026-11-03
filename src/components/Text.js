@@ -9,6 +9,13 @@ const LABEL = { 400: 'ChakraPetch_500Medium', 500: 'ChakraPetch_500Medium', 600:
 // Greek uses Roboto Condensed (the Latin fonts above have no Greek letters).
 const GR = { 400: 'RobotoCondensed_400Regular', 500: 'RobotoCondensed_500Medium', 600: 'RobotoCondensed_600SemiBold', 700: 'RobotoCondensed_700Bold' };
 const w = (v) => { if (!v || v === 'normal') return 400; if (v === 'bold') return 700; const n = Number(v); return n >= 700 ? 700 : n >= 600 ? 600 : n >= 500 ? 500 : 400; };
+// A figure that could not be worked out must never show as "NaN" or "undefined": it becomes a dash.
+const clean = (c) => {
+  if (typeof c === 'number') return Number.isNaN(c) ? '—' : c;
+  if (typeof c === 'string') return c.includes('NaN') ? c.replace(/-?NaN/g, '—') : c;
+  if (Array.isArray(c)) return c.map(clean);
+  return c;
+};
 export function Text({ style, ...props }) {
   const { fontFamily, fontWeight, fontStyle, ...rest } = StyleSheet.flatten(style) || {};
   const heavy = Number(fontWeight) >= 800;
@@ -18,6 +25,6 @@ export function Text({ style, ...props }) {
   else if (fontFamily === 'display') family = heavy ? 'Exo2_800ExtraBold' : 'Exo2_700Bold';
   else if (fontStyle === 'italic') family = heavy ? 'Exo2_800ExtraBold_Italic' : 'Exo2_700Bold_Italic';
   else family = fontFamily || BODY[w(fontWeight)];
-  const kids = el ? trKids(props.children) : props.children;
+  const kids = clean(el ? trKids(props.children) : props.children);
   return <RNText {...props} children={kids} style={[rest, { fontFamily: family, fontStyle: 'normal' }]} />;
 }

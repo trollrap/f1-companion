@@ -8,17 +8,18 @@ export const MIN = 60e3, HOUR = 3600e3, DAY = 86400e3;
 const GAPS = { 'api.jolpi.ca': [260, 4], 'api.openf1.org': [400, 2] };
 const hosts = new Map();
 function pump(h) {
-  while (h.active < h.conc && h.q.length) {
+  // Background jobs (low priority) only start when nothing a screen is waiting for is queued.
+  while (h.active < h.conc && (h.q.length || (h.low.length && !h.active))) {
     const wait = h.last + h.gap - Date.now();
     if (wait > 0) { if (!h.timer) h.timer = setTimeout(() => { h.timer = null; pump(h); }, wait); return; }
-    const job = h.q.shift(); h.last = Date.now(); h.active++;
+    const job = h.q.length ? h.q.shift() : h.low.shift(); h.last = Date.now(); h.active++;
     job.fn().then(job.resolve, job.reject).finally(() => { h.active--; pump(h); });
   }
 }
-function throttled(url, fn) {
+function throttled(url, fn, low) {
   const host = new URL(url).host; let h = hosts.get(host);
-  if (!h) { const [gap, conc] = GAPS[host] || [300, 3]; h = { gap, conc, last: 0, active: 0, q: [], timer: null }; hosts.set(host, h); }
-  return new Promise((resolve, reject) => { h.q.push({ fn, resolve, reject }); pump(h); });
+  if (!h) { const [gap, conc] = GAPS[host] || [300, 3]; h = { gap, conc, last: 0, active: 0, q: [], low: [], timer: null }; hosts.set(host, h); }
+  return new Promise((resolve, reject) => { (low ? h.low : h.q).push({ fn, resolve, reject }); pump(h); });
 }
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 async function fetchRetry(url, signal) {
@@ -29,7 +30,7 @@ async function fetchRetry(url, signal) {
   }
 }
 const inflight = new Map();
-function refresh(url, key, stale, signal, trackIt = true) {
+function refresh(url, key, stale, signal, trackIt = true, low = false) {
   if (inflight.has(url)) return inflight.get(url);
   const p = throttled(url, async () => {
     const ctrl = signal ? null : new AbortController(); const timer = ctrl && setTimeout(() => ctrl.abort(), 15000);
@@ -42,14 +43,14 @@ function refresh(url, key, stale, signal, trackIt = true) {
       AsyncStorage.setItem(key, JSON.stringify({ t: Date.now(), v })).catch(() => {});
       return v;
     } catch (e) { if (stale) return stale; throw e; } finally { if (timer) clearTimeout(timer); }
-  }).finally(() => inflight.delete(url));
+  }, low).finally(() => inflight.delete(url));
   inflight.set(url, trackIt ? track(p) : p);
   return p;
 }
 const MAX_STALE = 60 * DAY;
 // Stale-while-revalidate: old data is shown straight away and refreshed in the background (screens then update quietly).
 // Only a pull-to-refresh makes short-lived data wait for the network.
-export async function cachedJSON(url, ttlMs, { signal } = {}) {
+export async function cachedJSON(url, ttlMs, { signal, low } = {}) {
   const key = 'c:' + url;
   let stale = null, staleOk = false;
   try {
@@ -65,7 +66,7 @@ export async function cachedJSON(url, ttlMs, { signal } = {}) {
     refresh(url, key, stale, undefined, false).then((v) => { if (JSON.stringify(v) !== before) dataChanged(); }).catch(() => {});
     return stale;
   }
-  return refresh(url, key, stale, signal);
+  return refresh(url, key, stale, signal, true, !!low);
 }
 // Uncached request for diagnostics. Returns { status, json, ms }.
 export function liveJSON(url) {

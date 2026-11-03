@@ -11,7 +11,7 @@ export const RULES = [
     ['Overtake Mode', 'A car within one second of the car ahead at a designated point gets extra electrical power for the next lap.'],
     ['Boost', 'The driver can trigger a power setting for attack or defence anywhere on the lap, if the battery has charge.'],
     ['Car size and weight', 'Maximum wheelbase 3.4 m (200 mm shorter). Floor width 1.9 m (100 mm narrower). Minimum weight 768 kg, down from 800 kg.'],
-    ['Tyres', 'Pirelli 18-inch tyres, 25 mm narrower at the front and 30 mm narrower at the rear.'],
+    ['Tires', 'Pirelli 18-inch tires, 25 mm narrower at the front and 30 mm narrower at the rear.'],
     ['Aerodynamics', 'Simpler front wings, a flatter floor instead of long ground-effect tunnels, and no rear beam wing.'],
     ['Safety', 'The roll-hoop vertical impact test rises from 16g to 20g. A two-stage nose cone keeps protecting after a first impact.'],
     ['Grid', 'Eleven teams and 22 cars, with Cadillac joining.'],
@@ -22,7 +22,7 @@ export const RULES = [
     ['Race time limit', 'Two hours from the start. Time under a red flag does not count, so a race can last three hours in total.'],
     ['Sprint weekend', 'FP1, then Sprint Qualifying, then the Sprint, then Qualifying, then the Grand Prix. This order is from the 2024 format guide.'],
     ['Sprint', 'About 100 km, around 30 minutes, with no planned pit stops.'],
-    ['Sprint Qualifying', 'SQ1 is 12 minutes, SQ2 is 10 and SQ3 is 8. Medium tyres in SQ1 and SQ2, soft tyres in SQ3. These durations are from the 2024 guide.'],
+    ['Sprint Qualifying', 'SQ1 is 12 minutes, SQ2 is 10 and SQ3 is 8. Medium tires in SQ1 and SQ2, soft tires in SQ3. These durations are from the 2024 guide.'],
   ]},
   { key: 'points', title: 'Points', sources: [['racingnews365: rules explained', RN365], ['formula1.com: sprint format', SPRINT]], items: [
     ['Race', '1st 25, 2nd 18, 3rd 15, 4th 12, 5th 10, 6th 8, 7th 6, 8th 4, 9th 2, 10th 1.'],

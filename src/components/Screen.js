@@ -55,7 +55,7 @@ export default function Screen({ children, header = true, refreshable = true, sc
   );
 }
 // Cards carry a soft red-tinted gradient instead of flat grey.
-const CARD_GRAD = ['#2A1318', '#160C0F'];
+const CARD_GRAD = [colors.cardA, colors.cardB];
 export function Card({ style, children, onPress }) {
   const inner = (<><LinearGradient pointerEvents="none" colors={CARD_GRAD} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />{children}</>);
   if (!onPress) return <View style={[s.card, style]}>{inner}</View>;

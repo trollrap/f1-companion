@@ -1,6 +1,7 @@
 // "Check data sources": calls every endpoint the app depends on (uncached) and validates the response shape.
 // Each result is { name, ok, detail, ms }. Nothing here changes app data.
 import { liveJSON } from './cache';
+import { SOURCES, fetchFeed } from '../api/news';
 const OF = 'https://api.openf1.org/v1', JP = 'https://api.jolpi.ca/ergast/f1';
 const Y = 2026;
 const mr = (r) => r.json?.MRData;
@@ -108,16 +109,15 @@ export async function runDiagnostics(onResult) {
     const bad = r.filter((x) => x.status !== 200); if (bad.length) throw new Error(`failed: ${describe(bad)}`);
     return `paging, sprints and pole filter work (${r[1].mr.total} sprint results, ${r[2].mr.total} poles)`;
   }));
-  push(await step('Jolpica champions list', async () => {
-    const r = await probe('/driverstandings/1.json?limit=100'); if (r.status !== 200) throw new Error(`HTTP ${r.status} (the app will fall back to one request per season, slower but works)`);
-    const n = r.mr.StandingsTable.StandingsLists.length; if (n < 50) throw new Error(`only ${n} seasons returned (fallback will be used)`);
-    return `${n} champion seasons in one request`;
+  push(await step('Jolpica titles', async () => {
+    const r = [await probe('/drivers/max_verstappen/driverstandings/1.json'), await probe('/constructors/ferrari/constructorstandings/1.json')];
+    const bad = r.filter((x) => x.status !== 200); if (bad.length) throw new Error(`failed: ${describe(bad)} (titles show a dash)`);
+    return `${r[0].mr.StandingsTable.StandingsLists.length} Verstappen titles, ${r[1].mr.StandingsTable.StandingsLists.length} Ferrari titles`;
   }));
   push(await step('Jolpica team history', async () => {
     const r = [await probe('/constructors/ferrari/seasons.json?limit=100'), await probe('/constructors/ferrari/results/1.json?limit=1'), await probe('/constructors/ferrari/qualifying/1.json?limit=1')];
     const bad = r.filter((x) => x.status !== 200); if (bad.length) throw new Error(`failed: ${describe(bad)}`);
-    const titles = await probe('/constructorstandings/1.json?limit=100');
-    return `${r[0].mr.total} Ferrari seasons, ${r[1].mr.total} wins, ${r[2].mr.total} poles. Titles: ${titles.status === 200 ? 'one request' : `HTTP ${titles.status}, the app counts one season at a time (slower the first time, then cached)`}`;
+    return `${r[0].mr.total} Ferrari seasons, ${r[1].mr.total} wins, ${r[2].mr.total} poles`;
   }));
   push(await step('OpenF1 numbers and colours', async () => {
     const x = need(await liveJSON(`${OF}/drivers?session_key=latest`), 'drivers').json;
@@ -126,5 +126,6 @@ export async function runDiagnostics(onResult) {
   }));
   await motoChecks(push);
   await footChecks(push);
+  for (const s of SOURCES) push(await step(`News: ${s.name}`, async () => `${(await fetchFeed(s, { fresh: true })).length} stories`));
   return out;
 }

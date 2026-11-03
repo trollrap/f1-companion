@@ -10,6 +10,13 @@ import { seasonPoints } from '../api/jolpica';
 import { YEAR } from '../api/openf1';
 import { colors, alpha } from '../theme';
 
+// A failure inside the chart shows a note here instead of taking the whole app down.
+class Safe extends React.Component {
+  state = { bad: false };
+  static getDerivedStateFromError() { return { bad: true }; }
+  render() { return this.state.bad ? <Note>The chart could not be drawn. Go back and open it again.</Note> : this.props.children; }
+}
+
 // Points after every round. Tap a name to show or hide its line.
 export default function ChartScreen({ route }) {
   const tc = useTeamColor(); const seg = route?.params?.kind === 'teams' ? 'teams' : 'drivers', year = route?.params?.year || YEAR; const [pick, setPick] = useState({});
@@ -29,7 +36,7 @@ export default function ChartScreen({ route }) {
         {d.loading && <Skeleton />}
         {d.error && <ErrorNote error={d.error} onRetry={d.reload} />}
         {d.v && !d.v.rounds.length && <Note>No results yet this season.</Note>}
-        {d.v && d.v.rounds.length > 0 && <View style={{ marginTop: 12 }}><LineChart series={shown} rounds={d.v.rounds} /></View>}
+        {d.v && d.v.rounds.length > 0 && <View style={{ marginTop: 12 }}><Safe><LineChart series={shown} rounds={d.v.rounds} /></Safe></View>}
       </Card>
       {d.v && (
         <View>

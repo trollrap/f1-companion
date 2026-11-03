@@ -1,6 +1,6 @@
 export const colors = {
   bg: '#0A0506', surface: '#140B0D', surface2: '#1E1215', line: '#2E1B20', fg: '#F7F1F2', muted: '#9E8D92',
-  accent: '#F0141E', accentSoft: '#3B0C11', red: '#F0141E', good: '#22C55E', gold: '#F5C400', purple: '#B26BFF', sprint: '#FF2D87',
+  accent: '#F0141E', accentSoft: '#3B0C11', cardA: '#2A1318', cardB: '#160C0F', cardC: '#34121A', deep: '#0A0506', red: '#F0141E', good: '#22C55E', gold: '#F5C400', purple: '#B26BFF', sprint: '#FF2D87',
 };
 // Constructor colours by Jolpica constructorId. These are fallbacks: the app overrides them at runtime with the colours OpenF1
 // reports for the current season (see src/api/paddock.js), so new teams get their real colour without a code change.
@@ -14,3 +14,17 @@ const stable = (id) => { let h = 0; for (const ch of String(id)) h = (h * 31 + c
 export const teamColor = (id) => live[id] || teamColors[id] || OLD[id] || stable(id);
 // '#RRGGBB' + alpha 0..1 -> '#RRGGBBAA'
 export const alpha = (hex, a) => hex + Math.round(Math.max(0, Math.min(1, a)) * 255).toString(16).padStart(2, '0');
+
+// Custom accent colour. Called once at start-up (before any screen file is loaded, see App.js), so every style is built with it.
+// The dark backgrounds take a faint tint of the same hue so a blue accent does not sit on wine-red surfaces.
+const rgb = (h) => { const m = /^#?([0-9a-f]{6})$/i.exec(h || ''); if (!m) return null; const n = parseInt(m[1], 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; };
+const hueOf = ([r, g, b]) => { r /= 255; g /= 255; b /= 255; const mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn; if (!d) return 0; const h = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; return (h * 60 + 360) % 360; };
+export function applyAccent(hex) {
+  const c = rgb(hex); if (!c) return false;
+  const h = hueOf(c), neutral = Math.max(...c) - Math.min(...c) < 30; // grey, white or black accents get untinted greys
+  const t = (s, l) => hsl(h, neutral ? 4 : s, l);
+  colors.accent = '#' + c.map((x) => x.toString(16).padStart(2, '0')).join('').toUpperCase(); colors.red = colors.accent;
+  colors.accentSoft = hsl(h, neutral ? 6 : 62, 14);
+  Object.assign(colors, { bg: t(30, 3.6), deep: t(30, 3.6), surface: t(24, 6.2), surface2: t(22, 9), line: t(20, 14), cardA: t(30, 12), cardB: t(26, 7), cardC: t(34, 14.5) });
+  return true;
+}

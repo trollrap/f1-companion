@@ -46,7 +46,7 @@ export async function sessionClassification(sessionKey) {
       time: typeof best === 'number' ? lapFmt(best) : r.dsq ? 'DSQ' : r.dns ? 'DNS' : r.dnf ? 'DNF' : '—', gap: typeof gap === 'number' && gap > 0 ? `+${gap.toFixed(3)}` : '' };
   });
 }
-// Tyre stints of a finished race, ordered by finishing position. Compounds as OpenF1 names them (SOFT, MEDIUM, HARD, INTERMEDIATE, WET).
+// Tire stints of a finished race, ordered by finishing position. Compounds as OpenF1 names them (SOFT, MEDIUM, HARD, INTERMEDIATE, WET).
 export async function raceStints(sessionKey) {
   const [stints, rows] = await Promise.all([get(`/stints?session_key=${sessionKey}`, DAY), sessionClassification(sessionKey)]);
   if (!Array.isArray(stints)) throw new Error('Unexpected OpenF1 response');
@@ -54,4 +54,37 @@ export async function raceStints(sessionKey) {
   const by = {}; stints.forEach((s) => { (by[s.driver_number] ||= []).push({ n: s.stint_number, compound: String(s.compound || 'UNKNOWN').toUpperCase(), from: s.lap_start || 1, to: s.lap_end || laps, age: s.tyre_age_at_start || 0 }); });
   const out = rows.filter((r) => by[r.number]).map((r) => ({ position: r.position, number: r.number, last: r.last, color: r.color, stints: by[r.number].sort((a, b) => a.n - b.n) }));
   return { laps, rows: out };
+}
+// Session key of a past session (the schedule rebuilt from Jolpica has none): OpenF1 has sessions from 2023 on.
+export async function findSessionKey(year, name, dateISO) {
+  if (Number(year) < 2023) return null;
+  const l = await get(`/sessions?year=${year}&session_name=${encodeURIComponent(name)}`, DAY);
+  if (!Array.isArray(l)) return null;
+  const t = Date.parse(dateISO), hit = l.map((x) => ({ x, d: Math.abs(Date.parse(x.date_start) - t) })).sort((a, b) => a.d - b.d)[0];
+  return hit && hit.d < 4 * 86400e3 ? hit.x.session_key : null;
+}
+// Penalties the stewards announced, read from the race control messages: { number, kind, text, places, secs, date }.
+// kind: grid (places back), back (back of the grid), pit (pit lane start), time (seconds added), stopgo, drive, dsq. Messages saying a penalty was
+// served, withdrawn, or that no action is taken are ignored. A driver is matched by car number.
+export async function racePenalties(sessionKey) {
+  const msgs = await get(`/race_control?session_key=${sessionKey}`, 10 * 60e3);
+  if (!Array.isArray(msgs)) return [];
+  const out = [], seen = new Set();
+  [...msgs].sort((a, b) => Date.parse(a.date) - Date.parse(b.date)).forEach((m) => {
+    const t = String(m.message || '').toUpperCase();
+    if (!t || /SERVED|DELETED|NO FURTHER|NO INVESTIGATION|NOTED|UNDER INVESTIGATION|WILL BE INVESTIGATED|REVIEW|WARNING|WITHDRAWN|CANCELLED/.test(t)) return;
+    const num = m.driver_number ?? Number((/CAR (\d+)/.exec(t) || [])[1]); if (!num) return;
+    let x, p = null;
+    if ((x = /(\d+) PLACE GRID PENALTY/.exec(t))) p = { kind: 'grid', places: Number(x[1]), text: `Grid −${x[1]}` };
+    else if (/BACK OF THE GRID/.test(t)) p = { kind: 'back', text: 'Back of the grid' };
+    else if (/PIT ?LANE/.test(t) && /START/.test(t)) p = { kind: 'pit', text: 'Pit lane start' };
+    else if ((x = /(\d+) SECOND TIME PENALTY/.exec(t))) p = { kind: 'time', secs: Number(x[1]), text: `+${x[1]}s penalty` };
+    else if ((x = /(\d+) SECOND STOP.?GO/.exec(t))) p = { kind: 'stopgo', text: `${x[1]}s stop-go` };
+    else if (/DRIVE.?THROUGH/.test(t)) p = { kind: 'drive', text: 'Drive-through' };
+    else if (/DISQUALIFIED|EXCLUDED/.test(t) && !/LAP|TIME \d/.test(t)) p = { kind: 'dsq', text: 'Disqualified' };
+    if (!p) return;
+    const key = `${num}:${p.text}`; if (seen.has(key)) return; seen.add(key);
+    out.push({ number: Number(num), date: m.date, ...p });
+  });
+  return out;
 }

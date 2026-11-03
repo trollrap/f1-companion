@@ -20,6 +20,7 @@ import { engineerOf } from '../data/engineers';
 import { YEAR } from '../api/openf1';
 import { seasonStats, fix } from '../lib/stats';
 import { splitName } from '../lib/names';
+import { openPastRace } from '../lib/openRace';
 import { driverPhoto, engineerPhoto, numberImage, teamLogo } from '../lib/media';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors, alpha } from '../theme';
@@ -43,9 +44,11 @@ export default function DriverScreen({ route, navigation }) {
     const q = await driverSeasonQuali(year, driverId).catch(() => ({ poles: null, q3: null }));
     return { rows, stats: seasonStats(rows, q.poles, q.q3) };
   }, [driverId, year]);
-  const career = useAsync(() => driverCareer(driverId, YEAR), [driverId]);
-  const titles = useAsync(() => driverTitles(driverId, YEAR), [driverId]);
-  const teamsList = useAsync(() => driverTeamsList(driverId), [driverId]);
+  // The season tab is what opens first, so it gets the connection to itself: career totals, titles and the team list start once another tab is opened.
+  const [wantMore, setWantMore] = useState(false); React.useEffect(() => { if (tab !== 'season') setWantMore(true); }, [tab]);
+  const career = useAsync(() => (wantMore ? driverCareer(driverId, YEAR) : Promise.resolve(null)), [driverId, wantMore]);
+  const titles = useAsync(() => (wantMore ? driverTitles(driverId, YEAR) : Promise.resolve(null)), [driverId, wantMore]);
+  const teamsList = useAsync(() => (wantMore ? driverTeamsList(driverId) : Promise.resolve(null)), [driverId, wantMore]);
   const standAll = useAsync(() => driverStandings(year), [year]);
   const stand = { v: standAll.v ? standAll.v.find((x) => x.driverId === driverId) || null : standAll.v, loading: standAll.loading };
   React.useEffect(() => { navigation.setOptions({ headerRight: () => <StarButton on={favs.isDriver(driverId)} onPress={() => favs.toggleDriver(driverId)} label="Favourite" /> }); }, [favs.drivers]);
@@ -58,11 +61,11 @@ export default function DriverScreen({ route, navigation }) {
   const engName = isCur ? engineerOf(driverId) : null;
   // A reserve or test driver has no Grand Prix record: show the card and a note instead of empty tabs.
   const noHistory = !info.loading && (info.v === null || !!info.error) && !season.loading && !rows.length && !seasons.loading && !(seasons.v || []).length;
-  const openRace = (r) => { const m = season0.races?.find((x) => Number(x.round) === r.round); if (m) navigation.navigate('Round', { meeting: m }); };
+  const openRace = (r) => openPastRace(navigation, season0, year, r, driverId);
   return (
     <Screen header={false} swipe={{ index: ['season', 'career', 'profile'].indexOf(tab), count: 3, onIndex: (n) => setTab(['season', 'career', 'profile'][n]) }}>
-      <Grad color={champion ? colors.gold : color} from={champion ? 0.55 : 0.68} to={0.06} border={champion ? 0.9 : 0.5} style={{ height: 232 }}>
-        {champion ? <LinearGradient pointerEvents="none" colors={[alpha(color, 0.7), alpha(color, 0.05)]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }} /> : null}
+      <Grad color={color} from={0.68} to={0.06} border={0.5} style={[{ height: 232 }, champion && { borderColor: colors.gold, borderWidth: 2 }]}>
+        {champion ? <View pointerEvents="none" style={{ position: 'absolute', left: 0, right: 0, top: 0, height: 4, backgroundColor: colors.gold }} /> : null}
         {photo ? <Image source={photo} resizeMode="cover" resizeMethod="resize" fadeDuration={0} style={{ position: 'absolute', right: -30, bottom: -30, width: 268, height: 268 }} />
           : number != null ? <Text style={{ position: 'absolute', right: 8, bottom: -22, fontFamily: 'display', fontWeight: '800', fontSize: 150, color: 'rgba(255,255,255,0.12)' }}>{number}</Text> : null}
         {photo ? <Scrim dir="h" from={0.6} to={0} style={{ right: '30%' }} /> : null}
@@ -105,27 +108,6 @@ export default function DriverScreen({ route, navigation }) {
             ]} />}
           </Card>
         )}
-        {tab === 'season' && (
-          <View>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Eyebrow>{isCur ? 'Last 5 races' : `Last 5 races of ${year}`}</Eyebrow>
-              {rows.length > 5 ? <Pressable onPress={() => setAll(!all)} hitSlop={8}><Text style={{ color: colors.accent, fontWeight: '700', fontSize: 15 }}>{all ? 'Hide' : `View all ${rows.length}`}</Text></Pressable> : null}
-            </View>
-            {season.v && !rows.length && <Note>{isCur ? 'No races yet this season.' : 'No races found for this season.'}</Note>}
-            {rows.length > 0 && <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingTop: 10 }}>{[...rows].reverse().slice(0, 5).map((r) => <RaceCard key={r.round} r={r} color={color} onPress={isCur ? () => openRace(r) : undefined} />)}</ScrollView>}
-            {all && (
-              <View style={{ marginTop: 10 }}>
-                <Eyebrow>{`All ${year} results`}</Eyebrow>
-                {[...rows].reverse().map((r) => <SeasonRow key={r.round} r={r} color={color} onPress={isCur ? () => openRace(r) : undefined} />)}
-              </View>
-            )}
-            {rows.length > 0 && (
-              <Pressable onPress={() => navigation.navigate('DriverSeasons', { driverId, name, teamId: sTeamId, color })} style={({ pressed }) => [s.btn, { marginTop: 14 }, pressed && { opacity: 0.85 }]}>
-                <Ionicons name="time-outline" size={18} color={colors.accent} /><Text style={s.btnText}>Results from previous seasons</Text>
-              </Pressable>)}
-          </View>
-        )}
-
         {tab === 'season' && isCur && (eng || engName) ? (
           <Grad color={color} from={0.5} to={0.05} dir="h" radius={14} border={0.35} style={{ height: eng ? 96 : 60 }}>
             {eng ? <Image source={eng} resizeMode="cover" resizeMethod="resize" fadeDuration={0} style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 96, height: 96 }} /> : null}
@@ -134,6 +116,27 @@ export default function DriverScreen({ route, navigation }) {
               {engName ? <Text style={{ color: colors.fg, fontSize: 18, fontWeight: '700', maxWidth: '70%' }} numberOfLines={1}>{engName}</Text> : null}
             </View>
           </Grad>) : null}
+
+        {tab === 'season' && (
+          <View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Eyebrow>{isCur ? 'Last 5 races' : `Last 5 races of ${year}`}</Eyebrow>
+              {rows.length > 5 ? <Pressable onPress={() => setAll(!all)} hitSlop={8}><Text style={{ color: colors.accent, fontWeight: '700', fontSize: 15 }}>{all ? 'Hide' : `View all ${rows.length}`}</Text></Pressable> : null}
+            </View>
+            {season.v && !rows.length && <Note>{isCur ? 'No races yet this season.' : 'No races found for this season.'}</Note>}
+            {rows.length > 0 && <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingTop: 10 }}>{[...rows].reverse().slice(0, 5).map((r) => <RaceCard key={r.round} r={r} color={color} onPress={() => openRace(r)} />)}</ScrollView>}
+            {all && (
+              <View style={{ marginTop: 10 }}>
+                <Eyebrow>{`All ${year} results`}</Eyebrow>
+                {[...rows].reverse().map((r) => <SeasonRow key={r.round} r={r} color={color} onPress={() => openRace(r)} />)}
+              </View>
+            )}
+            {rows.length > 0 && (
+              <Pressable onPress={() => navigation.navigate('DriverSeasons', { driverId, name, teamId: sTeamId, color })} style={({ pressed }) => [s.btn, { marginTop: 14 }, pressed && { opacity: 0.85 }]}>
+                <Ionicons name="time-outline" size={18} color={colors.accent} /><Text style={s.btnText}>Results from previous seasons</Text>
+              </Pressable>)}
+          </View>
+        )}
 
         {tab === 'career' && (
           <Card>

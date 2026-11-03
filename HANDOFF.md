@@ -80,3 +80,11 @@ Expo Go (SDK 53+) does not include the `expo-notifications` native module; impor
 3. Widgets (needs a development build or the built APK route).
 4. Re-check circuit lap records after each remaining 2026 race.
 5. Live timing remains parked (OpenF1 paid tier).
+
+## V1.8.0
+- Run `npm install` (new deps: expo-image-picker, expo-file-system) then `npm run sync`, and build a NEW APK (`eas build -p android --profile preview`); new native modules.
+- F1: search rows with photos + current first; champion look without gradient distortion; engineer above last 5; grid option + penalties chips; tire spelling + hide strategy; favourite past drivers/teams under "Past seasons"; team compare fixed; wordmark dropdown for sport; Home drivers/teams swap; accent colour (restarts app); News tab (RSS, in-app articles, per-source alerts); Welcome screen; Fun tab (own driver, fantasy seasons, simulate, export, team logos); NaN scrubbed.
+- Photos/logos: run `fetch-media.bat` (or `npm run fetch:history`) on your PC; files go to assets/ named as in the app.
+- Not done: MotoGP/football team profiles. Penalties: shown as chips, provider's final classification trusted (no re-ordering).
+- Unverified against live services: RSS URLs, OpenF1 race_control wording, Jolpica titles endpoint. Chart crash not reproduced; hardened.
+- Web/PC versions removed as requested.

@@ -26,9 +26,11 @@ export default function TeamScreen({ route, navigation }) {
   const { teamId, name } = route.params; const favs = useFavs(); const tc = useTeamColor(); const meta = usePaddockMeta(); const season0 = useSeason();
   const [year, setYear] = React.useState(route.params.year || YEAR); const isCur = year === YEAR;
   const seasons = useAsync(() => constructorSeasonsList(teamId), [teamId]);
-  const career = useAsync(() => constructorCareer(teamId, YEAR), [teamId]);
-  const titles = useAsync(() => constructorTitles(teamId, YEAR), [teamId]);
   const season = useAsync(() => constructorSeason(year, teamId), [teamId, year]);
+  // The season figures go first; the all-time record and titles start once they are on screen.
+  const early = !season.loading;
+  const career = useAsync(() => (early ? constructorCareer(teamId, YEAR) : Promise.resolve(null)), [teamId, early]);
+  const titles = useAsync(() => (early ? constructorTitles(teamId, YEAR) : Promise.resolve(null)), [teamId, early]);
   const table = useAsync(() => constructorStandings(year), [year]);
   const stand = { v: table.v ? table.v.find((x) => x.teamId === teamId) || null : table.v, loading: table.loading };
   // This season: only the drivers who raced in the latest Grand Prix (reserves never appear). Earlier seasons: everyone who drove for the team.
@@ -43,8 +45,8 @@ export default function TeamScreen({ route, navigation }) {
   const champion = !!table.v && table.v.length > 1 && table.v[0].teamId === teamId && (isCur ? clinched(table.v, 'constructor', season0.races?.length, season0.races) : true);
   return (
     <Screen header={false}>
-      <Grad color={champion ? colors.gold : color} from={champion ? 0.55 : 0.68} to={0.06} border={champion ? 0.9 : 0.5} style={{ height: 200 }}>
-        {champion ? <LinearGradient pointerEvents="none" colors={[alpha(color, 0.7), alpha(color, 0.05)]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} /> : null}
+      <Grad color={color} from={0.68} to={0.06} border={0.5} style={[{ height: 200 }, champion && { borderColor: colors.gold, borderWidth: 2 }]}>
+        {champion ? <View pointerEvents="none" style={{ position: 'absolute', left: 0, right: 0, top: 0, height: 4, backgroundColor: colors.gold }} /> : null}
         {photo ? <Image source={photo} resizeMode="cover" resizeMethod="resize" fadeDuration={0} style={{ position: 'absolute', right: -24, bottom: -24, width: 236, height: 236 }} /> : null}
         {photo ? <Scrim dir="h" from={0.6} to={0} style={{ right: '30%' }} /> : null}
         {photo ? <Scrim dir="v" from={0} to={0.55} style={{ top: '60%' }} /> : null}
@@ -106,7 +108,7 @@ export default function TeamScreen({ route, navigation }) {
       </Card>
       <Card>
         <Eyebrow>All-time record</Eyebrow>
-        {career.loading && <><Skeleton /><Note>Loading team history. The first time can take several seconds.</Note></>}
+        {(career.loading || !early) && <><Skeleton /><Note>Loading team history. The first time can take several seconds.</Note></>}
         {career.error && <ErrorNote error={career.error} onRetry={career.reload} />}
         {C && <StatGrid cols={3} items={[['Wins', dash(C.wins)], ['Poles', dash(C.poles)], ['Titles', titles.loading ? '…' : dash(titles.v)], ['Seasons', dash(C.seasons)], ['First year', dash(C.first)]]} />}
       </Card>

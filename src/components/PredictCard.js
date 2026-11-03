@@ -15,7 +15,7 @@ const Mark = ({ ok }) => (ok == null ? null : (
 const Slot = ({ label, d, big, ok }) => {
   const photo = d ? driverPhoto(d.driverId) : null, col = d?.color || colors.muted, H = big ? 210 : 150;
   return (
-    <View style={{ flex: big ? 1 : 1, height: H, borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: alpha(col, 0.7), backgroundColor: '#140B0D' }}>
+    <View style={{ flex: big ? 1 : 1, height: H, borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: alpha(col, 0.7), backgroundColor: colors.surface }}>
       <LinearGradient pointerEvents="none" colors={[alpha(col, 0.75), alpha(col, 0.08)]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }} />
       {photo ? <Image source={photo} resizeMode="cover" style={{ position: 'absolute', right: big ? -10 : -16, bottom: big ? -10 : -12, width: big ? 230 : 120, height: big ? 230 : 120 }} /> : null}
       {photo ? <Scrim dir="v" from={0} to={0.8} style={{ top: '38%' }} /> : null}
@@ -35,8 +35,8 @@ const Slot = ({ label, d, big, ok }) => {
 };
 export default function PredictCard({ gp, flag, pole, podium, marks }) {
   return (
-    <View collapsable={false} style={{ borderRadius: 22, overflow: 'hidden', padding: 16, backgroundColor: '#0A0506', borderWidth: 1, borderColor: alpha(colors.accent, 0.5) }}>
-      <LinearGradient pointerEvents="none" colors={['#3A0E15', '#0A0506']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }} />
+    <View collapsable={false} style={{ borderRadius: 22, overflow: 'hidden', padding: 16, backgroundColor: colors.deep, borderWidth: 1, borderColor: alpha(colors.accent, 0.5) }}>
+      <LinearGradient pointerEvents="none" colors={[colors.accentSoft, colors.deep]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }} />
       <Text style={{ color: colors.fg, fontFamily: 'label', fontWeight: '700', letterSpacing: 2.5, fontSize: 16 }}>F1<Text style={{ color: colors.accent }}>·</Text>COMPANION</Text>
       <Text style={{ color: colors.accent, fontFamily: 'label', letterSpacing: 2.4, fontSize: 12, fontWeight: '700', marginTop: 14 }}>MY PREDICTIONS</Text>
       <Text style={{ color: colors.fg, fontFamily: 'display', fontStyle: 'italic', fontWeight: '800', fontSize: 30, marginTop: 2 }} numberOfLines={1}>{`${flag || ''} ${gp}`}</Text>

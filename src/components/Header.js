@@ -12,7 +12,7 @@ export default function Header() {
   return (
     <View style={s.top}>
       <View style={s.logo}>
-        <><SportSwitch /><Text style={s.word}>{prefs.opts.sport === 'motogp' ? 'MOTO' : prefs.opts.sport === 'football' ? 'GOAL' : 'F1'}<Text style={{ color: colors.accent }}>·</Text>COMPANION</Text></>
+        <SportSwitch />
       </View>
       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
       {prefs.opts.pullRefresh !== true && <Pressable onPress={refreshAll} hitSlop={10} accessibilityLabel="Refresh" style={({ pressed }) => [s.btn, pressed && { opacity: 0.6 }]}><Ionicons name="refresh" size={22} color={colors.muted} /></Pressable>}

@@ -1190,7 +1190,7 @@ export const CIRCUITS = [
   ],
   [
    "Track surface",
-   "The track surface uses graywacke aggregate shipped from a Shropshire, England quarry, which offers high grip but causes higher tyre wear."
+   "The track surface uses graywacke aggregate shipped from a Shropshire, England quarry, which offers high grip but causes higher tire wear."
   ]
  ],
  "about": "Yas Marina Circuit on Yas Island hosted its first Grand Prix in 2009 as the season finale. The current layout, in use since 2021, is 5.281 km with 16 turns."

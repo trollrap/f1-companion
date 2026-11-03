@@ -2,7 +2,7 @@
   "expo": {
     "name": "F1 Companion",
     "slug": "f1-companion",
-    "version": "1.7.0",
+    "version": "1.8.0",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
     "backgroundColor": "#0A0506",
@@ -12,7 +12,7 @@
     },
     "android": {
       "package": "com.f1companion.app",
-      "versionCode": 10700,
+      "versionCode": 10800,
       "adaptiveIcon": {
         "foregroundImage": "./assets/app/adaptive-icon.png",
         "backgroundColor": "#0A0506"
@@ -36,6 +36,12 @@
         {
           "savePhotosPermission": "Allow F1 Companion to save pictures of your comparisons and predictions.",
           "isAccessMediaLocationEnabled": false
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow F1 Companion to use a photo for your driver profile and fantasy team logos."
         }
       ]
     ],

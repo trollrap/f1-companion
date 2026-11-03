@@ -11,14 +11,16 @@ import { TeamBadge } from '../components/Shared';
 import { SeasonRow } from '../components/RaceRows';
 import { useAsync } from '../hooks/useAsync';
 import { useTeamColor } from '../hooks/useTeams';
+import { useSeason } from '../hooks/useSeason';
+import { openPastRace } from '../lib/openRace';
 import { driverSeasons, driverSeasonResults } from '../api/jolpica';
 import { YEAR } from '../api/openf1';
 import { seasonStats } from '../lib/stats';
 import { colors } from '../theme';
 
 // Every earlier season a driver raced in, newest first. Results only for now (no full race pages yet).
-export default function DriverSeasonsScreen({ route }) {
-  const { driverId, name } = route.params; const tc = useTeamColor();
+export default function DriverSeasonsScreen({ route, navigation }) {
+  const { driverId, name } = route.params; const tc = useTeamColor(); const season0 = useSeason();
   const list = useAsync(async () => (await driverSeasons(driverId)).filter((y) => y < YEAR), [driverId]);
   const [sel, setSel] = useState(null);
   const cur = sel ?? list.v?.[0] ?? null;
@@ -50,7 +52,7 @@ export default function DriverSeasonsScreen({ route }) {
           {res.loading && <View style={{ marginTop: 12 }}><Skeleton /></View>}
           {res.error && <ErrorNote error={res.error} onRetry={res.reload} />}
           {S && <StatGrid cols={3} items={[['Races', String(S.races)], ['Wins', String(S.wins)], ['Podiums', String(S.podiums)], ['In points', String(S.pointsFinishes)], ['Fast laps', String(S.fastest)], ['DNF / NC', String(S.notClassified)]]} />}
-          <View style={{ marginTop: 6 }}>{rows.map((r) => <SeasonRow key={r.round} r={r} color={color} />)}</View>
+          <View style={{ marginTop: 6 }}>{rows.map((r) => <SeasonRow key={r.round} r={r} color={color} onPress={() => openPastRace(navigation, season0, cur, r, driverId)} />)}</View>
         </View>
       )}
     </Screen>

@@ -96,13 +96,19 @@ export function HeadShot({ id, size = 48, color }) {
     </View>
   );
 }
+// A dark overlay that blinks twice, used to point at the row a screen has just scrolled to.
+export function Flash() {
+  const v = useRef(new Animated.Value(0)).current;
+  useEffect(() => { Animated.sequence([Animated.timing(v, { toValue: 1, duration: 260, useNativeDriver: true }), Animated.timing(v, { toValue: 0.15, duration: 300, useNativeDriver: true }), Animated.timing(v, { toValue: 1, duration: 260, useNativeDriver: true }), Animated.timing(v, { toValue: 0, duration: 700, useNativeDriver: true })]).start(); }, []);
+  return <Animated.View pointerEvents="none" style={{ ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.62)', opacity: v }} />;
+}
 // One row of any classification: position, driver, optional head photo or team logo, then time/gap and points.
 // Tinted with the team colour; `logoId` adds a faint team logo behind the right side.
-export const ResultLine = React.memo(function ResultLine({ pos, first, last, color, right, sub, fav, fastest, onPress, style, photoId, logoId, midLogoId, slotLogoId, champion, index }) {
+export const ResultLine = React.memo(function ResultLine({ pos, first, last, color, right, sub, fav, fastest, onPress, style, photoId, logoId, midLogoId, slotLogoId, champion, index, tags, flash, rowRef }) {
   const { prefs } = usePrefs(); const photos = prefs.opts.photos !== false; const slot = slotLogoId ? teamLogo(slotLogoId) : null;
   const gold = pos === 1 || champion; const wm = logoId ? teamLogo(logoId) : null, mid = midLogoId ? teamLogo(midLogoId) : null;
   const body = (
-    <Grad color={color || colors.muted} from={champion ? 0.42 : 0.26} to={0.03} dir="h" radius={14} border={gold ? 0.7 : 0.22} style={[{ marginTop: 6 }, gold && { borderColor: alpha(colors.gold, champion ? 0.95 : 0.55), borderWidth: champion ? 1.5 : 1 }, style]}>
+    <View ref={rowRef} collapsable={false}><Grad color={color || colors.muted} from={champion ? 0.42 : 0.26} to={0.03} dir="h" radius={14} border={gold ? 0.7 : 0.22} style={[{ marginTop: 6 }, gold && { borderColor: alpha(colors.gold, champion ? 0.95 : 0.55), borderWidth: champion ? 1.5 : 1 }, style]}>
       {wm ? <Image source={wm} resizeMode="contain" resizeMethod="resize" fadeDuration={0} style={s.wm} /> : null}
       {fav ? <View style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 4, backgroundColor: colors.gold }} /> : null}
       <View style={s.line}>
@@ -110,6 +116,7 @@ export const ResultLine = React.memo(function ResultLine({ pos, first, last, col
         <View style={{ flex: 1 }}>
           <DriverName first={first} last={last} size={18} />
           {champion ? <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, alignSelf: 'flex-start', marginTop: 3, backgroundColor: alpha(colors.gold, 0.18), borderRadius: 7, paddingHorizontal: 6, paddingVertical: 2 }}><Ionicons name="trophy" size={11} color={colors.gold} /><Text style={{ color: colors.gold, fontFamily: 'label', fontWeight: '700', fontSize: 10, letterSpacing: 1.2 }}>CHAMPION</Text></View> : null}
+          {tags && tags.length ? <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: 4 }}>{tags.map((g) => <View key={g.text} style={{ borderRadius: 7, paddingHorizontal: 6, paddingVertical: 2, backgroundColor: alpha(g.bad === false ? colors.good : colors.gold, 0.18), borderWidth: 1, borderColor: alpha(g.bad === false ? colors.good : colors.gold, 0.55) }}><Text style={{ color: g.bad === false ? colors.good : colors.gold, fontSize: 11, fontWeight: '700' }}>{g.text}</Text></View>)}</View> : null}
         </View>
         {photoId && photos ? <HeadShot id={photoId} size={46} color={color} /> : null}
         {slot ? <Image source={slot} resizeMode="contain" resizeMethod="resize" fadeDuration={0} style={{ width: 44, height: 44, opacity: 0.95 }} /> : null}
@@ -119,16 +126,19 @@ export const ResultLine = React.memo(function ResultLine({ pos, first, last, col
           {sub ? <Text style={s.sub}>{sub}</Text> : null}
         </View>
       </View>
-    </Grad>
+      {flash ? <Flash /> : null}
+    </Grad></View>
   );
   const out = onPress ? <Press onPress={onPress} scale={0.985}>{body}</Press> : body;
   return index == null ? out : <Reveal index={index} dx={14}>{out}</Reveal>;
 });
 export const driverParams = (r) => ({ driverId: r.driverId, name: r.name || `${r.first} ${r.last}`.trim(), first: r.first, last: r.last, teamId: r.teamId, team: r.team });
 // Race and sprint results from Jolpica. Tap a row to open the driver.
-export function ResultRow({ r, photo = true, index }) {
+export function ResultRow({ r, photo = true, index, tags, flash, rowRef }) {
   const favs = useFavs(); const tc = useTeamColor(); const nav = useNavigation();
-  return <ResultLine pos={r.position} first={r.first} last={r.last} color={tc(r.teamId)} right={r.time} sub={`${r.grid > 0 ? `Started P${r.grid}` : r.grid === 0 ? 'Pit lane' : ''}${r.grid >= 0 ? ' · ' : ''}${r.points} pts`} fav={r.driverId && favs.isDriver(r.driverId)} fastest={r.fastest} index={index}
+  const start = r.grid > 0 ? `Started P${r.grid}` : r.grid === 0 ? 'Pit lane' : '';
+  const sub = [start, Number.isFinite(r.points) ? `${r.points} pts` : ''].filter(Boolean).join(' · ');
+  return <ResultLine pos={r.position} first={r.first} last={r.last} color={tc(r.teamId)} right={r.time} sub={sub} fav={r.driverId && favs.isDriver(r.driverId)} fastest={r.fastest} index={index} tags={tags} flash={flash} rowRef={rowRef}
     logoId={r.teamId} photoId={photo ? r.driverId : null} onPress={r.driverId ? () => nav.navigate('Driver', driverParams(r)) : undefined} />;
 }
 export function CircuitBox({ meeting }) {
@@ -162,25 +172,29 @@ export function StatGrid({ items, cols = 2, accent }) {
   const w = cols === 3 ? '31%' : '48.5%';
   return (
     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
-      {items.map(([k, v]) => (
-        <View key={k} style={{ width: w, backgroundColor: colors.surface2, borderRadius: 12, paddingVertical: 10, paddingHorizontal: 12, borderWidth: 1, borderColor: colors.line }}>
-          <Text style={{ color: colors.muted, fontFamily: 'label', fontSize: 10, letterSpacing: 1.4 }} numberOfLines={1}>{up(k)}</Text>
-          <Text style={{ color: accent && k === accent ? colors.accent : colors.fg, fontSize: 22, fontWeight: '700', marginTop: 2, fontVariant: ['tabular-nums'] }}>{v}</Text>
+      {items.map(([k, v], n) => (
+        <View key={k} style={{ width: w }}>
+          <Reveal index={n % 6}>
+            <View style={{ backgroundColor: colors.surface2, borderRadius: 12, paddingVertical: 10, paddingHorizontal: 12, borderWidth: 1, borderColor: colors.line }}>
+              <Text style={{ color: colors.muted, fontFamily: 'label', fontSize: 10, letterSpacing: 1.4 }} numberOfLines={1}>{up(k)}</Text>
+              <Text style={{ color: accent && k === accent ? colors.accent : colors.fg, fontSize: 22, fontWeight: '700', marginTop: 2, fontVariant: ['tabular-nums'] }}>{v}</Text>
+            </View>
+          </Reveal>
         </View>
       ))}
     </View>
   );
 }
-// Shows the first two rows of boxes; a button over a fade below reveals the rest, and hides them again.
+// Shows the first two rows of boxes; a button over a deep fade below reveals the rest, and hides them again.
 export function ExpandStats({ items, cols = 3, rows = 2, accent }) {
   const [open, setOpen] = useState(false); const n = cols * rows;
   if (items.length <= n) return <StatGrid items={items} cols={cols} accent={accent} />;
-  const flip = () => { LayoutAnimation.configureNext(LayoutAnimation.create(220, 'easeInEaseOut', 'opacity')); setOpen(!open); };
+  const flip = () => { LayoutAnimation.configureNext(LayoutAnimation.create(240, 'easeInEaseOut', 'opacity')); setOpen(!open); };
   return (
     <View>
       <StatGrid items={open ? items : items.slice(0, n)} cols={cols} accent={accent} />
-      {!open ? <LinearGradient pointerEvents="none" colors={['rgba(22,12,15,0)', 'rgba(22,12,15,0.96)']} style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 56 }} /> : null}
-      <Pressable onPress={flip} hitSlop={6} style={({ pressed }) => [{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, alignSelf: 'center', marginTop: open ? 10 : -34, paddingHorizontal: 16, height: 34, borderRadius: 17, backgroundColor: colors.accentSoft, borderWidth: 1, borderColor: colors.accent }, pressed && { opacity: 0.8 }]}>
+      {!open ? <LinearGradient pointerEvents="none" colors={[alpha(colors.cardB, 0), alpha(colors.cardB, 0.82), colors.cardB]} locations={[0, 0.45, 0.8]} style={{ position: 'absolute', left: -2, right: -2, bottom: -2, height: 104 }} /> : null}
+      <Pressable onPress={flip} hitSlop={6} style={({ pressed }) => [{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, alignSelf: 'center', marginTop: open ? 12 : -40, paddingHorizontal: 16, height: 34, borderRadius: 17, backgroundColor: colors.accentSoft, borderWidth: 1, borderColor: colors.accent }, pressed && { opacity: 0.8 }]}>
         <Text style={{ color: colors.fg, fontWeight: '700', fontSize: 14 }}>{open ? 'Show less' : 'Show all stats'}</Text><Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={16} color={colors.accent} />
       </Pressable>
     </View>
@@ -240,7 +254,7 @@ export const TeamRow = React.memo(function TeamRow({ t, lineup = [], fav, onPres
           <TeamBadge teamId={t.teamId} name={t.name} size={44} />
           <View style={{ flex: 1 }}>
             <Text style={{ color: colors.fg, fontSize: 24, fontWeight: '700' }} numberOfLines={1}>{t.name}</Text>
-            <Text style={{ color: 'rgba(255,255,255,0.75)', fontSize: 16 }}>P{t.position} · {t.points} pts</Text>
+            <Text style={{ color: 'rgba(255,255,255,0.75)', fontSize: 16 }}>{t.position != null ? `P${t.position} · ${t.points} pts` : t.note || ''}</Text>
           </View>
         </View>
         {onStar ? <View style={{ position: 'absolute', top: 10, right: 10 }}><StarButton small on={fav} onPress={onStar} label={`Favourite ${t.name}`} /></View> : null}

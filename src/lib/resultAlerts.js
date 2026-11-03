@@ -10,6 +10,7 @@ import { liveJSON } from './cache';
 import { notifyNow } from './notifications';
 import { shortName } from './time';
 import { tr, setLang } from './i18n';
+import { checkNews } from './newsAlerts';
 
 export const TASK = 'f1-results-check';
 const BASE = 'https://api.jolpi.ca/ergast/f1/current/last';
@@ -57,7 +58,7 @@ function load() {
 }
 // Defined at import time (App.js imports this file) so Android can start it while the app is closed.
 if (load()) {
-  try { TM.defineTask(TASK, async () => { try { await checkResults(); return BT.BackgroundTaskResult.Success; } catch { return BT.BackgroundTaskResult.Failed; } }); } catch {}
+  try { TM.defineTask(TASK, async () => { try { await checkResults(); await checkNews(); return BT.BackgroundTaskResult.Success; } catch { return BT.BackgroundTaskResult.Failed; } }); } catch {}
 }
 // Turns the background check on or off to match the switch.
 export async function syncResultTask(on) {

@@ -15,7 +15,7 @@ export default function SeasonSwitch({ year, onChange, min = 1950, max, years: l
   return (
     <>
       <Pressable onPress={() => setOpen(true)} accessibilityRole="button" accessibilityLabel={`Season ${year}. Tap to choose another season.`} style={({ pressed }) => [{ borderRadius: 18, overflow: 'hidden', paddingHorizontal: 16, paddingVertical: compact ? 8 : 10, borderWidth: 1, borderColor: alpha(colors.accent, 0.35) }, pressed && { opacity: 0.85 }]}>
-        <LinearGradient pointerEvents="none" colors={['#34121A', '#160C0F']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }} />
+        <LinearGradient pointerEvents="none" colors={[colors.cardC, colors.cardB]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }} />
         <Animated.View style={{ alignItems: 'center', opacity: v, transform: [{ scale: v.interpolate({ inputRange: [0, 1], outputRange: [0.92, 1] }) }] }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
             <Text style={{ fontFamily: 'display', fontStyle: 'italic', fontWeight: '800', fontSize: compact ? 22 : 30, color: colors.fg, letterSpacing: 1 }}>{year}</Text>
@@ -28,7 +28,7 @@ export default function SeasonSwitch({ year, onChange, min = 1950, max, years: l
         <Animated.View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.72)', opacity: m, justifyContent: 'center', padding: 20 }}>
           <Pressable style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }} onPress={() => close()} />
           <Animated.View style={{ maxHeight: '78%', borderRadius: 22, overflow: 'hidden', borderWidth: 1, borderColor: alpha(colors.accent, 0.4), transform: [{ scale: m.interpolate({ inputRange: [0, 1], outputRange: [0.94, 1] }) }, { translateY: m.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) }] }}>
-            <LinearGradient pointerEvents="none" colors={['#2A1318', '#120A0C']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }} />
+            <LinearGradient pointerEvents="none" colors={[colors.cardA, colors.deep]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }} />
             <Text style={{ color: colors.muted, fontFamily: 'label', letterSpacing: 2.4, fontSize: 12, textAlign: 'center', paddingTop: 16 }}>CHOOSE A SEASON</Text>
             <ScrollView contentContainerStyle={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, padding: 14 }} showsVerticalScrollIndicator={false}>
               {years.map((y) => (
