@@ -5,10 +5,11 @@ import { Text } from './Text';
 import { colors, alpha } from '../theme';
 
 // Round-cornered picture of a driver (own photo) or a team logo; falls back to the number or initials on the team colour.
-export function Avatar({ uri, size = 48, color = colors.muted, label, radius }) {
+export function Avatar({ uri, source, size = 48, color = colors.muted, label, radius }) {
+  const src = source || (uri ? { uri } : null);
   return (
     <View style={{ width: size, height: size, borderRadius: radius ?? size * 0.28, overflow: 'hidden', backgroundColor: alpha(color, 0.35), alignItems: 'center', justifyContent: 'center' }}>
-      {uri ? <Image source={{ uri }} resizeMode="cover" style={{ width: size, height: size }} /> : <Text style={{ color: colors.fg, fontFamily: 'display', fontWeight: '800', fontSize: size * 0.4 }}>{String(label ?? '').slice(0, 3)}</Text>}
+      {src ? <Image source={src} resizeMode="cover" style={{ width: size, height: size }} /> : <Text style={{ color: colors.fg, fontFamily: 'display', fontWeight: '800', fontSize: size * 0.4 }}>{String(label ?? '').slice(0, 3)}</Text>}
     </View>
   );
 }
@@ -57,6 +58,27 @@ export function SessionCard({ title, sub, rows, shotRef, limit = 20 }) {
           <Text style={{ flex: 1, color: colors.fg, fontSize: 15, fontWeight: '700' }} numberOfLines={1}>{r.name}</Text>
           <Text style={{ color: colors.muted, fontSize: 13 }} numberOfLines={1}>{r.team}</Text>
           <Text style={{ minWidth: 62, textAlign: 'right', color: colors.fg, fontSize: 14, fontVariant: ['tabular-nums'] }}>{r.right}</Text>
+        </View>))}
+      <Text style={{ color: colors.muted, fontFamily: 'label', fontSize: 9, letterSpacing: 2, textAlign: 'center', marginTop: 8 }}>FANTASY · F1 COMPANION</Text>
+    </View>
+  );
+}
+
+// Compact championship table made to be shared as a picture (drivers or teams).
+export function StandingsCard({ title, sub, rows, shotRef, limit = 22 }) {
+  return (
+    <View ref={shotRef} collapsable={false} style={{ borderRadius: 18, overflow: 'hidden', padding: 12, backgroundColor: colors.deep, borderWidth: 1, borderColor: alpha(colors.accent, 0.5) }}>
+      <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 8 }}>
+        <Text style={{ color: colors.fg, fontSize: 18, fontWeight: '800', fontStyle: 'italic', flexShrink: 1 }} numberOfLines={1}>{title}</Text>
+        <Text style={{ color: colors.muted, fontFamily: 'label', fontSize: 10, letterSpacing: 1.5 }}>{String(sub).toUpperCase()}</Text>
+      </View>
+      {rows.slice(0, limit).map((r, i) => (
+        <View key={r.key} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 3 }}>
+          <Text style={{ width: 22, color: i === 0 ? colors.gold : colors.muted, fontWeight: '800', fontSize: 14, textAlign: 'right' }}>{i + 1}</Text>
+          <View style={{ width: 3, height: 16, borderRadius: 2, backgroundColor: r.color }} />
+          <Text style={{ flex: 1, color: colors.fg, fontSize: 15, fontWeight: '700' }} numberOfLines={1}>{r.name}</Text>
+          <Text style={{ color: colors.muted, fontSize: 13 }} numberOfLines={1}>{r.team}</Text>
+          <Text style={{ minWidth: 40, textAlign: 'right', color: colors.fg, fontSize: 15, fontWeight: '800' }}>{r.points}</Text>
         </View>))}
       <Text style={{ color: colors.muted, fontFamily: 'label', fontSize: 9, letterSpacing: 2, textAlign: 'center', marginTop: 8 }}>FANTASY · F1 COMPANION</Text>
     </View>

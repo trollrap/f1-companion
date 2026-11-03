@@ -12,10 +12,10 @@ import { SOURCES, fetchNews, fetchArticle } from '../api/news';
 import { colors, alpha } from '../theme';
 
 export const ago = (ms) => { if (!ms) return ''; const m = Math.max(0, Math.round((Date.now() - ms) / 60000)); if (m < 1) return 'just now'; if (m < 60) return `${m} min ago`; const h = Math.round(m / 60); if (h < 24) return `${h} h ago`; const d = Math.round(h / 24); return d < 7 ? `${d} d ago` : new Date(ms).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }); };
-// Latest motorsport news from the sources the user picked. Tap a story to read it inside the app.
+// Latest motorsport news from the sources the user picked. Tap a story to read it in your browser.
 export default function NewsScreen({ navigation }) {
   const { prefs, setOpt } = usePrefs(); const sel = Array.isArray(prefs.opts.newsSel) && prefs.opts.newsSel.length ? prefs.opts.newsSel : SOURCES.map((s) => s.id);
-  const [n, setN] = useState(0);
+  const [n, setN] = useState(0); const [shown, setShown] = useState(15);
   const d = useAsync(() => fetchNews(sel, n ? { fresh: true } : undefined), [sel.join(','), n]);
   const toggle = (id) => { const next = sel.includes(id) ? sel.filter((x) => x !== id) : [...sel, id]; if (next.length) setOpt('newsSel', next); };
   const items = d.v?.items || [];
@@ -34,9 +34,17 @@ export default function NewsScreen({ navigation }) {
       {d.error && <Note>News could not be loaded: {d.error}</Note>}
       {d.v && !items.length && <Note>No stories right now. Check your connection, or pick more sources.</Note>}
       {d.v?.failed?.length ? <Note>{`Not reachable right now: ${d.v.failed.join(', ')}.`}</Note> : null}
-      {items.map((x, i) => (
-        <Press key={x.id} onPress={() => navigation.navigate('Article', { item: x })} scale={0.985}>
-          <Grad color={colors.accent} from={i === 0 ? 0.3 : 0.14} to={0.03} radius={16} border={0.3} style={{ overflow: 'hidden' }}>
+      {items.slice(0, shown).map((x, i) => (
+        <Story key={x.id} x={x} i={i} />))}
+      {items.length > shown ? <Press onPress={() => setShown(shown + 15)}><View style={{ height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface2, borderWidth: 1, borderColor: colors.line }}><Text style={{ color: colors.fg, fontWeight: '700', fontSize: 16 }}>{`Show more (${items.length - shown})`}</Text></View></Press> : null}
+    </Screen>
+  );
+}
+// One story. Memoised and drawn with plain views, so a long list stays smooth; tapping opens the article in the phone's browser.
+const Story = React.memo(function Story({ x, i }) {
+  return (
+        <Press onPress={() => Linking.openURL(x.link).catch(() => {})} scale={0.985}>
+          <View style={{ borderRadius: 16, overflow: 'hidden', backgroundColor: i === 0 ? colors.cardC : colors.cardA, borderWidth: 1, borderColor: alpha(colors.accent, 0.3) }}>
             {x.image && i === 0 ? <Image source={{ uri: x.image }} resizeMode="cover" style={{ width: '100%', aspectRatio: 16 / 9, backgroundColor: colors.surface2 }} /> : null}
             <View style={{ flexDirection: 'row', gap: 12, padding: 12, alignItems: 'center' }}>
               <View style={{ flex: 1, gap: 4 }}>
@@ -45,11 +53,10 @@ export default function NewsScreen({ navigation }) {
               </View>
               {x.image && i !== 0 ? <Image source={{ uri: x.image }} resizeMode="cover" style={{ width: 86, height: 86, borderRadius: 12, backgroundColor: colors.surface2 }} /> : null}
             </View>
-          </Grad>
-        </Press>))}
-    </Screen>
+          </View>
+        </Press>
   );
-}
+});
 // A story read inside the app: picture, text and pictures from the article, then a link to the original.
 export function ArticleScreen({ route }) {
   const { item } = route.params; const body = useAsync(() => fetchArticle(item), [item.id]);

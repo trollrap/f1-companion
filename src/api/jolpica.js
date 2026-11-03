@@ -26,12 +26,12 @@ const mapRow = (r) => ({
   time: r.Time?.time ?? r.status, points: N(r.points, 0), fastest: r.FastestLap?.rank === '1', status: r.status,
 });
 export async function lastRace(year) {
-  const d = await get(`/${year}/last/results.json`, ttlFor(year, 10 * MIN));
+  const d = await get(`/${year}/last/results.json`, ttlFor(year, 3 * MIN));
   const race = d.RaceTable.Races[0];
   return race && { round: Number(race.round), date: race.date, name: race.raceName, rows: race.Results.map(mapRow) };
 }
 export async function sessionResults(year, round, kind /* results | qualifying | sprint */) {
-  const d = await get(`/${year}/${round}/${kind}.json`, ttlFor(year, 30 * MIN));
+  const d = await get(`/${year}/${round}/${kind}.json`, ttlFor(year, 5 * MIN));
   const race = d.RaceTable.Races[0];
   if (!race) return null;
   if (kind === 'qualifying') return race.QualifyingResults.map((r) => ({

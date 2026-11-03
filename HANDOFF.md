@@ -88,3 +88,8 @@ Expo Go (SDK 53+) does not include the `expo-notifications` native module; impor
 - Not done: MotoGP/football team profiles. Penalties: shown as chips, provider's final classification trusted (no re-ordering).
 - Unverified against live services: RSS URLs, OpenF1 race_control wording, Jolpica titles endpoint. Chart crash not reproduced; hardened.
 - Web/PC versions removed as requested.
+
+## V1.9.0
+- Fixes: chart touch crash (gesture state was reset by re-renders; reproduced and fixed), welcome screen/accent now saved under their own keys and confirmed before restart, Home refreshes after a race ends / when the app returns, News opens stories in the browser and is much lighter (15 at a time).
+- Fantasy: real grid (real teams, logos, drivers) or made-up; add custom or real (any year) drivers; every driver has a profile (photo, number, skill, team, real career + fantasy); transfers window between seasons (team, number, release, new drivers, calendar); seasons kept in history (Season dropdown); results menu like the real one; compact exports for sessions and standings.
+- No new native packages since 1.8.0: if 1.8.0 is installed a new APK is still needed for these JS changes unless you use updates (you don't), so build a new APK.

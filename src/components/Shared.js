@@ -104,9 +104,9 @@ export function Flash() {
 }
 // One row of any classification: position, driver, optional head photo or team logo, then time/gap and points.
 // Tinted with the team colour; `logoId` adds a faint team logo behind the right side.
-export const ResultLine = React.memo(function ResultLine({ pos, first, last, color, right, sub, fav, fastest, onPress, style, photoId, logoId, midLogoId, slotLogoId, champion, index, tags, flash, rowRef }) {
+export const ResultLine = React.memo(function ResultLine({ pos, first, last, color, right, sub, fav, fastest, onPress, style, photoId, logoId, midLogoId, slotLogoId, champion, index, tags, flash, rowRef, photoSrc, logoSrc }) {
   const { prefs } = usePrefs(); const photos = prefs.opts.photos !== false; const slot = slotLogoId ? teamLogo(slotLogoId) : null;
-  const gold = pos === 1 || champion; const wm = logoId ? teamLogo(logoId) : null, mid = midLogoId ? teamLogo(midLogoId) : null;
+  const gold = pos === 1 || champion; const wm = logoSrc || (logoId ? teamLogo(logoId) : null), mid = midLogoId ? teamLogo(midLogoId) : null;
   const body = (
     <View ref={rowRef} collapsable={false}><Grad color={color || colors.muted} from={champion ? 0.42 : 0.26} to={0.03} dir="h" radius={14} border={gold ? 0.7 : 0.22} style={[{ marginTop: 6 }, gold && { borderColor: alpha(colors.gold, champion ? 0.95 : 0.55), borderWidth: champion ? 1.5 : 1 }, style]}>
       {wm ? <Image source={wm} resizeMode="contain" resizeMethod="resize" fadeDuration={0} style={s.wm} /> : null}
@@ -118,7 +118,7 @@ export const ResultLine = React.memo(function ResultLine({ pos, first, last, col
           {champion ? <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, alignSelf: 'flex-start', marginTop: 3, backgroundColor: alpha(colors.gold, 0.18), borderRadius: 7, paddingHorizontal: 6, paddingVertical: 2 }}><Ionicons name="trophy" size={11} color={colors.gold} /><Text style={{ color: colors.gold, fontFamily: 'label', fontWeight: '700', fontSize: 10, letterSpacing: 1.2 }}>CHAMPION</Text></View> : null}
           {tags && tags.length ? <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: 4 }}>{tags.map((g) => <View key={g.text} style={{ borderRadius: 7, paddingHorizontal: 6, paddingVertical: 2, backgroundColor: alpha(g.bad === false ? colors.good : colors.gold, 0.18), borderWidth: 1, borderColor: alpha(g.bad === false ? colors.good : colors.gold, 0.55) }}><Text style={{ color: g.bad === false ? colors.good : colors.gold, fontSize: 11, fontWeight: '700' }}>{g.text}</Text></View>)}</View> : null}
         </View>
-        {photoId && photos ? <HeadShot id={photoId} size={46} color={color} /> : null}
+        {photoSrc && photos ? <View style={{ width: 46, height: 46, borderRadius: 13, overflow: 'hidden', backgroundColor: alpha(color || colors.muted, 0.2) }}><Image source={photoSrc} resizeMode="cover" style={{ width: 46, height: 46 }} /></View> : photoId && photos ? <HeadShot id={photoId} size={46} color={color} /> : null}
         {slot ? <Image source={slot} resizeMode="contain" resizeMethod="resize" fadeDuration={0} style={{ width: 44, height: 44, opacity: 0.95 }} /> : null}
         {mid ? <Image source={mid} resizeMode="contain" resizeMethod="resize" fadeDuration={0} style={{ width: 44, height: 44, opacity: 0.4 }} /> : null}
         <View style={{ alignItems: 'flex-end', minWidth: 64 }}>

@@ -25,6 +25,8 @@ export function makeGrid(teamCount, taken = []) {
   return { teams, drivers };
 }
 // Gives every driver but `keep` a number that is not taken, used when your own number is added after the grid exists.
+// A made-up driver that does not share a name with anyone already in the fantasy.
+export function randomDriver(existing = []) { const names = new Set(existing.map((d) => d.name)); for (let i = 0; i < 80; i++) { const first = FIRST[Math.floor(Math.random() * FIRST.length)], last = LAST[Math.floor(Math.random() * LAST.length)]; if (!names.has(`${first} ${last}`)) return { first, last, name: `${first} ${last}` }; } return { first: 'New', last: 'Driver', name: 'New Driver' }; }
 export const freeNumber = (taken) => { const s = new Set(taken.map(Number)); for (let n = 2; n < 100; n++) if (!s.has(n)) return n; return 99; };
 
 export const sessionsOf = (race) => (race.sprint ? ['Sprint Qualifying', 'Sprint', 'Qualifying', 'Race'] : ['Qualifying', 'Race']);

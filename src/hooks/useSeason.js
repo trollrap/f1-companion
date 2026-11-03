@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { fetchSeason } from '../api/season';
-import { useEpoch } from '../lib/net';
+import { useEpoch, refreshAll } from '../lib/net';
 
 const Ctx = createContext(null);
 export function SeasonProvider({ children }) {
@@ -12,6 +12,15 @@ export function SeasonProvider({ children }) {
   }, []);
   const epoch = useEpoch();
   useEffect(() => { load(); }, [load]);
+  // When the race being shown as "next" ends, move on by itself (no need to reopen the app), then again a few minutes later when results are published.
+  const endAt = state.status === 'ready' && state.next ? Date.parse(state.next.date_end) : 0;
+  useEffect(() => {
+    if (!endAt) return undefined;
+    const wait = endAt - Date.now() + 60000;
+    if (wait <= 0 || wait > 2147483000) return undefined;
+    const a = setTimeout(() => load(true), wait), b = setTimeout(() => { refreshAll(); }, wait + 6 * 60000);
+    return () => { clearTimeout(a); clearTimeout(b); };
+  }, [endAt, load]);
   useEffect(() => { if (epoch > 0) load(true); }, [epoch, load]);
   return <Ctx.Provider value={{ ...state, reload: () => load() }}>{children}</Ctx.Provider>;
 }

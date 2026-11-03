@@ -12,7 +12,7 @@ import { colors, alpha } from '../theme';
 
 const FEATURES = [
   ['speedometer-outline', 'Everything F1', 'Calendar with every session, live standings, full race results with grids and penalties, tire strategy and a profile for every driver and team since 1950.'],
-  ['newspaper-outline', 'News', 'Stories from the best motorsport sites, readable inside the app, with alerts from the sources you choose.'],
+  ['newspaper-outline', 'News', 'Stories from the best motorsport sites, opened in your browser, with alerts from the sources you choose.'],
   ['game-controller-outline', 'Fun', 'Make your own driver, build fantasy seasons with any number of teams and simulate them race by race.'],
   ['notifications-outline', 'Alerts', 'A reminder before every session you care about, and a message when results are in.'],
   ['bicycle-outline', 'MotoGP and Football', 'Tap the name at the top to switch sport.'],

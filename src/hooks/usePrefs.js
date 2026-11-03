@@ -13,14 +13,24 @@ const Ctx = createContext(null);
 export function PrefsProvider({ children }) {
   const [prefs, setPrefs] = useState(DEFAULT); const [ready, setReady] = useState(false);
   useEffect(() => {
-    AsyncStorage.getItem('prefs').then((r) => {
-      if (!r) return; const v = JSON.parse(r);
+    Promise.all([AsyncStorage.getItem('prefs'), AsyncStorage.getItem('welcomed'), AsyncStorage.getItem('accent')]).then(([r, wel, acc]) => {
+      // "welcomed" and the accent colour also live under their own small keys, so they survive however the main prefs were last written
+      const v = r ? JSON.parse(r) : {}; v.opts = { ...(v.opts || {}) };
+      if (wel === '1') v.opts.welcomed = true; if (acc && !v.opts.accent) v.opts.accent = acc;
       const leads = Array.isArray(v.leads) && v.leads.length ? v.leads : typeof v.lead === 'number' ? [v.lead] : DEFAULT.leads; // older versions stored one lead time
       const n = { ...DEFAULT, opts: { ...OPTS, ...(v.opts || {}) }, results: !!v.results, types: { ...DEFAULT.types, ...v.types }, leads: leads.filter((m) => m !== 1440).length ? leads.filter((m) => m !== 1440) : DEFAULT.leads }; // (the 1-day option was removed)
       sync(n); setPrefs(n);
     }).catch(() => {}).finally(() => setReady(true));
   }, []);
-  const save = useCallback((n) => { sync(n); setPrefs(n); AsyncStorage.setItem('prefs', JSON.stringify(n)).catch(() => {}); }, []);
+  // Writes are confirmed before anything (such as an app restart) depends on them: one retry, then read back.
+  const save = useCallback(async (n) => {
+    sync(n); setPrefs(n);
+    const put = async (k, v) => { for (let i = 0; i < 2; i++) { try { await AsyncStorage.setItem(k, v); if ((await AsyncStorage.getItem(k)) === v) return true; } catch {} } return false; };
+    const ok = await put('prefs', JSON.stringify(n));
+    if (n.opts.welcomed) await put('welcomed', '1');
+    if (n.opts.accent) await put('accent', n.opts.accent); else { try { await AsyncStorage.removeItem('accent'); } catch {} }
+    return ok;
+  }, []);
   const api = {
     prefs, ready,
     toggleLead: (m) => { const has = prefs.leads.includes(m); if (has && prefs.leads.length === 1) return; save({ ...prefs, leads: (has ? prefs.leads.filter((x) => x !== m) : [...prefs.leads, m]).sort((a, b) => a - b) }); },

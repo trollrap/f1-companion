@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, UIManager, Platform } from 'react-native';
+import { View, UIManager, Platform, AppState } from 'react-native';
+import { refreshAll } from './lib/net';
 import { useFonts } from 'expo-font';
 import { Rajdhani_400Regular, Rajdhani_500Medium, Rajdhani_600SemiBold, Rajdhani_700Bold } from '@expo-google-fonts/rajdhani';
 import { ChakraPetch_500Medium, ChakraPetch_600SemiBold, ChakraPetch_700Bold } from '@expo-google-fonts/chakra-petch';
@@ -38,7 +39,8 @@ import GridScreen from './screens/GridScreen';
 import TeamCompareScreen from './screens/TeamCompareScreen';
 import { MotoHome, MotoCalendar, MotoStandings, MotoEvent, MotoRider, MotoPaddock } from './screens/MotoScreens';
 import { FootScores, FootTable, FootMatch } from './screens/FootScreens';
-import { FunHome, FunProfile, FantasyNew, Fantasy, FantasyRace } from './screens/FunScreens';
+import { FunHome, FunProfile } from './screens/FunScreens';
+import { FantasyNew, Fantasy, FantasyRace, FantasyDriver, FantasyTransfers } from './screens/FantasyScreens';
 import SettingsScreen from './screens/SettingsScreen';
 import AlertScheduler from './components/AlertScheduler';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -106,6 +108,11 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 function Shell() {
   // Changing the language rebuilds the navigation tree so every screen and title is drawn again in the new language.
   const { prefs, ready } = usePrefs();
+  // Coming back to the app after a while (or after a race ended) reloads the short-lived data, so the Home cards are never a stale copy.
+  React.useEffect(() => {
+    let away = 0; const sub = AppState.addEventListener('change', (st) => { if (st !== 'active') away = Date.now(); else if (away && Date.now() - away > 3 * 60000) { away = 0; refreshAll(); } });
+    return () => sub.remove();
+  }, []);
   if (!ready) return <View style={{ flex: 1, backgroundColor: colors.bg }} />;
   if (!prefs.opts.welcomed) return <WelcomeScreen />;
   return (
@@ -145,6 +152,8 @@ function Shell() {
               <Stack.Screen name="FantasyNew" component={FantasyNew} options={{ title: 'New fantasy season' }} />
               <Stack.Screen name="Fantasy" component={Fantasy} options={{ title: 'Fantasy' }} />
               <Stack.Screen name="FantasyRace" component={FantasyRace} options={({ route }) => ({ title: 'Race result' })} />
+              <Stack.Screen name="FantasyDriver" component={FantasyDriver} options={{ title: 'Driver' }} />
+              <Stack.Screen name="FantasyTransfers" component={FantasyTransfers} options={{ title: 'Transfers' }} />
               <Stack.Screen name="Article" component={ArticleScreen} options={{ title: tr('News') }} />
               <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: tr('Settings') }} />
               </Stack.Navigator>

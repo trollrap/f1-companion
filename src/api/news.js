@@ -48,7 +48,7 @@ export async function fetchFeed(source, { fresh = false } = {}) {
     const r = await fetch(source.url, { headers: UA, signal: ctrl.signal }).finally(() => clearTimeout(timer));
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
     const items = parseFeed(await r.text(), source); if (!items.length) throw new Error('no articles in the feed');
-    const keep = items.slice(0, 30); AsyncStorage.setItem(key, JSON.stringify({ t: Date.now(), items: keep.map((x) => ({ ...x, html: x.html.slice(0, 40000) })) })).catch(() => {});
+    const keep = items.slice(0, 15); AsyncStorage.setItem(key, JSON.stringify({ t: Date.now(), items: keep.map((x) => ({ ...x, html: '' })) })).catch(() => {});
     return keep;
   } catch (e) { if (saved) return saved.items; throw e; }
 }
