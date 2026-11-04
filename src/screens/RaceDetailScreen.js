@@ -16,7 +16,7 @@ import { colors } from '../theme';
 import { placeLine, parseOffset, hm, dayName, dateRange, shortName, flag } from '../lib/time';
 
 export default function RaceDetailScreen({ route }) {
-  const { meeting } = route.params; const now = useNow(); const { prefs } = usePrefs();
+  const { meeting } = route.params; const now = useNow(); const { prefs, setOpt } = usePrefs();
   const [sessions, setSessions] = useState([]); const [mode, setMode] = useState(prefs.opts.trackTime ? 'track' : 'device');
   const track = parseOffset(meeting.gmt_offset), off = mode === 'track' ? track : null;
   useEffect(() => { sessionsOf(meeting).then(setSessions).catch(() => {}); }, [meeting.meeting_key]);
@@ -36,7 +36,7 @@ export default function RaceDetailScreen({ route }) {
       </Grad>
       <Card>
         <Eyebrow>Weekend schedule</Eyebrow>
-        {track != null && <View style={{ marginTop: 12 }}><Segmented value={mode} onChange={setMode} items={[['device', 'My time'], ['track', 'Track time']]} /></View>}
+        {track != null && <View style={{ marginTop: 12 }}><Segmented value={mode} onChange={(m) => { setMode(m); setOpt('trackTime', m === 'track'); }} items={[['device', 'My time'], ['track', 'Track time']]} /></View>}
         {sessions.length ? <Schedule sessions={sessions} now={now} off={off} /> : <Note>Session times appear here once they are published.</Note>}
       </Card>
       <Card>

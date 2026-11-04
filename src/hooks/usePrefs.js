@@ -1,5 +1,5 @@
 import { setLang } from '../lib/i18n';
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { setUi } from '../lib/motion';
 import { readDurable, writeDurable } from '../lib/durable';
@@ -12,33 +12,34 @@ const DEFAULT = { opts: OPTS, results: false, leads: [15], types: { 'Practice 1'
 
 const Ctx = createContext(null);
 export function PrefsProvider({ children }) {
-  const [prefs, setPrefs] = useState(DEFAULT); const [ready, setReady] = useState(false);
+  const [prefs, setPrefs] = useState(DEFAULT); const [ready, setReady] = useState(false); const cur = useRef(DEFAULT); const chain = useRef(Promise.resolve());
   useEffect(() => {
-    Promise.all([AsyncStorage.getItem('prefs'), readDurable('welcomed'), readDurable('accent')]).then(([r, wel, acc]) => {
+    Promise.all([AsyncStorage.getItem('prefs'), readDurable('welcomed'), readDurable('accent'), readDurable('prefs:v2')]).then(([raw, wel, acc, dur]) => {
+      let r = raw; try { if (dur) { const d = JSON.parse(dur); const m = raw ? JSON.parse(raw) : null; if (!m || (d.t || 0) >= (m.t || 0)) r = JSON.stringify(d); } } catch {}
       // "welcomed" and the accent colour also live under their own small keys, so they survive however the main prefs were last written
       const v = r ? JSON.parse(r) : {}; v.opts = { ...(v.opts || {}) };
       if (wel === '1') v.opts.welcomed = true; if (acc && !v.opts.accent) v.opts.accent = acc;
       const leads = Array.isArray(v.leads) && v.leads.length ? v.leads : typeof v.lead === 'number' ? [v.lead] : DEFAULT.leads; // older versions stored one lead time
       const n = { ...DEFAULT, opts: { ...OPTS, ...(v.opts || {}) }, results: !!v.results, types: { ...DEFAULT.types, ...v.types }, leads: leads.filter((m) => m !== 1440).length ? leads.filter((m) => m !== 1440) : DEFAULT.leads }; // (the 1-day option was removed)
-      sync(n); setPrefs(n);
+      cur.current = n; sync(n); setPrefs(n);
     }).catch(() => {}).finally(() => setReady(true));
   }, []);
   // Writes are confirmed before anything (such as an app restart) depends on them: one retry, then read back.
-  const save = useCallback(async (n) => {
-    sync(n); setPrefs(n);
+  // Changes are applied to the latest state (not the one from the last render), so quick successive changes are not lost.
+  const save = useCallback((fn) => {
+    const n = { ...fn(cur.current), t: Date.now() }; cur.current = n; sync(n); setPrefs(n);
+    const str = JSON.stringify(n);
     const put = async (k, v) => { for (let i = 0; i < 2; i++) { try { await AsyncStorage.setItem(k, v); if ((await AsyncStorage.getItem(k)) === v) return true; } catch {} } return false; };
-    const ok = await put('prefs', JSON.stringify(n));
-    if (n.opts.welcomed) await writeDurable('welcomed', '1');
-    if (n.opts.accent) await writeDurable('accent', n.opts.accent); else await writeDurable('accent', '');
-    return ok;
+    const job = async () => { const ok = await put('prefs', str); await writeDurable('prefs:v2', str); if (n.opts.welcomed) await writeDurable('welcomed', '1'); await writeDurable('accent', n.opts.accent || ''); return ok; };
+    const p = chain.current.then(job, job); chain.current = p.catch(() => {}); return p;
   }, []);
   const api = {
     prefs, ready,
-    toggleLead: (m) => { const has = prefs.leads.includes(m); if (has && prefs.leads.length === 1) return; save({ ...prefs, leads: (has ? prefs.leads.filter((x) => x !== m) : [...prefs.leads, m]).sort((a, b) => a - b) }); },
-    setOpt: (k, val) => save({ ...prefs, opts: { ...prefs.opts, [k]: val } }),
-    setOpts: (o) => save({ ...prefs, opts: { ...prefs.opts, ...o } }),
-    toggleResults: () => save({ ...prefs, results: !prefs.results }),
-    toggle: (t) => save({ ...prefs, types: { ...prefs.types, [t]: !prefs.types[t] } }),
+    toggleLead: (m) => { const has = prefs.leads.includes(m); if (has && prefs.leads.length === 1) return; save((p) => ({ ...p, leads: (p.leads.includes(m) ? p.leads.filter((x) => x !== m) : [...p.leads, m]).sort((a, b) => a - b) })); },
+    setOpt: (k, val) => save((p) => ({ ...p, opts: { ...p.opts, [k]: val } })),
+    setOpts: (o) => save((p) => ({ ...p, opts: { ...p.opts, ...o } })),
+    toggleResults: () => save((p) => ({ ...p, results: !p.results })),
+    toggle: (t) => save((p) => ({ ...p, types: { ...p.types, [t]: !p.types[t] } })),
   };
   return <Ctx.Provider value={api}>{children}</Ctx.Provider>;
 }

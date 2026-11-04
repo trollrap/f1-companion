@@ -55,8 +55,10 @@ export function SessionCard({ title, sub, rows, shotRef, limit = 20 }) {
         <View key={r.key} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 3 }}>
           <Text style={{ width: 22, color: r.pos === 1 ? colors.gold : colors.muted, fontWeight: '800', fontSize: 14, textAlign: 'right' }}>{r.pos}</Text>
           <View style={{ width: 3, height: 16, borderRadius: 2, backgroundColor: r.color }} />
+          {r.photo !== undefined ? <Avatar source={r.photo} color={r.color} label={r.code} size={22} radius={11} /> : null}
           <Text style={{ flex: 1, color: colors.fg, fontSize: 15, fontWeight: '700' }} numberOfLines={1}>{r.name}</Text>
-          <Text style={{ color: colors.muted, fontSize: 13 }} numberOfLines={1}>{r.team}</Text>
+          {r.logo ? <Image source={r.logo} resizeMode="contain" style={{ width: 18, height: 18 }} /> : null}
+          <Text style={{ color: colors.muted, fontSize: 13, maxWidth: 110 }} numberOfLines={1}>{r.team}</Text>
           <Text style={{ minWidth: 62, textAlign: 'right', color: colors.fg, fontSize: 14, fontVariant: ['tabular-nums'] }}>{r.right}</Text>
         </View>))}
       <Text style={{ color: colors.muted, fontFamily: 'label', fontSize: 9, letterSpacing: 2, textAlign: 'center', marginTop: 8 }}>FANTASY · F1 COMPANION</Text>
@@ -76,9 +78,37 @@ export function StandingsCard({ title, sub, rows, shotRef, limit = 22 }) {
         <View key={r.key} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 3 }}>
           <Text style={{ width: 22, color: i === 0 ? colors.gold : colors.muted, fontWeight: '800', fontSize: 14, textAlign: 'right' }}>{i + 1}</Text>
           <View style={{ width: 3, height: 16, borderRadius: 2, backgroundColor: r.color }} />
+          {r.photo !== undefined ? <Avatar source={r.photo} color={r.color} label={r.code} size={22} radius={11} /> : null}
           <Text style={{ flex: 1, color: colors.fg, fontSize: 15, fontWeight: '700' }} numberOfLines={1}>{r.name}</Text>
-          <Text style={{ color: colors.muted, fontSize: 13 }} numberOfLines={1}>{r.team}</Text>
+          {r.logo ? <Image source={r.logo} resizeMode="contain" style={{ width: 18, height: 18 }} /> : null}
+          <Text style={{ color: colors.muted, fontSize: 13, maxWidth: 110 }} numberOfLines={1}>{r.team}</Text>
           <Text style={{ minWidth: 40, textAlign: 'right', color: colors.fg, fontSize: 15, fontWeight: '800' }}>{r.points}</Text>
+        </View>))}
+      <Text style={{ color: colors.muted, fontFamily: 'label', fontSize: 9, letterSpacing: 2, textAlign: 'center', marginTop: 8 }}>FANTASY · F1 COMPANION</Text>
+    </View>
+  );
+}
+
+// Season highlights made to be shared as a picture: rows of label and value, with the champion on top.
+export function SummaryCard({ title, sub, hero, rows, shotRef }) {
+  return (
+    <View ref={shotRef} collapsable={false} style={{ borderRadius: 18, overflow: 'hidden', padding: 12, backgroundColor: colors.deep, borderWidth: 1, borderColor: alpha(colors.accent, 0.5) }}>
+      <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 8 }}>
+        <Text style={{ color: colors.fg, fontSize: 18, fontWeight: '800', fontStyle: 'italic', flexShrink: 1 }} numberOfLines={1}>{title}</Text>
+        <Text style={{ color: colors.muted, fontFamily: 'label', fontSize: 10, letterSpacing: 1.5 }}>{String(sub).toUpperCase()}</Text>
+      </View>
+      {hero ? (
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, padding: 10, borderRadius: 14, backgroundColor: alpha(hero.color || colors.gold, 0.22), borderWidth: 1, borderColor: alpha(colors.gold, 0.6), marginBottom: 6 }}>
+          <Avatar source={hero.photo} color={hero.color} label={hero.code} size={46} radius={23} />
+          <View style={{ flex: 1 }}><Text style={{ color: colors.gold, fontFamily: 'label', fontSize: 10, letterSpacing: 2 }}>{hero.label}</Text><Text style={{ color: colors.fg, fontSize: 20, fontWeight: '800' }} numberOfLines={1}>{hero.name}</Text><Text style={{ color: colors.muted, fontSize: 13 }} numberOfLines={1}>{hero.sub}</Text></View>
+          {hero.logo ? <Image source={hero.logo} resizeMode="contain" style={{ width: 34, height: 34 }} /> : null}
+        </View>) : null}
+      {rows.map((r) => (
+        <View key={r.k} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 4, borderBottomWidth: 1, borderBottomColor: colors.line }}>
+          <Text style={{ width: 96, color: colors.muted, fontSize: 13 }}>{r.k}</Text>
+          {r.logo ? <Image source={r.logo} resizeMode="contain" style={{ width: 18, height: 18 }} /> : null}
+          <Text style={{ flex: 1, color: colors.fg, fontSize: 15, fontWeight: '700' }} numberOfLines={1}>{r.v}</Text>
+          <Text style={{ color: colors.fg, fontSize: 15, fontWeight: '800' }}>{r.n}</Text>
         </View>))}
       <Text style={{ color: colors.muted, fontFamily: 'label', fontSize: 9, letterSpacing: 2, textAlign: 'center', marginTop: 8 }}>FANTASY · F1 COMPANION</Text>
     </View>

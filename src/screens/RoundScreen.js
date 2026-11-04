@@ -30,7 +30,7 @@ import { dateRange, shortName, flag } from '../lib/time';
 
 const KIND = { Race: 'results', Qualifying: 'qualifying', Sprint: 'sprint' };
 export default function RoundScreen({ route, navigation }) {
-  const { meeting } = route.params; const now = useNow(60000); const outline = useOutline(meeting.circuit_key); const { prefs } = usePrefs(); const [gapMode, setGapMode] = useState(prefs.opts.gap === 'ahead' ? 'ahead' : 'leader'); const tc = useTeamColor(); const favs = useFavs(); const meta = usePaddockMeta();
+  const { meeting } = route.params; const now = useNow(60000); const outline = useOutline(meeting.circuit_key); const { prefs, setOpt } = usePrefs(); const [gapMode, setGapMode] = useState(prefs.opts.gap === 'ahead' ? 'ahead' : 'leader'); const tc = useTeamColor(); const favs = useFavs(); const meta = usePaddockMeta();
   const year = meeting.year || YEAR; const stand = useAsync(() => driverStandings(year), [year]);
   // Practice rows come from OpenF1 (no Jolpica id). Match them to the standings by car number, then surname.
   // A reserve driver is not in the standings: open a profile from the name alone (it shows what exists for that driver).
@@ -129,7 +129,7 @@ export default function RoundScreen({ route, navigation }) {
           <Eyebrow>Results</Eyebrow>
           <View style={{ marginTop: 12 }}><Dropdown value={cur} options={names.map((n) => [n, labelOf(n)])} onChange={(v) => { setShowStrat(false); setSel(v); }} /></View>
           {canGap ? (
-            <Pressable onPress={() => setGapMode(gapMode === 'leader' ? 'ahead' : 'leader')} hitSlop={8} accessibilityRole="button" style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 12, alignSelf: 'flex-start', opacity: pressed ? 0.6 : 1 })}>
+            <Pressable onPress={() => { const k = gapMode === 'leader' ? 'ahead' : 'leader'; setGapMode(k); setOpt('gap', k); }} hitSlop={8} accessibilityRole="button" style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 12, alignSelf: 'flex-start', opacity: pressed ? 0.6 : 1 })}>
               <Ionicons name="swap-vertical" size={16} color={colors.accent} /><Text style={{ color: colors.accent, fontWeight: '700', fontSize: 16 }}>{gapMode === 'leader' ? 'Gap to leader' : 'Gap to car ahead'}</Text>
             </Pressable>) : null}
           {res.loading && <Skeleton />}

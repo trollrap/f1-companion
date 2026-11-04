@@ -79,3 +79,22 @@ export async function riderSeason(seasonId, year, riderId) {
   }
   return out;
 }
+
+// One team's season in the top class: for every finished event, how each of its riders finished (race and sprint). One pass over the events for the whole team.
+export async function teamSeason(seasonId, year, riderIds) {
+  const evs = (await events(seasonId, year)).filter((e) => Date.parse(e.end) < Date.now()); const top = (await categories(seasonId))[0]; if (!top) return [];
+  const out = [];
+  for (const e of evs) {
+    const ss = await sessions(e.id, top.id).catch(() => []); const race = ss.find((s) => s.type === 'RAC'); if (!race) continue;
+    const rows = await classification(race.id, year).catch(() => []); const spr = ss.find((s) => s.type === 'SPR'); const srows = spr ? await classification(spr.id, year).catch(() => []) : [];
+    out.push({ event: e, riders: riderIds.map((id) => ({ id, race: rows.find((r) => r.riderId === id) || null, sprint: srows.find((r) => r.riderId === id) || null })) });
+  }
+  return out;
+}
+// Manufacturer colours (the team name is often a sponsor name, so the bike decides).
+const BIKE = [[/ducati/i, '#E10600'], [/aprilia/i, '#8A2BE2'], [/ktm|gas ?gas|tech ?3/i, '#FF6600'], [/honda/i, '#E4572E'], [/yamaha/i, '#1E5BC6'], [/suzuki/i, '#1FA2E0'], [/kalex/i, '#2EA66B'], [/boscoscuro/i, '#D7263D'], [/triumph/i, '#B0B7C0'], [/honda/i, '#E4572E']];
+// Satellite teams get their own colour first (estimates of their liveries), then the manufacturer's.
+const TEAMS = [[/pramac/i, '#E040FB'], [/gresini/i, '#4FB3FF'], [/vr46|mooney/i, '#E6E600'], [/trackhouse/i, '#2F6BFF'], [/\blcr\b/i, '#D6D6D6'], [/tech ?3/i, '#FF8A00'], [/red bull ktm|ktm factory/i, '#FF6600'], [/honda hrc/i, '#E4572E'], [/ducati lenovo/i, '#E10600'], [/monster energy yamaha/i, '#1E5BC6'], [/aprilia racing/i, '#9B1FE8']];
+export const bikeColor = (bike, team, fallback) => { const t = TEAMS.find(([r]) => r.test(team || '')); if (t) return t[1]; const h = BIKE.find(([r]) => r.test(`${bike || ''} ${team || ''}`)); return h ? h[1] : fallback; };
+// Only the two main riders of each team (most points): wild cards, replacements and test riders are left out.
+export const mainRiders = (rows) => { const by = new Map(); rows.forEach((r) => { const k = r.team || r.name; (by.get(k) || by.set(k, []).get(k)).push(r); }); return [...by.values()].flatMap((l) => [...l].sort((a, b) => (b.points || 0) - (a.points || 0)).slice(0, 2)).sort((a, b) => (a.position ?? 999) - (b.position ?? 999)); };

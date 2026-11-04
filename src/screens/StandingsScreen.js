@@ -20,7 +20,7 @@ import { colors } from '../theme';
 // One tappable label that cycles through the ways of showing the gap.
 const modes = (teams) => [['leader', 'Gap to leader'], ['ahead', teams ? 'Gap to team ahead' : 'Gap to car ahead']];
 export default function StandingsScreen({ navigation }) {
-  const { prefs } = usePrefs(); const season = useSeason();
+  const { prefs, setOpt } = usePrefs(); const season = useSeason();
   const [seg, setSeg] = useState('drivers'); const [year, setYear] = useState(YEAR);
   const [mode, setMode] = useState(prefs.opts?.gap === 'ahead' ? 'ahead' : 'leader');
   const favs = useFavs(); const tc = useTeamColor(); const cur = year === YEAR;
@@ -37,7 +37,7 @@ export default function StandingsScreen({ navigation }) {
   // Points are the big number; the gap sits underneath.
   const right = (r) => `${r.points}`;
   const sub = (r, i) => (i === 0 ? 'Leader' : `−${mode === 'leader' ? rows[0].points - r.points : rows[i - 1].points - r.points}`);
-  const next = () => setMode(M[(M.findIndex(([k]) => k === mode) + 1) % M.length][0]);
+  const next = () => { const k = M[(M.findIndex(([k]) => k === mode) + 1) % M.length][0]; setMode(k); if (k === 'leader' || k === 'ahead') setOpt('gap', k); };
   // Past seasons: the final table, so the leader is the champion. This season: only once it is mathematically decided.
   const won = rows.length > 0 && (cur ? rows.length > 1 && clinched(rows, teams ? 'constructor' : 'driver', season.races?.length, season.races) : true);
   return (

@@ -37,8 +37,8 @@ import PredictScreen from './screens/PredictScreen';
 import ChartScreen from './screens/ChartScreen';
 import GridScreen from './screens/GridScreen';
 import TeamCompareScreen from './screens/TeamCompareScreen';
-import { MotoHome, MotoCalendar, MotoStandings, MotoEvent, MotoRider, MotoPaddock } from './screens/MotoScreens';
-import { FootScores, FootTable, FootMatch } from './screens/FootScreens';
+import { MotoHome, MotoCalendar, MotoStandings, MotoEvent, MotoRider, MotoPaddock, MotoTeam } from './screens/MotoScreens';
+import { FootScores, FootTable, FootMatch, FootTeam } from './screens/FootScreens';
 import { FunHome, FunProfile } from './screens/FunScreens';
 import { FantasyNew, Fantasy, FantasyRace, FantasyDriver, FantasyTransfers } from './screens/FantasyScreens';
 import SettingsScreen from './screens/SettingsScreen';
@@ -123,12 +123,14 @@ function Shell() {
               <Stack.Navigator screenOptions={detail}>
                 <Stack.Screen name="Tabs" component={FootTabs} options={{ headerShown: false }} />
                 <Stack.Screen name="FootMatch" component={FootMatch} options={{ title: tr('Match') }} />
+                <Stack.Screen name="FootTeam" component={FootTeam} options={({ route }) => ({ title: route.params.name })} />
                 <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: tr('Settings') }} />
               </Stack.Navigator>
             ) : prefs.opts.sport === 'motogp' ? (
               <Stack.Navigator screenOptions={detail}>
                 <Stack.Screen name="Tabs" component={MotoTabs} options={{ headerShown: false }} />
                 <Stack.Screen name="MotoEvent" component={MotoEvent} options={({ route }) => ({ title: route.params.event.short || route.params.event.name })} />
+                <Stack.Screen name="MotoTeam" component={MotoTeam} options={({ route }) => ({ title: route.params.name })} />
                 <Stack.Screen name="MotoRider" component={MotoRider} options={({ route }) => ({ title: route.params.rider.name })} />
                 <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: tr('Settings') }} />
               </Stack.Navigator>

@@ -34,7 +34,7 @@ export default function HomeScreen({ navigation }) {
   const favs = useFavs(); const tc = useTeamColor();
   const stand = useAsync(() => driverStandings(YEAR), []);
   const tstand = useAsync(() => constructorStandings(YEAR), []);
-  const { prefs } = usePrefs(); const [mineView, setMineView] = useState(prefs.opts.homeFirst === 'teams' ? 'teams' : 'drivers');
+  const { prefs, setOpt } = usePrefs(); const [mineView, setMineView] = useState(prefs.opts.homeFirst === 'teams' ? 'teams' : 'drivers');
   const [slow, setSlow] = useState(false);
   useEffect(() => { if (season.status !== 'loading') { setSlow(false); return; } const t = setTimeout(() => setSlow(true), 8000); return () => clearTimeout(t); }, [season.status]);
   if (season.status === 'loading') return (
@@ -78,7 +78,7 @@ export default function HomeScreen({ navigation }) {
         <View>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
             <Eyebrow>{showTeams ? 'Your teams' : 'Your drivers'}</Eyebrow>
-            {both ? <Pressable onPress={() => { LayoutAnimation.configureNext(LayoutAnimation.create(220, 'easeInEaseOut', 'opacity')); setMineView(showTeams ? 'drivers' : 'teams'); }} hitSlop={10} accessibilityRole="button" accessibilityLabel={showTeams ? 'Show your drivers' : 'Show your teams'} style={({ pressed }) => [{ flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, height: 30, borderRadius: 15, backgroundColor: colors.accentSoft, borderWidth: 1, borderColor: colors.accent }, pressed && { opacity: 0.7 }]}><Ionicons name="swap-horizontal" size={15} color={colors.accent} /><Text style={{ color: colors.fg, fontWeight: '700', fontSize: 13 }}>{showTeams ? 'Drivers' : 'Teams'}</Text></Pressable> : null}
+            {both ? <Pressable onPress={() => { LayoutAnimation.configureNext(LayoutAnimation.create(220, 'easeInEaseOut', 'opacity')); const nv = showTeams ? 'drivers' : 'teams'; setMineView(nv); setOpt('homeFirst', nv); }} hitSlop={10} accessibilityRole="button" accessibilityLabel={showTeams ? 'Show your drivers' : 'Show your teams'} style={({ pressed }) => [{ flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, height: 30, borderRadius: 15, backgroundColor: colors.accentSoft, borderWidth: 1, borderColor: colors.accent }, pressed && { opacity: 0.7 }]}><Ionicons name="swap-horizontal" size={15} color={colors.accent} /><Text style={{ color: colors.fg, fontWeight: '700', fontSize: 13 }}>{showTeams ? 'Drivers' : 'Teams'}</Text></Pressable> : null}
           </View>
           {showTeams ? (
             <ScrollView key="teams" horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingTop: 10 }}>

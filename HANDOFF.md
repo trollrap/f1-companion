@@ -100,3 +100,19 @@ Expo Go (SDK 53+) does not include the `expo-notifications` native module; impor
 - Chart: lines were drawn shifted left on Android (nested Svg offset ignored); fixed. Stats "show all" panel replaced by a dimmed row. News: pictures load after cards appear, 8 more per tap.
 - Saving: fantasy, welcome flag and accent are written twice (storage + file) and on app background. Save picture: gallery, else a folder you pick once, else share sheet.
 - Fantasy: attributes (driver: pace, qualifying, racecraft, consistency, wet, aggression, age; team: car, reliability, development, pit crew), weather, safety cars, DNF reasons, penalties, pit stops, fastest lap, Q1-Q3; cars change season to season, drivers only age; random transfers + retirements; results screen like the real one, export with photos or compact. Talent ratings for real drivers are my estimates (src/fun/talent.js).
+
+## V1.10.1
+- News crash fixed: InteractionManager removed (plain timeout for lazy pictures).
+- Prefs: updates apply to the latest state (ref), written to 'prefs' plus a durable 'prefs:v2' copy; newest copy wins on load. Home drivers/teams swap, gap mode and track/device time toggles now persist.
+- Fantasy transfers: no rookies; vacancies filled by drivers stepping up from slower teams (cascade); retirement chance ~2% + 3%/year over 33 (cap 30%), never your own driver, every team keeps at least one driver.
+
+## V1.11.0
+- Paddock: lineups capped to the two race seats (most points keep them); team colour = most common OpenF1 colour among a team's drivers; static colours for audi/cadillac.
+- MotoGP: MotoTeam profile (stats, riders, race by race via teamSeason), manufacturer colours (bikeColor). Football: FootTeam profile (ESPN teams/roster/schedule, unverified live), crest taps from scores, table and match.
+- Fantasy: "End this save" (f.ended) + Stats tab (allTime in look.js: totals, champions, all-time drivers/teams, records, export); race export is compact only, with logos and small photos (SessionCard/StandingsCard take photo/logo); made-up grid defaults to 11 teams (22 drivers); rookies (from F2/F3/other, tag `from`) fill seats left after step-ups.
+
+## V1.11.1
+- Fantasy Stats tab: per-season summary (seasonSummary in look.js) with export picture (SummaryCard).
+
+## V1.12.0
+- MotoGP paddock: only the two main riders per team (mainRiders), team colours by team name then bike (estimates), rider/home colours via bikeColor. Team points still count every rider.

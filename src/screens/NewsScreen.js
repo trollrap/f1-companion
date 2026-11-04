@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Pressable, Image, Linking, StyleSheet, InteractionManager } from 'react-native';
+import { View, Pressable, Image, Linking, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Text } from '../components/Text';
 import Skeleton from '../components/Skeleton';
@@ -43,7 +43,7 @@ export default function NewsScreen({ navigation }) {
 // One story. Memoised and drawn with plain views, so a long list stays smooth; tapping opens the article in the phone's browser.
 const Story = React.memo(function Story({ x, i }) {
   // Pictures are fetched after the card has appeared (and scaled down by the system), so adding more stories never freezes the list.
-  const [pic, setPic] = useState(false); useEffect(() => { const h = InteractionManager.runAfterInteractions(() => setPic(true)); return () => h.cancel(); }, []);
+  const [pic, setPic] = useState(false); useEffect(() => { const h = setTimeout(() => setPic(true), 80); return () => clearTimeout(h); }, []);
   const img = (style) => (pic && x.image ? <Image source={{ uri: x.image }} resizeMode="cover" resizeMethod="resize" fadeDuration={0} style={style} /> : <View style={style} />);
   return (
         <Press onPress={() => Linking.openURL(x.link).catch(() => {})} scale={0.985}>

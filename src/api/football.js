@@ -28,7 +28,7 @@ const stat = (e, n) => { const x = (e.stats || []).find((s) => s.name === n || s
 export async function table(slug) {
   const d = await cachedJSON(`${V2}/${slug}/standings`, 10 * MIN);
   const groups = d?.children?.length ? d.children : [d]; const out = [];
-  groups.forEach((g) => { const es = g?.standings?.entries || []; if (es.length) out.push({ name: g.name || '', rows: es.map((e) => ({ team: e.team?.displayName || e.team?.name || '—', logo: e.team?.logos?.[0]?.href || null, rank: stat(e, 'rank'), played: stat(e, 'gamesPlayed'), won: stat(e, 'wins'), drawn: stat(e, 'ties'), lost: stat(e, 'losses'), gd: stat(e, 'pointDifferential'), points: stat(e, 'points') })).sort((a, b) => (a.rank ?? 99) - (b.rank ?? 99)) }); });
+  groups.forEach((g) => { const es = g?.standings?.entries || []; if (es.length) out.push({ name: g.name || '', rows: es.map((e) => ({ id: e.team?.id, team: e.team?.displayName || e.team?.name || '—', logo: e.team?.logos?.[0]?.href || null, rank: stat(e, 'rank'), played: stat(e, 'gamesPlayed'), won: stat(e, 'wins'), drawn: stat(e, 'ties'), lost: stat(e, 'losses'), gd: stat(e, 'pointDifferential'), points: stat(e, 'points') })).sort((a, b) => (a.rank ?? 99) - (b.rank ?? 99)) }); });
   return out;
 }
 export async function match(slug, id) {
@@ -38,4 +38,26 @@ export async function match(slug, id) {
   const events = (d?.keyEvents || []).map((k) => ({ minute: k.clock?.displayValue || '', type: k.type?.text || '', text: k.shortText || k.text || '', team: k.team?.displayName || '' })).filter((k) => k.type || k.text);
   const stats = (d?.boxscore?.teams || []).map((t) => ({ team: t.team?.displayName, stats: Object.fromEntries((t.statistics || []).map((s) => [s.label || s.name, s.displayValue])) }));
   return { state: comp.status?.type?.state || '', detail: comp.status?.type?.shortDetail || '', home: side(home), away: side(away), venue: d?.gameInfo?.venue?.fullName || '', events, stats };
+}
+
+// ---- team profile (ESPN: /teams/{id}, /teams/{id}/roster, /teams/{id}/schedule). Mapped from the known layout; every field is optional.
+const numOf = (x) => { const v = x && typeof x === 'object' ? (x.value ?? x.displayValue) : x; return v == null || v === '' || Number.isNaN(Number(v)) ? null : Number(v); };
+export async function teamProfile(slug, id) {
+  const [info, ros, sch] = await Promise.all([
+    cachedJSON(`${SITE}/${slug}/teams/${id}`, 30 * MIN).catch(() => null),
+    cachedJSON(`${SITE}/${slug}/teams/${id}/roster`, 6 * 60 * MIN).catch(() => null),
+    cachedJSON(`${SITE}/${slug}/teams/${id}/schedule`, 15 * MIN).catch(() => null),
+  ]);
+  const t = info?.team || {};
+  const flat = (ros?.athletes || []).flatMap((g) => (Array.isArray(g?.items) ? g.items : [g]));
+  const players = flat.map((p) => ({ id: p.id, name: p.displayName || p.fullName || p.name || '', pos: p.position?.displayName || p.position?.name || '', posAbbr: p.position?.abbreviation || '', number: p.jersey ?? null, age: p.age ?? null, country: p.citizenship || p.birthPlace?.country || '', height: p.displayHeight || '' })).filter((p) => p.name);
+  const games = (sch?.events || []).map((e) => {
+    const c = e.competitions?.[0] || {}; const cs = c.competitors || []; const me = cs.find((x) => String(x.team?.id) === String(id)) || cs[0], op = cs.find((x) => x !== me) || cs[1];
+    const st = c.status?.type || e.status?.type || {};
+    return { id: e.id, date: e.date, state: st.state || 'pre', home: me?.homeAway === 'home', opp: op?.team?.displayName || op?.team?.name || '—', oppLogo: op?.team?.logos?.[0]?.href || op?.team?.logo || null, mine: numOf(me?.score), theirs: numOf(op?.score), winner: me?.winner === true ? 'W' : op?.winner === true ? 'L' : st.state === 'post' ? 'D' : '', comp: e.league?.name || e.season?.slug || '' };
+  }).filter((g) => g.date);
+  return {
+    name: t.displayName || t.name || '', logo: t.logos?.[0]?.href || t.logo || null, color: t.color ? `#${String(t.color).replace('#', '')}` : null, location: t.location || '', venue: t.franchise?.venue?.fullName || t.venue?.fullName || '',
+    record: t.record?.items?.[0]?.summary || '', standing: t.standingSummary || '', form: t.form || '', players, games,
+  };
 }

@@ -171,6 +171,9 @@ export async function lineups(year) {
   const lr = await lastRace(year).catch(() => null);
   if (lr && lr.rows.length) lr.rows.forEach((r) => add(r.teamId, { driverId: r.driverId, name: r.driver, first: r.first, last: r.last, code: r.code, team: r.team }));
   else (await driverStandings(year)).forEach((x) => add(x.teamId, { driverId: x.driverId, name: x.name, first: x.first, last: x.last, code: x.code, team: x.team }));
+  // Only the two race seats: test, reserve and one-off drivers are left out (the ones with the most points keep the seats).
+  const st = await driverStandings(year).catch(() => []); const pts = (id) => st.find((x) => x.driverId === id)?.points ?? -1;
+  Object.keys(out).forEach((k) => { if (out[k].length > 2) out[k] = [...out[k]].sort((a, b) => pts(b.driverId) - pts(a.driverId)).slice(0, 2); });
   return out;
 }
 // One team's season so far, from both cars' results. A figure that fails to load is null and shows as a dash.

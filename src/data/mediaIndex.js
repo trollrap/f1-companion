@@ -84,4 +84,4 @@ export const engineers = {
 export const numbers = {
 
 };
-export const appLogo = require('../../assets/app/logo.png');
+export const appLogo = null;

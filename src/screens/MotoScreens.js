@@ -13,7 +13,7 @@ import { Segmented, Countdown } from '../components/Shared';
 import { hm, dayName } from '../lib/time';
 import { useAsync } from '../hooks/useAsync';
 import { useNow } from '../hooks/useSeason';
-import { seasons, events, categories, sessions, classification, standings, lastRace, flagOf, mgDate, groupStandings, riderSeason } from '../api/motogp';
+import { seasons, events, categories, sessions, classification, standings, lastRace, flagOf, mgDate, groupStandings, riderSeason, teamSeason, bikeColor, mainRiders } from '../api/motogp';
 import { up } from '../lib/i18n';
 import { useMotoFavs } from '../hooks/useMotoFavs';
 import { StarButton } from '../components/Shared';
@@ -70,7 +70,7 @@ export function MotoHome({ navigation }) {
         <Eyebrow>Your riders</Eyebrow>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>{mine.slice(0, 4).map((r) => (
           <View key={r.riderId} style={{ width: '48%' }}><Press onPress={() => navigation.navigate('MotoRider', { rider: r, season: m.season })}>
-            <Grad color={teamColor(r.team)} from={0.6} to={0.08} radius={18} border={0.9} style={{ height: 120, padding: 12, justifyContent: 'space-between', borderColor: colors.gold }}>
+            <Grad color={bikeColor(r.bike, r.team, teamColor(r.team))} from={0.6} to={0.08} radius={18} border={0.9} style={{ height: 120, padding: 12, justifyContent: 'space-between', borderColor: colors.gold }}>
               <Text style={{ color: colors.fg, fontFamily: 'display', fontWeight: '800', fontSize: 26 }}>{`P${r.position}`}</Text>
               <View><Text style={s.sub} numberOfLines={1}>{r.name.split(' ')[0]}</Text><Text style={{ color: colors.fg, fontSize: 19, fontWeight: '700' }} numberOfLines={1}>{r.name.split(' ').slice(1).join(' ')}</Text><Text style={s.sub}>{`${r.points} pts`}</Text></View>
             </Grad>
@@ -153,7 +153,7 @@ export function MotoRider({ route, navigation }) {
     ['Sprint podiums', list.filter((x) => x.sprint && Number(x.sprint.position) <= 3).length], ['Not classified', races.length - fin.length]];
   return (
     <Screen header={false}>
-      <Grad color={colors.accent} from={0.5} to={0.05} border={0.4} style={{ padding: 16 }}>
+      <Grad color={bikeColor(rider.bike, rider.team, colors.accent)} from={0.5} to={0.05} border={0.4} style={{ padding: 16 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <View style={{ flex: 1 }}>
             <Text style={s.eyebrow}>{`${rider.iso ? flagOf(rider.iso) + ' ' : ''}${season.year}`}</Text>
@@ -190,12 +190,12 @@ export function MotoPaddock({ navigation }) {
   const cats = useAsync(() => (m.season ? categories(m.season.id) : Promise.resolve(null)), [m.season?.id]);
   const [cat, setCat] = useState(null); const catId = cats.v?.find((c) => c.id === cat)?.id || cats.v?.[0]?.id; const isTop = catId && catId === cats.v?.[0]?.id;
   const st = useAsync(() => (m.season && catId ? standings(m.season.id, catId) : Promise.resolve(null)), [m.season?.id, catId]);
-  const rows = (st.v || []).filter((r) => !q.trim() || matches(q, r.name, r.team, r.bike));
-  const teams = useMemo(() => groupStandings(rows, 'team'), [rows]);
+  const main = useMemo(() => mainRiders(st.v || []), [st.v]); const rows = main.filter((r) => !q.trim() || matches(q, r.name, r.team, r.bike));
+  const teams = useMemo(() => groupStandings(st.v || [], 'team').filter((tm) => rows.some((r) => r.team === tm.name)), [st.v, rows]); // team points count every rider, the riders shown are the two main ones
   const open = (r) => isTop && r.riderId && navigation.navigate('MotoRider', { rider: r, season: m.season });
   const box = (r) => (
     <View key={r.riderId || r.name} style={{ width: '48.5%' }}><Press onPress={() => open(r)}>
-      <Grad color={teamColor(r.team)} from={0.6} to={0.08} radius={18} border={mf.has(r.riderId) ? 0.9 : 0.4} style={[{ height: 130 }, mf.has(r.riderId) && { borderColor: colors.gold }]}>
+      <Grad color={bikeColor(r.bike, r.team, teamColor(r.team))} from={0.6} to={0.08} radius={18} border={mf.has(r.riderId) ? 0.9 : 0.4} style={[{ height: 130 }, mf.has(r.riderId) && { borderColor: colors.gold }]}>
         {r.number != null ? <Text style={{ position: 'absolute', right: 6, bottom: -10, fontFamily: 'display', fontWeight: '800', fontSize: 78, color: 'rgba(255,255,255,0.13)' }}>{r.number}</Text> : null}
         <View style={{ flex: 1, padding: 12, justifyContent: 'space-between' }}>
           <Text style={{ fontFamily: 'display', fontWeight: '800', fontSize: 24, color: colors.fg }}>{r.number ?? ''}</Text>
@@ -213,15 +213,58 @@ export function MotoPaddock({ navigation }) {
       {st.v && !rows.length && <Note>Nothing found.</Note>}
       {seg === 'riders' && teams.map((tm) => (
         <View key={tm.name} style={{ gap: 8 }}>
-          <Text style={{ color: colors.muted, fontFamily: 'label', fontSize: 12, letterSpacing: 2.2 }}>{tm.name.toUpperCase()}</Text>
+          <Pressable onPress={() => isTop && navigation.navigate('MotoTeam', { name: tm.name, riders: rows.filter((r) => r.team === tm.name), position: tm.position, points: tm.points, season: m.season })} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}><Text style={{ color: colors.muted, fontFamily: 'label', fontSize: 12, letterSpacing: 2.2 }}>{tm.name.toUpperCase()}</Text>{isTop ? <Ionicons name="chevron-forward" size={14} color={colors.muted} /> : null}</Pressable>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>{rows.filter((r) => r.team === tm.name).map(box)}</View>
         </View>))}
-      {seg === 'teams' && teams.map((tm) => (
-        <Grad key={tm.name} color={teamColor(tm.name)} from={0.75} to={0.1} dir="h" radius={18} border={0.45} style={{ padding: 14 }}>
-          <View style={{ gap: 4 }}>{rows.filter((r) => r.team === tm.name).map((r) => <Text key={r.name} style={{ color: colors.fg, fontSize: 15, fontWeight: '700' }}>{`${r.number != null ? r.number + '  ' : ''}${r.name}`}</Text>)}</View>
-          <Text style={{ color: colors.fg, fontSize: 24, fontWeight: '700', marginTop: 10 }} numberOfLines={1}>{tm.name}</Text>
-          <Text style={{ color: 'rgba(255,255,255,0.75)', fontSize: 16 }}>{`P${tm.position} · ${tm.points} pts`}</Text>
-        </Grad>))}
+      {seg === 'teams' && teams.map((tm) => { const mem = rows.filter((r) => r.team === tm.name), col = bikeColor(mem[0]?.bike, tm.name, teamColor(tm.name)); return (
+        <Press key={tm.name} onPress={() => isTop && navigation.navigate('MotoTeam', { name: tm.name, riders: mem, position: tm.position, points: tm.points, season: m.season })}>
+          <Grad color={col} from={0.75} to={0.1} dir="h" radius={18} border={0.45} style={{ padding: 14 }}>
+            <View style={{ gap: 4 }}>{mem.map((r) => <Text key={r.name} style={{ color: colors.fg, fontSize: 15, fontWeight: '700' }}>{`${r.number != null ? r.number + '  ' : ''}${r.name}`}</Text>)}</View>
+            <Text style={{ color: colors.fg, fontSize: 24, fontWeight: '700', marginTop: 10 }} numberOfLines={1}>{tm.name}</Text>
+            <Text style={{ color: 'rgba(255,255,255,0.75)', fontSize: 16 }}>{`P${tm.position} · ${tm.points} pts`}</Text>
+          </Grad>
+        </Press>); })}
+    </Screen>
+  );
+}
+
+export function MotoTeam({ route, navigation }) {
+  const { name, riders, position, points, season } = route.params; const ids = riders.map((r) => r.riderId).filter(Boolean); const col = bikeColor(riders[0]?.bike, name, colors.accent);
+  const res = useAsync(() => teamSeason(season.id, season.year, ids), [name, season.id]);
+  const list = res.v || []; const fin = (k) => list.flatMap((x) => x.riders.map((r) => r[k]).filter(Boolean)).map((r) => Number(r.position)).filter((p) => Number.isFinite(p));
+  const rp = fin('race'), sp = fin('sprint'); const bikes = [...new Set(riders.map((r) => r.bike).filter(Boolean))];
+  const stat = [['Position', position ?? '—'], ['Points', points ?? '—'], ['Wins', rp.filter((p) => p === 1).length], ['Podiums', rp.filter((p) => p <= 3).length], ['Best finish', rp.length ? `P${Math.min(...rp)}` : '—'], ['Events', list.length], ['Sprint podiums', sp.filter((p) => p <= 3).length], ['Riders', riders.length], ['Top 10s', rp.filter((p) => p <= 10).length]];
+  return (
+    <Screen header={false}>
+      <Grad color={col} from={0.6} to={0.06} border={0.45} style={{ padding: 16 }}>
+        <Text style={s.eyebrow}>{`${season.year} · MOTOGP`}</Text>
+        <Text style={s.title} numberOfLines={2}>{name}</Text>
+        {bikes.length ? <Text style={s.sub}>{bikes.join(' · ')}</Text> : null}
+      </Grad>
+      <Card>
+        <Eyebrow>{`${season.year} season`}</Eyebrow>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>{stat.map(([k, v]) => <View key={k} style={s.stat}><Text style={s.statK}>{up(k)}</Text><Text style={s.statV}>{String(v)}</Text></View>)}</View>
+        {res.loading && <Note>Loading the season's races. The first time can take several seconds.</Note>}
+        {res.error && <Note>{`Results unavailable: ${res.error}`}</Note>}
+      </Card>
+      <Card>
+        <Eyebrow>Riders</Eyebrow>
+        <View style={{ marginTop: 8 }}>{riders.map((r) => (
+          <Pressable key={r.riderId || r.name} onPress={() => r.riderId && navigation.navigate('MotoRider', { rider: r, season })} style={s.row}>
+            <View style={s.pos}><Text style={s.posT}>{r.position ?? '–'}</Text></View>
+            <View style={{ flex: 1 }}><Text style={s.name} numberOfLines={1}>{`${r.iso ? flagOf(r.iso) + ' ' : ''}${r.name}`}</Text><Text style={s.sub}>{r.number != null ? `#${r.number}` : ''}</Text></View>
+            <Text style={s.right}>{`${r.points ?? 0} pts`}</Text><Ionicons name="chevron-forward" size={16} color={colors.muted} />
+          </Pressable>))}</View>
+      </Card>
+      {list.length > 0 && (
+        <Card>
+          <Eyebrow>Race by race</Eyebrow>
+          <View style={{ marginTop: 8 }}>{[...list].reverse().map((x) => (
+            <View key={x.event.id} style={s.row}>
+              <View style={{ flex: 1 }}><Text style={s.name} numberOfLines={1}>{`${flagOf(x.event.iso)} ${x.event.short || x.event.name}`}</Text><Text style={s.sub}>{mgDate(x.event)}</Text></View>
+              <View style={{ alignItems: 'flex-end', gap: 2 }}>{x.riders.map((r, i) => <Text key={i} style={{ color: colors.fg, fontSize: 14, fontWeight: '700' }}>{`${(riders[i]?.name || '').split(' ').slice(-1)[0]}  ${r.race ? (Number.isFinite(Number(r.race.position)) ? 'P' + r.race.position : r.race.status || '–') : '–'}`}</Text>)}</View>
+            </View>))}</View>
+        </Card>)}
     </Screen>
   );
 }

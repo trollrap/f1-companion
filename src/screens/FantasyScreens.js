@@ -9,11 +9,11 @@ import Dropdown from '../components/Dropdown';
 import Skeleton from '../components/Skeleton';
 import { Segmented, StatGrid, ResultLine } from '../components/Shared';
 import ExportBar from '../components/ExportBar';
-import { Avatar, Field, Stepper, Btn, Swatches, SessionCard, StandingsCard } from '../components/FunBits';
+import { Avatar, Field, Stepper, Btn, Swatches, SessionCard, StandingsCard, SummaryCard } from '../components/FunBits';
 import { useFun, pickImage, uid, canPickImage } from '../fun/store';
 import { makeGrid, nextStep, runStep, runWeekend, runSeason, sessionsOf, standings, freeNumber, randomDriver, TEAM_COLORS, DRIVER_ATTRS, TEAM_ATTRS, A, TA, ovr, makeDriverAttrs, simulateTransfers } from '../fun/sim';
 import { attrsFor } from '../fun/talent';
-import { driverPic, teamPic, viewOf, seasonList, seasonNo, careerOf, numberClash, closeSeason, isDone } from '../fun/look';
+import { driverPic, teamPic, viewOf, seasonList, seasonNo, careerOf, numberClash, closeSeason, isDone, allTime, seasonSummary } from '../fun/look';
 import { loadRealGrid } from '../fun/realGrid';
 import { nameParts } from './FunScreens';
 import { useAsync } from '../hooks/useAsync';
@@ -112,7 +112,7 @@ function NumField({ f, d, onSet }) {
 /* ------------------------------------------------------------------ new fantasy */
 export function FantasyNew({ navigation }) {
   const fun = useFun(); const p = fun.profile;
-  const [name, setName] = useState(`Fantasy ${fun.fantasies.length + 1}`); const [mode, setMode] = useState('real'); const [count, setCount] = useState(10);
+  const [name, setName] = useState(`Fantasy ${fun.fantasies.length + 1}`); const [mode, setMode] = useState('real'); const [count, setCount] = useState(11);
   const [races, setRaces] = useState(() => CIRCUITS.slice(0, 8).map(circuitRace)); const [me, setMe] = useState(false); const [meTeam, setMeTeam] = useState(0); const [seed, setSeed] = useState(0);
   const real = useAsync(() => (mode === 'real' ? loadRealGrid([]) : Promise.resolve(null)), [mode]);
   const invented = useMemo(() => makeGrid(count, [p?.number].filter(Boolean)), [count, seed, p?.number]);
@@ -164,18 +164,27 @@ export function Fantasy({ route, navigation }) {
   useEffect(() => { if (f) navigation.setOptions({ title: f.name }); }, [f?.name]);
   if (!f) return <Screen header={false}><Note>{fun.loaded ? 'This season no longer exists.' : 'Loading…'}</Note></Screen>;
   const cur = seasonNo(f), n = sel && seasonList(f).includes(sel) ? sel : cur, isCur = n === cur, v = viewOf(f, n), st = standings(v), off = !!f.off && isCur;
-  const step = isCur && !off ? nextStep(f) : null, done = v.races.filter((r) => sessionsOf(r).every((s) => v.results?.[r.id]?.[s])).length, complete = isDone(v) && !off;
+  const ended = !!f.ended && isCur, step = isCur && !off && !ended ? nextStep(f) : null, done = v.races.filter((r) => sessionsOf(r).every((s) => v.results?.[r.id]?.[s])).length, complete = isDone(v) && !off;
   const apply = (fn) => { setBusy(true); setTimeout(() => { fun.update(id, fn); setBusy(false); }, 30); };
-  const champ = complete ? st.drivers[0] : null, tchamp = complete ? st.teams[0] : null; const tabs = ['season', 'drivers', 'teams', 'setup'];
+  const champ = complete ? st.drivers[0] : null, tchamp = complete ? st.teams[0] : null; const tabs = ['season', 'drivers', 'teams', 'stats', 'setup'];
   const openDriver = (d) => navigation.navigate('FantasyDriver', { id, driverId: d.id, season: n });
-  const driverRows = st.drivers.map((d) => ({ key: d.id, name: d.name, team: teamOf(v, d.teamId)?.name || '', color: tcol(v, d.teamId), points: d.points }));
-  const teamRows = st.teams.map((t) => ({ key: t.id, name: t.name, team: `${t.wins} wins`, color: t.color, points: t.points }));
+  const driverRows = st.drivers.map((d) => ({ key: d.id, name: d.name, team: teamOf(v, d.teamId)?.name || '', color: tcol(v, d.teamId), points: d.points, photo: driverPic(v.drivers.find((x) => x.id === d.id)), code: String(d.last || d.name).slice(0, 3).toUpperCase(), logo: teamPic(teamOf(v, d.teamId)) }));
+  const teamRows = st.teams.map((t) => ({ key: t.id, name: t.name, team: `${t.wins} wins`, color: t.color, points: t.points, logo: teamPic(t) }));
   return (
-    <Screen header={false} swipe={{ index: tabs.indexOf(tab), count: 4, onIndex: (i) => setTab(tabs[i]) }}>
+    <Screen header={false} swipe={{ index: tabs.indexOf(tab), count: 5, onIndex: (i) => setTab(tabs[i]) }}>
       {seasonList(f).length > 1 ? <Dropdown value={n} options={seasonList(f).map((k) => [k, k === cur ? `Season ${k} · ${off ? 'transfers' : 'current'}` : `Season ${k}`])} onChange={(k) => { setSel(k); setExp(false); }} prefix="Season" /> : null}
-      <Segmented value={tab} onChange={setTab} items={[['season', 'Season'], ['drivers', 'Drivers'], ['teams', 'Teams'], ['setup', 'Setup']]} />
+      <Segmented value={tab} onChange={setTab} items={[['season', 'Season'], ['drivers', 'Drivers'], ['teams', 'Teams'], ['stats', 'Stats'], ['setup', 'Setup']]} />
       {tab === 'season' && (<>
-        {off ? (
+        {ended ? (
+          <Card>
+            <Eyebrow>Save ended</Eyebrow>
+            <Text style={{ color: colors.muted, fontSize: 16, marginTop: 8 }}>This save is closed. Everything that happened is in the Stats tab.</Text>
+            <View style={{ gap: 10, marginTop: 14 }}>
+              <Btn tone="solid" icon="stats-chart" onPress={() => setTab('stats')}>Show the total stats</Btn>
+              <Btn icon="refresh" onPress={() => fun.update(id, (g) => ({ ...g, ended: false }))}>Reopen this save</Btn>
+            </View>
+          </Card>
+        ) : off ? (
           <Card>
             <Eyebrow>{`Season ${cur} · transfers`}</Eyebrow>
             <Text style={{ color: colors.muted, fontSize: 16, marginTop: 8 }}>Move drivers between teams, change numbers, add new drivers and choose the calendar. Then start the season.</Text>
@@ -197,7 +206,7 @@ export function Fantasy({ route, navigation }) {
                   <Btn icon="fast-forward" disabled={busy} onPress={() => apply(runSeason)} style={{ flex: 1 }}>Whole season</Btn>
                 </View>
               </View>) : null}
-            {complete && isCur ? (
+            {complete && isCur && !ended ? (
               <View style={{ gap: 10, marginTop: 14 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}><Text style={{ flex: 1, color: colors.fg, fontSize: 15 }}>Ratings change a little for the new season</Text><Switch value={evolve} onValueChange={setEvolve} trackColor={{ true: colors.accent, false: colors.surface2 }} thumbColor="#fff" /></View>
                 <Btn tone="solid" icon="arrow-forward-circle" onPress={() => { fun.update(id, (g) => closeSeason(g, evolve)); setSel(null); navigation.navigate('FantasyTransfers', { id }); }}>{`Continue to season ${cur + 1}`}</Btn>
@@ -215,6 +224,7 @@ export function Fantasy({ route, navigation }) {
               </Grad>
             </Press>);
         })}
+        {isCur && !ended ? <Btn icon="flag" onPress={() => Alert.alert('End this save?', 'The save is closed and the total stats of every season are shown. You can reopen it later.', [{ text: 'Cancel', style: 'cancel' }, { text: 'End save', onPress: () => { fun.update(id, (g) => ({ ...g, ended: true, endedAt: Date.now(), off: false })); setTab('stats'); } }])}>End this save and show total stats</Btn> : null}
       </>)}
       {tab === 'drivers' && (<>
         <Btn icon="share-social-outline" onPress={() => setExp(!exp)}>{exp ? 'Hide the export picture' : 'Export the drivers standings'}</Btn>
@@ -232,6 +242,7 @@ export function Fantasy({ route, navigation }) {
             <Text style={{ color: colors.fg, fontSize: 22, fontWeight: '800' }}>{t.points}</Text>
           </Grad>))}
       </>)}
+      {tab === 'stats' && <AllStats f={f} v={v} n={n} closed={complete || (ended && isCur)} navigation={navigation} />}
       {tab === 'setup' && (isCur ? <Setup f={f} update={(fn) => fun.update(id, fn)} profile={fun.profile} navigation={navigation} onDelete={() => Alert.alert('Delete this fantasy?', 'All its seasons are deleted and cannot be brought back.', [{ text: 'Cancel', style: 'cancel' }, { text: 'Delete', style: 'destructive', onPress: () => { fun.remove(id); navigation.goBack(); } }])} /> : <Note>Past seasons cannot be edited. Switch back to the current season to change the setup.</Note>)}
     </Screen>
   );
@@ -411,7 +422,7 @@ export function FantasyDriver({ route, navigation }) {
 /* ------------------------------------------------------------------ one race: the same session menu and rows as the real results, plus exports */
 const OVT = (od) => (od > 0.62 ? 'Hard to overtake' : od > 0.45 ? 'Medium overtaking' : 'Easy to overtake');
 export function FantasyRace({ route, navigation }) {
-  const { id, raceId, season, focus } = route.params; const fun = useFun(); const f = fun.get(id); const shotList = useRef(null), shotCompact = useRef(null); const [sel, setSel] = useState(null); const [mode, setMode] = useState('photos');
+  const { id, raceId, season, focus } = route.params; const fun = useFun(); const f = fun.get(id); const shotCompact = useRef(null); const [sel, setSel] = useState(null);
   const v = f ? viewOf(f, season) : null; const race = v?.races.find((r) => r.id === raceId);
   if (!f || !race) return <Screen header={false}><Note>Not found.</Note></Screen>;
   const isCur = !season || season === seasonNo(f), all = sessionsOf(race), have = all.filter((x) => v.results?.[raceId]?.[x]);
@@ -426,7 +437,7 @@ export function FantasyRace({ route, navigation }) {
     const sub = isQ ? `${r.seg}${r.gap ? ` · ${r.gap}` : ''}` : [r.grid > 0 ? `Started P${r.grid}` : '', `${r.points} pts`].filter(Boolean).join(' · ');
     return <ResultLine key={r.driverId} pos={r.pos} first={d.first} last={d.last} color={tcol(v, d.teamId)} right={r.time} sub={sub} tags={tags} fav={d.me} fastest={!!r.fl} flash={focus === d.id} photoSrc={driverPic(d)} logoSrc={teamPic(t)} index={anim ? Math.min(i, 8) : undefined} onPress={anim ? () => navigation.navigate('FantasyDriver', { id, driverId: d.id, season: season || seasonNo(f) }) : undefined} />;
   };
-  const cardRows = rows.map((r) => { const d = drv(r.driverId); return { key: r.driverId, pos: r.pos, color: tcol(v, d?.teamId), name: d ? d.name : '?', team: team(d?.teamId)?.name || '', right: !isQ && r.points ? `${r.time}  +${r.points}` : r.time }; });
+  const cardRows = rows.map((r) => { const d = drv(r.driverId); return { key: r.driverId, pos: r.pos, color: tcol(v, d?.teamId), name: d ? d.name : '?', photo: d ? driverPic(d) : null, code: d ? String(d.last).slice(0, 3).toUpperCase() : '', logo: teamPic(team(d?.teamId)), team: team(d?.teamId)?.name || '', right: !isQ && r.points ? `${r.time}  +${r.points}` : r.time }; });
   const chip = (icon, text) => <View key={text} style={{ flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, height: 30, borderRadius: 15, backgroundColor: colors.surface2, borderWidth: 1, borderColor: colors.line }}><Ionicons name={icon} size={14} color={colors.accent} /><Text style={{ color: colors.fg, fontSize: 13, fontWeight: '600' }}>{text}</Text></View>;
   return (
     <Screen header={false}>
@@ -438,20 +449,82 @@ export function FantasyRace({ route, navigation }) {
       {missing && isCur && !f.off ? <Btn tone="solid" icon="play-skip-forward" onPress={simulateMissing}>{have.length ? 'Simulate the rest of the weekend' : 'Simulate this weekend'}</Btn> : null}
       {have.length > 0 && (<>
         <Dropdown value={cur} options={have.map((x) => [x, x])} onChange={setSel} />
-        <View ref={shotList} collapsable={false} style={{ borderRadius: 18, padding: 10, paddingTop: 12, backgroundColor: colors.bg, borderWidth: 1, borderColor: alpha(colors.accent, 0.35) }}>
-          <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', paddingHorizontal: 4 }}>
-            <Text style={{ color: colors.fg, fontSize: 19, fontWeight: '800', fontStyle: 'italic', flexShrink: 1 }} numberOfLines={1}>{race.name}</Text>
-            <Text style={{ color: colors.muted, fontFamily: 'label', fontSize: 11, letterSpacing: 1.5 }}>{String(cur).toUpperCase()}</Text>
-          </View>
-          {fl ? <Text style={{ color: colors.purple, fontSize: 13, paddingHorizontal: 4, marginTop: 4 }}>{`Fastest lap: ${drv(fl.driverId)?.name} · ${fl.flTime}`}</Text> : null}
-          {rows.map((r, i) => line(r, i, true))}
-          <Text style={{ color: colors.muted, fontFamily: 'label', fontSize: 9, letterSpacing: 2, textAlign: 'center', marginTop: 10 }}>FANTASY · F1 COMPANION</Text>
-        </View>
-        <Segmented value={mode} onChange={setMode} items={[['photos', 'Export with photos'], ['compact', 'Export compact']]} />
-        {mode === 'compact' ? <SessionCard shotRef={shotCompact} title={race.name} sub={cur} rows={cardRows} /> : null}
-        <ExportBar target={mode === 'compact' ? shotCompact : shotList} />
+        {fl ? <Text style={{ color: colors.purple, fontSize: 14 }}>{`Fastest lap: ${drv(fl.driverId)?.name} · ${fl.flTime}`}</Text> : null}
+        {rows.map((r, i) => line(r, i, true))}
+        <Text style={{ color: colors.muted, fontSize: 13, marginTop: 4 }}>The picture below is the compact version, with team logos and small driver photos.</Text>
+        <SessionCard shotRef={shotCompact} title={race.name} sub={cur} rows={cardRows} limit={22} />
+        <ExportBar target={shotCompact} />
       </>)}
       {!have.length && <Note>Nothing simulated for this race yet.</Note>}
     </Screen>
   );
+}
+
+/* ------------------------------------------------------------------ everything that happened in a save */
+function AllStats({ f, v, n, closed, navigation }) {
+  const a = useMemo(() => allTime(f), [f]); const sm = useMemo(() => seasonSummary(v, closed), [v, closed]); const [sx, setSx] = useState(false); const shotS = useRef(null); const [all, setAll] = useState(false); const [exp, setExp] = useState(false); const shot = useRef(null);
+  const tile = (k, v) => (<View key={k} style={{ width: '31.5%', backgroundColor: colors.surface2, borderWidth: 1, borderColor: colors.line, borderRadius: 12, padding: 10 }}><Text style={{ color: colors.muted, fontFamily: 'label', fontSize: 9, letterSpacing: 1.2 }}>{k.toUpperCase()}</Text><Text style={{ color: colors.fg, fontSize: 22, fontWeight: '800', marginTop: 2 }}>{String(v)}</Text></View>);
+  if (!a.races) return <Card><Note>Nothing has been simulated yet. Once races are run, every total shows up here.</Note></Card>;
+  const rows = all ? a.drivers : a.drivers.slice(0, 10); const champ = a.drivers[0];
+  const ex = a.drivers.map((x) => ({ key: x.id, name: x.d.name, photo: driverPic(x.d), code: String(x.d.last || '').slice(0, 3).toUpperCase(), logo: teamPic(x.team), team: `${x.titles} titles · ${x.wins} wins`, color: x.team?.color || colors.muted, points: x.points }));
+  return (<>
+    {f.ended ? <Grad color={colors.gold} from={0.3} to={0.04} border={0.5} style={{ padding: 14 }}><Text style={{ color: colors.gold, fontFamily: 'label', fontSize: 11, letterSpacing: 2 }}>FINAL STATS</Text><Text style={{ color: colors.fg, fontSize: 22, fontWeight: '800', marginTop: 4 }}>{f.name}</Text><Text style={{ color: colors.muted, fontSize: 15 }}>{`${a.seasons} season${a.seasons > 1 ? 's' : ''} · ${a.races} races`}</Text></Grad> : null}
+    <Card>
+      <Eyebrow>Totals</Eyebrow>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
+        {tile('Seasons', a.seasons)}{tile('Races', a.races)}{tile('Drivers', a.drivers.length)}{tile('Champions', new Set(a.champs.map((c) => c.driver.id)).size)}{tile('Winners', a.drivers.filter((x) => x.wins > 0).length)}{tile('Fastest laps', a.drivers.reduce((s, x) => s + x.fl, 0))}
+      </View>
+      {champ && champ.titles > 0 ? <Text style={{ color: colors.gold, fontSize: 17, fontWeight: '800', marginTop: 12 }}>{`🏆 Most titles: ${champ.d.name} (${champ.titles})`}</Text> : null}
+    </Card>
+    {a.champs.length > 0 && (
+      <Card>
+        <Eyebrow>Champions</Eyebrow>
+        <View style={{ marginTop: 8 }}>{a.champs.map((c) => (
+          <View key={c.n} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.line }}>
+            <Text style={{ width: 30, color: colors.muted, fontWeight: '800', fontSize: 15 }}>{`S${c.n}`}</Text>
+            <Avatar source={driverPic(c.driver)} color={c.team?.color} label={c.driver.number} size={36} radius={18} />
+            <View style={{ flex: 1 }}><Text style={{ color: colors.fg, fontSize: 16, fontWeight: '700' }} numberOfLines={1}>{c.driver.name}</Text><Text style={{ color: colors.muted, fontSize: 13 }} numberOfLines={1}>{`${c.team?.name || ''} · ${c.driver.points} pts · ${c.driver.wins} wins`}</Text></View>
+            <Text style={{ color: colors.muted, fontSize: 12, maxWidth: 90, textAlign: 'right' }} numberOfLines={2}>{c.tteam ? `Teams: ${c.tteam.name}` : ''}</Text>
+          </View>))}</View>
+      </Card>)}
+    {sm ? (() => {
+      const names = (t) => (t ? t.who.map((d) => d.name).join(', ') : '—'); const c = sm.champion;
+      const rows = [['Most wins', sm.wins], ['Most poles', sm.poles], ['Most podiums', sm.podiums], ['Fastest laps', sm.fl], ['Most retirements', sm.dnf]].filter(([, t]) => t).map(([k, t]) => ({ k, v: names(t), n: t.val }));
+      if (sm.tpoints) rows.push({ k: 'Team champion', v: sm.tpoints.who[0].name, n: sm.tpoints.val, logo: teamPic(sm.tpoints.who[0]) });
+      if (sm.margin != null) rows.push({ k: 'Title margin', v: `${sm.races} races, ${sm.winners} winners`, n: `${sm.margin} pts` });
+      const hero = c ? { label: sm.closed ? 'CHAMPION' : 'LEADER', name: c.name, sub: `${c.points} pts · ${c.wins} wins · ${sm.team?.name || ''}`, photo: driverPic(c), color: sm.team?.color, code: String(c.last || '').slice(0, 3).toUpperCase(), logo: teamPic(sm.team) } : null;
+      return (<>
+        <View><Eyebrow>{`Season ${n} summary`}</Eyebrow></View>
+        <Card>
+          {hero ? <Text style={{ color: colors.gold, fontSize: 20, fontWeight: '800' }}>{`${sm.closed ? '🏆' : '⏱'} ${hero.name}`}</Text> : null}
+          <View style={{ marginTop: 8, gap: 6 }}>{rows.map((r) => <View key={r.k} style={{ flexDirection: 'row', gap: 8 }}><Text style={{ width: 120, color: colors.muted, fontSize: 15 }}>{r.k}</Text><Text style={{ flex: 1, color: colors.fg, fontSize: 15, fontWeight: '700' }}>{r.v}</Text><Text style={{ color: colors.fg, fontSize: 15, fontWeight: '800' }}>{r.n}</Text></View>)}</View>
+        </Card>
+        <Btn icon="share-social-outline" onPress={() => setSx(!sx)}>{sx ? 'Hide the export picture' : `Export the season ${n} summary`}</Btn>
+        {sx ? <><SummaryCard shotRef={shotS} title={`${f.name} · season ${n}`} sub={`${sm.races} races`} hero={hero} rows={rows} /><ExportBar target={shotS} /></> : null}
+      </>);
+    })() : null}
+    <View><Eyebrow>All-time drivers</Eyebrow></View>
+    {rows.map((x, i) => <ResultLine key={x.id} pos={i + 1} first={x.d.first} last={x.d.last} color={x.team?.color || colors.muted} right={String(x.points)} sub={`${x.titles} titles · ${x.wins} wins · ${x.podiums} podiums · ${x.poles} poles`} fav={x.d.me} champion={x.titles > 0 && i === 0} photoSrc={driverPic(x.d)} logoSrc={teamPic(x.team)} onPress={() => navigation.navigate('FantasyDriver', { id: f.id, driverId: x.id })} />)}
+    {a.drivers.length > 10 ? <Btn icon={all ? 'chevron-up' : 'chevron-down'} onPress={() => setAll(!all)}>{all ? 'Show the top 10' : `Show all ${a.drivers.length} drivers`}</Btn> : null}
+    <View><Eyebrow>All-time teams</Eyebrow></View>
+    {a.teams.map((x, i) => (
+      <Grad key={x.id} color={x.t.color} from={0.5} to={0.06} dir="h" radius={16} border={0.4} style={{ padding: 12, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+        <Text style={{ width: 26, color: i === 0 ? colors.gold : colors.fg, fontWeight: '800', fontSize: 18, textAlign: 'center' }}>{i + 1}</Text>
+        <Avatar source={teamPic(x.t)} color={x.t.color} label={x.t.name} size={44} radius={12} />
+        <View style={{ flex: 1 }}><Text style={{ color: colors.fg, fontSize: 18, fontWeight: '700' }} numberOfLines={1}>{x.t.name}</Text><Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13 }}>{`${x.titles} titles · ${x.wins} wins · ${x.seasons} seasons`}</Text></View>
+        <Text style={{ color: colors.fg, fontSize: 20, fontWeight: '800' }}>{x.points}</Text>
+      </Grad>))}
+    {(a.rec.wins || a.rec.points) && (
+      <Card>
+        <Eyebrow>Records</Eyebrow>
+        <View style={{ marginTop: 8, gap: 8 }}>
+          {a.rec.wins ? <Text style={{ color: colors.fg, fontSize: 16 }}>{`Most wins in a season: ${a.rec.wins.val} · ${a.rec.wins.name} (S${a.rec.wins.n})`}</Text> : null}
+          {a.rec.points ? <Text style={{ color: colors.fg, fontSize: 16 }}>{`Most points in a season: ${a.rec.points.val} · ${a.rec.points.name} (S${a.rec.points.n})`}</Text> : null}
+          {a.rec.margin && a.champs.length > 1 ? <Text style={{ color: colors.fg, fontSize: 16 }}>{`Biggest title margin: ${a.rec.margin.val} pts · ${a.rec.margin.name} (S${a.rec.margin.n})`}</Text> : null}
+          {a.rec.tight && a.champs.length > 1 ? <Text style={{ color: colors.fg, fontSize: 16 }}>{`Closest title fight: ${a.rec.tight.val} pts · ${a.rec.tight.name} (S${a.rec.tight.n})`}</Text> : null}
+        </View>
+      </Card>)}
+    <Btn icon="share-social-outline" onPress={() => setExp(!exp)}>{exp ? 'Hide the export picture' : 'Export the all-time drivers table'}</Btn>
+    {exp ? <><StandingsCard shotRef={shot} title={`${f.name} · all-time`} sub={`${a.seasons} season${a.seasons > 1 ? 's' : ''}`} rows={ex} /><ExportBar target={shot} /></> : null}
+  </>);
 }

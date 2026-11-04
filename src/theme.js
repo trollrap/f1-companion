@@ -4,7 +4,7 @@ export const colors = {
 };
 // Constructor colours by Jolpica constructorId. These are fallbacks: the app overrides them at runtime with the colours OpenF1
 // reports for the current season (see src/api/paddock.js), so new teams get their real colour without a code change.
-export const teamColors = { mercedes: '#27F4D2', ferrari: '#E8002D', red_bull: '#3671C6', mclaren: '#FF8000', aston_martin: '#229971', alpine: '#FF87BC', williams: '#64C4FF', haas: '#B6BABD', rb: '#6692FF', sauber: '#52E252' };
+export const teamColors = { mercedes: '#27F4D2', ferrari: '#E8002D', red_bull: '#3671C6', mclaren: '#FF8000', aston_martin: '#229971', alpine: '#FF87BC', williams: '#64C4FF', haas: '#B6BABD', rb: '#6692FF', sauber: '#52E252', audi: '#F2262E', cadillac: '#B7BCC6' };
 const live = {};
 export const setLiveTeamColors = (m) => { Object.keys(live).forEach((k) => delete live[k]); Object.assign(live, m); };
 // Teams that no longer race (or never reported a colour) still get a stable colour of their own, so old seasons are not all grey.
