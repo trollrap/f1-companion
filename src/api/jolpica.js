@@ -3,6 +3,7 @@
 // The position filter (/results/1) is NOT in Jolpica's docs, so it is probed at runtime and falls back to counting rows.
 import { cachedJSON, memo, MIN, HOUR, DAY } from '../lib/cache';
 import { YEAR } from './openf1';
+import { driverChampionYears, constructorChampionYears } from '../data/champions';
 const BASE = 'https://api.jolpi.ca/ergast/f1';
 // Finished seasons never change, so they are kept (almost) for good: the second visit is instant.
 const PAST = 58 * DAY, ttlFor = (year, ttl) => (Number(year) < YEAR ? PAST : ttl);
@@ -102,35 +103,30 @@ const settle = async (p) => { try { return await p; } catch { return null; } };
 const sprintRows = (d) => d.RaceTable.Races.flatMap((race) => (race.SprintResults || []).map((r) => ({ race, r })));
 const sumPts = (rows) => Math.round(rows.reduce((a, x) => a + Number(x.r.points || 0), 0) * 10) / 10;
 
-// Titles. One small request per driver or team: the seasons they finished first in the standings ("/drivers/<id>/driverstandings/1").
-// (The old "all champions in one request" call answered HTTP 400, and the per-season fallback queued about 70 requests in front of every other
-// screen. Titles now run as background requests that never block anything a screen is waiting for.) A figure that cannot load is a dash.
+// Titles come from the built-in list of champions (see data/champions.js). A title in progress is never counted.
+export async function driverTitles(id, year) { return driverChampionYears(id).filter((y) => y < year).length; }
+export async function constructorTitles(id, year) { return constructorChampionYears(id).filter((y) => y < year).length; }
 const lowGet = (path, ttl) => cachedJSON(`${BASE}${path}`, ttl, { low: true }).then((j) => j.MRData);
-async function titleCount(path, year) {
-  const d = await lowGet(path, 7 * DAY);
-  return d.StandingsTable.StandingsLists.filter((l) => Number(l.season) < year).length;
-}
-// Past seasons only: a title in progress is never counted.
-export async function driverTitles(id, year) { return settle(titleCount(`/drivers/${id}/driverstandings/1.json`, year)); }
-export async function constructorTitles(id, year) { return settle(titleCount(`/constructors/${id}/constructorstandings/1.json`, year)); }
 
+// A driver's career from small "count only" requests (limit=1) that all run at once, instead of paging every result: a few KB instead of ~15 pages.
+// Points need every result row, so they load separately (driverPoints) and fill in afterwards.
 export async function driverCareer(id, year) {
   const scope = `/drivers/${id}`;
-  // All the pieces start at once; the throttle in cache.js spaces the requests.
-  const polesP = (async () => {
-    const qAll = await settle(total(`${scope}/qualifying.json`));
-    if (qAll == null) return null;
-    const p = await countAt(scope, 'qualifying', 1, qAll);
-    return p !== null ? p : settle(pageAll(`${scope}/qualifying.json`, qualiRows, DAY, 10).then((r) => r.filter((x) => x.r.position === '1').length));
-  })();
-  const [rows, fastest, sprint, poles] = await Promise.all([settle(pageAll(`${scope}/results.json`, resultRows, DAY, 10)), settle(total(`${scope}/fastest/1/results.json`)), settle(pageAll(`${scope}/sprint.json`, sprintRows, DAY, 3)), polesP]);
-  const at = (n) => (rows ? rows.filter((x) => x.r.position === String(n)).length : null);
-  const seasons = rows ? [...new Set(rows.map((x) => Number(x.race.season)))].sort((a, b) => a - b) : null;
+  const cnt = (kind, pos) => settle(get(`${scope}/${kind}${pos ? `/${pos}` : ''}.json?limit=1`, DAY).then((d) => Number(d.total)));
+  const seasonsP = settle(get(`${scope}/seasons.json?limit=100`, DAY).then((d) => d.SeasonTable.Seasons.map((x) => Number(x.season))));
+  const [races, w, p2, p3, poles, fastest, seasons] = await Promise.all([cnt('results'), cnt('results', 1), cnt('results', 2), cnt('results', 3), cnt('qualifying', 1), settle(total(`${scope}/fastest/1/results.json`)), seasonsP]);
+  // The position filter is checked, not trusted: if it was ignored the filtered total equals the unfiltered one.
+  const ok = races != null && w != null && (races === 0 || w < races) ? { w, podiums: p2 != null && p3 != null ? w + p2 + p3 : null } : null;
   return {
-    races: rows ? rows.length : null, wins: at(1), podiums: rows ? at(1) + at(2) + at(3) : null, poles, fastest,
-    seasons: seasons ? seasons.length : null, first: seasons ? seasons[0] : null,
-    points: rows && sprint ? Math.round((sumPts(rows) + sumPts(sprint)) * 10) / 10 : null,
+    races, wins: ok ? ok.w : null, podiums: ok ? ok.podiums : null, poles: poles != null && (races == null || poles <= races) ? poles : null, fastest,
+    seasons: seasons ? seasons.length : null, first: seasons ? Math.min(...seasons) : null, points: undefined,
   };
+}
+// Total career points (all results plus sprints): the slow part of a career, loaded on its own.
+export async function driverPoints(id) {
+  const scope = `/drivers/${id}`;
+  const [rows, sprint] = await Promise.all([settle(pageAll(`${scope}/results.json`, resultRows, DAY, 10)), settle(pageAll(`${scope}/sprint.json`, sprintRows, DAY, 3))]);
+  return rows && sprint ? Math.round((sumPts(rows) + sumPts(sprint)) * 10) / 10 : null;
 }
 // Team totals. A figure the server cannot give is null and shown as a dash, never a guess.
 export async function constructorCareer(id, year) {
@@ -153,10 +149,10 @@ export async function teamDrivers(year, id) {
   return d.DriverTable.Drivers.map((x) => ({ driverId: x.driverId, name: `${x.givenName} ${x.familyName}`, first: x.givenName, last: x.familyName, number: x.permanentNumber, code: x.code }));
 }
 
-// Seasons a driver has raced in, newest first. Reads the same pages as driverCareer, so it comes from the cache.
+// Seasons a driver has raced in, newest first: one small request.
 export async function driverSeasons(id) {
-  const rows = await pageAll(`/drivers/${id}/results.json`, resultRows, DAY, 10);
-  return [...new Set(rows.map((x) => Number(x.race.season)))].sort((a, b) => b - a);
+  const d = await get(`/drivers/${id}/seasons.json?limit=100`, 7 * DAY);
+  return d.SeasonTable.Seasons.map((x) => Number(x.season)).sort((a, b) => b - a);
 }
 // Teams a driver raced for, oldest first, with the first and last season and the number of races (same pages as driverCareer, so cached).
 export async function driverTeamsList(id) {
@@ -222,8 +218,12 @@ export async function entryList(year) {
 
 // Everyone who ever raced / every team that ever entered (for search). Big lists, so they are kept for a month.
 export async function allDrivers() {
-  const rows = await pageAll('/drivers.json', (d) => d.DriverTable.Drivers, 30 * DAY, 12);
-  return rows.map((d) => ({ driverId: d.driverId, name: `${d.givenName} ${d.familyName}`, first: d.givenName, last: d.familyName, code: d.code, number: d.permanentNumber, nationality: d.nationality }));
+  const q = (o) => `/drivers.json?limit=100&offset=${o}`;
+  const first = await get(q(0), 30 * DAY); const pages = Math.ceil(Number(first.total) / 100);
+  // The other pages load side by side; a page that fails is skipped (and tried again next time) instead of losing the whole list.
+  const rest = await Promise.all(Array.from({ length: Math.max(0, pages - 1) }, (_, i) => get(q((i + 1) * 100), 30 * DAY).catch(() => null)));
+  const rows = [first, ...rest].filter(Boolean).flatMap((d) => d.DriverTable.Drivers);
+  return rows.map((d) => ({ driverId: d.driverId, name: `${d.givenName} ${d.familyName}`, first: d.givenName, last: d.familyName, code: d.code, number: d.permanentNumber, nationality: d.nationality, dob: d.dateOfBirth }));
 }
 export async function allConstructors() {
   const rows = await pageAll('/constructors.json', (d) => d.ConstructorTable.Constructors, 30 * DAY, 6);

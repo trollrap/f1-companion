@@ -3,7 +3,7 @@ import { View, Pressable, StyleSheet } from 'react-native';
 import Skeleton from '../components/Skeleton';
 import { Text } from '../components/Text';
 import { Ionicons } from '@expo/vector-icons';
-import Screen, { ErrorNote } from '../components/Screen';
+import Screen, { ErrorNote, Note } from '../components/Screen';
 import { Segmented, DriverBox, TeamRow, TeamBadge, ResultLine } from '../components/Shared';
 import { Eyebrow } from '../components/Screen';
 import { successor } from '../data/lineage';
@@ -22,12 +22,12 @@ export default function PaddockScreen({ navigation }) {
   const [seg, setSeg] = useState('drivers'); const favs = useFavs(); const meta = usePaddockMeta(); const tc = useTeamColor();
   const d = useAsync(() => driverStandings(YEAR), []); const t = useAsync(() => constructorStandings(YEAR), []); const lu = useAsync(() => lineups(YEAR), []);
   const [q, setQ] = useState(''); const [kind, setKind] = useState('all'); const searching = q.trim().length >= 2;
-  const everyD = useAsync(() => (searching && kind !== 'teams' ? allDrivers() : Promise.resolve(null)), [searching, kind]);
-  const everyT = useAsync(() => (searching && kind !== 'drivers' ? allConstructors() : Promise.resolve(null)), [searching, kind]);
+  const everyD = useAsync(() => (kind !== 'teams' ? allDrivers() : Promise.resolve(null)), [kind]); // starts as soon as Paddock opens, so it is ready when you type
+  const everyT = useAsync(() => (kind !== 'drivers' ? allConstructors() : Promise.resolve(null)), [kind]);
   // Search: this season's drivers and teams come first, then everyone else (names that start with the search before names that only contain it).
   const nowD = useMemo(() => new Set((d.v || []).map((x) => x.driverId)), [d.v]); const nowT = useMemo(() => new Set((t.v || []).map((x) => x.teamId)), [t.v]);
   const rank = (name, isNow) => (isNow ? 0 : 2) + (String(name).toLowerCase().split(/\s+/).some((w) => w.startsWith(q.trim().toLowerCase().split(/\s+/)[0] || '')) ? 0 : 1);
-  const hitsD = useMemo(() => (searching && everyD.v ? everyD.v.filter((x) => matches(q, x.name, x.code)).sort((a, b) => rank(a.name, nowD.has(a.driverId)) - rank(b.name, nowD.has(b.driverId))).slice(0, 40) : []), [q, everyD.v, searching, nowD]);
+  const hitsD = useMemo(() => (searching && (everyD.v || (d.v || []).map((x) => ({ driverId: x.driverId, name: x.name, first: x.first, last: x.last, code: x.code, teamId: x.teamId, team: x.team }))) ? (everyD.v || (d.v || []).map((x) => ({ driverId: x.driverId, name: x.name, first: x.first, last: x.last, code: x.code, teamId: x.teamId, team: x.team }))).filter((x) => matches(q, x.name, x.code)).sort((a, b) => rank(a.name, nowD.has(a.driverId)) - rank(b.name, nowD.has(b.driverId))).slice(0, 40) : []), [q, everyD.v, d.v, searching, nowD]);
   const hitsT = useMemo(() => (searching && everyT.v ? everyT.v.filter((x) => matches(q, x.name)).sort((a, b) => rank(a.name, nowT.has(a.teamId)) - rank(b.name, nowT.has(b.teamId))).slice(0, 40) : []), [q, everyT.v, searching, nowT]);
   // Favourites that are no longer on the grid sit under "Past seasons" below the last pair / team.
   const pastDriverIds = (favs.drivers || []).filter((id) => d.v && !nowD.has(id));
@@ -56,8 +56,10 @@ export default function PaddockScreen({ navigation }) {
       </View>
       <SearchBox value={q} onChange={setQ} placeholder="Search any driver or team, ever" />
       {q ? <Segmented value={kind} onChange={setKind} items={[['all', 'All'], ['drivers', 'Drivers'], ['teams', 'Teams']]} /> : null}
-      {searching && (everyD.loading || everyT.loading) && <Skeleton rows={3} />}
-      {searching && !everyD.loading && !everyT.loading && !hitsD.length && !hitsT.length && <Text style={{ color: colors.muted, fontSize: 15 }}>Nothing found.</Text>}
+      {searching && (everyD.loading || everyT.loading) && !hitsD.length && <Skeleton rows={3} />}
+      {searching && everyD.loading && hitsD.length ? <Note>Looking through every driver since 1950…</Note> : null}
+      {searching && (everyD.error || everyT.error) ? <Pressable onPress={() => { everyD.reload(); everyT.reload(); }}><Text style={{ color: colors.accent, fontSize: 15 }}>The full list could not be loaded (rate limit or connection). Tap to try again.</Text></Pressable> : null}
+      {searching && !everyD.loading && !everyD.error && !everyT.loading && !hitsD.length && !hitsT.length && <Text style={{ color: colors.muted, fontSize: 15 }}>Nothing found.</Text>}
       {searching && hitsD.map((x, i) => { const cur = drivers.find((y) => y.driverId === x.driverId);
         return <ResultLine key={`d${x.driverId}`} index={i} pos={cur ? cur.position : '–'} first={x.first} last={x.last} color={cur ? tc(cur.teamId) : colors.muted} right={x.code || ''} sub={cur ? cur.team : x.nationality} photoId={x.driverId} logoId={cur?.teamId} fav={favs.isDriver(x.driverId)} onPress={() => navigation.navigate('Driver', { driverId: x.driverId, name: x.name, first: x.first, last: x.last, teamId: cur?.teamId, team: cur?.team })} />; })}
       {searching && hitsT.map((x) => (

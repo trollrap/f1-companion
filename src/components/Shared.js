@@ -190,11 +190,13 @@ export function ExpandStats({ items, cols = 3, rows = 2, accent }) {
   const [open, setOpen] = useState(false); const n = cols * rows;
   if (items.length <= n) return <StatGrid items={items} cols={cols} accent={accent} />;
   const flip = () => { LayoutAnimation.configureNext(LayoutAnimation.create(240, 'easeInEaseOut', 'opacity')); setOpen(!open); };
+  // Closed: the first row in full, the second row dimmed behind the button. No gradient panel over the card (it never matched the card's own colour).
+  const first = items.slice(0, cols), rest = items.slice(cols, n);
   return (
     <View>
-      <StatGrid items={open ? items : items.slice(0, n)} cols={cols} accent={accent} />
-      {!open ? <LinearGradient pointerEvents="none" colors={[alpha(colors.cardB, 0), alpha(colors.cardB, 0.82), colors.cardB]} locations={[0, 0.45, 0.8]} style={{ position: 'absolute', left: -2, right: -2, bottom: -2, height: 104 }} /> : null}
-      <Pressable onPress={flip} hitSlop={6} style={({ pressed }) => [{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, alignSelf: 'center', marginTop: open ? 12 : -40, paddingHorizontal: 16, height: 34, borderRadius: 17, backgroundColor: colors.accentSoft, borderWidth: 1, borderColor: colors.accent }, pressed && { opacity: 0.8 }]}>
+      <StatGrid items={open ? items : first} cols={cols} accent={accent} />
+      {!open ? <View pointerEvents="none" style={{ opacity: 0.28, marginTop: -4 }}><StatGrid items={rest} cols={cols} accent={accent} /></View> : null}
+      <Pressable onPress={flip} hitSlop={6} style={({ pressed }) => [{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, alignSelf: 'center', marginTop: open ? 12 : -34, paddingHorizontal: 16, height: 34, borderRadius: 17, backgroundColor: colors.accentSoft, borderWidth: 1, borderColor: colors.accent }, pressed && { opacity: 0.8 }]}>
         <Text style={{ color: colors.fg, fontWeight: '700', fontSize: 14 }}>{open ? 'Show less' : 'Show all stats'}</Text><Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={16} color={colors.accent} />
       </Pressable>
     </View>

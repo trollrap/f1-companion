@@ -2,6 +2,7 @@ import { setLang } from '../lib/i18n';
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { setUi } from '../lib/motion';
+import { readDurable, writeDurable } from '../lib/durable';
 
 export const SESSION_TYPES = ['Practice 1', 'Practice 2', 'Practice 3', 'Sprint Qualifying', 'Sprint', 'Qualifying', 'Race'];
 export const LEADS = [[0, 'At start'], [5, '5 min'], [15, '15 min'], [30, '30 min'], [60, '1 hour'], [120, '2 hours']];
@@ -13,7 +14,7 @@ const Ctx = createContext(null);
 export function PrefsProvider({ children }) {
   const [prefs, setPrefs] = useState(DEFAULT); const [ready, setReady] = useState(false);
   useEffect(() => {
-    Promise.all([AsyncStorage.getItem('prefs'), AsyncStorage.getItem('welcomed'), AsyncStorage.getItem('accent')]).then(([r, wel, acc]) => {
+    Promise.all([AsyncStorage.getItem('prefs'), readDurable('welcomed'), readDurable('accent')]).then(([r, wel, acc]) => {
       // "welcomed" and the accent colour also live under their own small keys, so they survive however the main prefs were last written
       const v = r ? JSON.parse(r) : {}; v.opts = { ...(v.opts || {}) };
       if (wel === '1') v.opts.welcomed = true; if (acc && !v.opts.accent) v.opts.accent = acc;
@@ -27,8 +28,8 @@ export function PrefsProvider({ children }) {
     sync(n); setPrefs(n);
     const put = async (k, v) => { for (let i = 0; i < 2; i++) { try { await AsyncStorage.setItem(k, v); if ((await AsyncStorage.getItem(k)) === v) return true; } catch {} } return false; };
     const ok = await put('prefs', JSON.stringify(n));
-    if (n.opts.welcomed) await put('welcomed', '1');
-    if (n.opts.accent) await put('accent', n.opts.accent); else { try { await AsyncStorage.removeItem('accent'); } catch {} }
+    if (n.opts.welcomed) await writeDurable('welcomed', '1');
+    if (n.opts.accent) await writeDurable('accent', n.opts.accent); else await writeDurable('accent', '');
     return ok;
   }, []);
   const api = {

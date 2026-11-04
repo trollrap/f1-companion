@@ -4,12 +4,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export const SOURCES = [
   { id: 'bbc', name: 'BBC Sport', url: 'https://feeds.bbci.co.uk/sport/formula1/rss.xml' },
-  { id: 'autosport', name: 'Autosport', url: 'https://www.autosport.com/rss/f1/news' },
+  { id: 'f1', name: 'Formula 1', url: 'https://www.formula1.com/content/fom-website/en/latest/all.xml' },
+  { id: 'autosport', name: 'Autosport', url: 'https://www.autosport.com/rss/feed/f1' },
   { id: 'motorsport', name: 'Motorsport.com', url: 'https://www.motorsport.com/rss/f1/news/' },
   { id: 'racefans', name: 'RaceFans', url: 'https://www.racefans.net/feed/' },
   { id: 'therace', name: 'The Race', url: 'https://the-race.com/feed/' },
   { id: 'crash', name: 'Crash.net', url: 'https://www.crash.net/rss/f1' },
-  { id: 'planetf1', name: 'PlanetF1', url: 'https://www.planetf1.com/feed' },
+  { id: 'mweek', name: 'Motorsport Week', url: 'https://www.motorsportweek.com/feed/' },
 ];
 const TTL = 10 * 60e3, UA = { 'User-Agent': 'Mozilla/5.0 (Android) F1Companion/1.8', Accept: 'application/rss+xml, application/atom+xml, application/xml, text/xml, */*' };
 

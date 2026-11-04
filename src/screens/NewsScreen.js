@@ -1,5 +1,5 @@
-import React, { useCallback, useMemo, useState } from 'react';
-import { View, Pressable, Image, Linking, StyleSheet } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { View, Pressable, Image, Linking, StyleSheet, InteractionManager } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Text } from '../components/Text';
 import Skeleton from '../components/Skeleton';
@@ -15,7 +15,7 @@ export const ago = (ms) => { if (!ms) return ''; const m = Math.max(0, Math.roun
 // Latest motorsport news from the sources the user picked. Tap a story to read it in your browser.
 export default function NewsScreen({ navigation }) {
   const { prefs, setOpt } = usePrefs(); const sel = Array.isArray(prefs.opts.newsSel) && prefs.opts.newsSel.length ? prefs.opts.newsSel : SOURCES.map((s) => s.id);
-  const [n, setN] = useState(0); const [shown, setShown] = useState(15);
+  const [n, setN] = useState(0); const [shown, setShown] = useState(10);
   const d = useAsync(() => fetchNews(sel, n ? { fresh: true } : undefined), [sel.join(','), n]);
   const toggle = (id) => { const next = sel.includes(id) ? sel.filter((x) => x !== id) : [...sel, id]; if (next.length) setOpt('newsSel', next); };
   const items = d.v?.items || [];
@@ -36,22 +36,25 @@ export default function NewsScreen({ navigation }) {
       {d.v?.failed?.length ? <Note>{`Not reachable right now: ${d.v.failed.join(', ')}.`}</Note> : null}
       {items.slice(0, shown).map((x, i) => (
         <Story key={x.id} x={x} i={i} />))}
-      {items.length > shown ? <Press onPress={() => setShown(shown + 15)}><View style={{ height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface2, borderWidth: 1, borderColor: colors.line }}><Text style={{ color: colors.fg, fontWeight: '700', fontSize: 16 }}>{`Show more (${items.length - shown})`}</Text></View></Press> : null}
+      {items.length > shown ? <Press onPress={() => setShown(shown + 8)}><View style={{ height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface2, borderWidth: 1, borderColor: colors.line }}><Text style={{ color: colors.fg, fontWeight: '700', fontSize: 16 }}>{`Show more (${items.length - shown})`}</Text></View></Press> : null}
     </Screen>
   );
 }
 // One story. Memoised and drawn with plain views, so a long list stays smooth; tapping opens the article in the phone's browser.
 const Story = React.memo(function Story({ x, i }) {
+  // Pictures are fetched after the card has appeared (and scaled down by the system), so adding more stories never freezes the list.
+  const [pic, setPic] = useState(false); useEffect(() => { const h = InteractionManager.runAfterInteractions(() => setPic(true)); return () => h.cancel(); }, []);
+  const img = (style) => (pic && x.image ? <Image source={{ uri: x.image }} resizeMode="cover" resizeMethod="resize" fadeDuration={0} style={style} /> : <View style={style} />);
   return (
         <Press onPress={() => Linking.openURL(x.link).catch(() => {})} scale={0.985}>
           <View style={{ borderRadius: 16, overflow: 'hidden', backgroundColor: i === 0 ? colors.cardC : colors.cardA, borderWidth: 1, borderColor: alpha(colors.accent, 0.3) }}>
-            {x.image && i === 0 ? <Image source={{ uri: x.image }} resizeMode="cover" style={{ width: '100%', aspectRatio: 16 / 9, backgroundColor: colors.surface2 }} /> : null}
+            {x.image && i === 0 ? img({ width: '100%', aspectRatio: 16 / 9, backgroundColor: colors.surface2 }) : null}
             <View style={{ flexDirection: 'row', gap: 12, padding: 12, alignItems: 'center' }}>
               <View style={{ flex: 1, gap: 4 }}>
                 <Text style={{ color: colors.accent, fontFamily: 'label', fontSize: 11, letterSpacing: 1.4 }}>{`${x.sourceName.toUpperCase()}${x.date ? ` · ${ago(x.date).toUpperCase()}` : ''}`}</Text>
                 <Text style={{ color: colors.fg, fontSize: i === 0 ? 21 : 18, fontWeight: '700', lineHeight: i === 0 ? 25 : 22 }} numberOfLines={4}>{x.title}</Text>
               </View>
-              {x.image && i !== 0 ? <Image source={{ uri: x.image }} resizeMode="cover" style={{ width: 86, height: 86, borderRadius: 12, backgroundColor: colors.surface2 }} /> : null}
+              {x.image && i !== 0 ? img({ width: 86, height: 86, borderRadius: 12, backgroundColor: colors.surface2 }) : null}
             </View>
           </View>
         </Press>

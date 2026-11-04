@@ -7,7 +7,7 @@ import { colors } from '../theme';
 // "Share picture" and "Save to gallery" for a captured view.
 export default function ExportBar({ target, fallback }) {
   const [msg, setMsg] = useState('');
-  const run = async (fn, okText) => { const r = await fn(target); setMsg(r === 'ok' ? okText : r === 'shared' ? 'Photo access was not available, so the share menu opened: choose Save to gallery there.' : r === 'denied' ? 'Allow access to photos to save the picture.' : r === 'unavailable' ? 'Pictures need the latest app build.' : `That did not work${getLastError() ? ` (${getLastError().slice(0, 90)})` : ''}. Try Share picture.`); if (r === 'unavailable' && fallback) fallback(); };
+  const run = async (fn, okText) => { const r = await fn(target); setMsg(r === 'ok' ? okText : r === 'folder' ? 'Saved in the folder you chose. Pick your Pictures folder once and it shows in the gallery.' : r === 'shared' ? 'Photo access was not available, so the share menu opened: choose Save to gallery there.' : r === 'denied' ? 'Allow access to photos to save the picture.' : r === 'unavailable' ? 'Pictures need the latest app build.' : `That did not work${getLastError() ? ` (${getLastError().slice(0, 90)})` : ''}. Try Share picture.`); if (r === 'unavailable' && fallback) fallback(); };
   const B = ({ icon, label, onPress }) => (
     <Pressable onPress={onPress} style={({ pressed }) => [{ flex: 1, height: 46, borderRadius: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: colors.accentSoft, borderWidth: 1, borderColor: colors.accent }, pressed && { opacity: 0.8 }]}>
       <Ionicons name={icon} size={18} color={colors.accent} /><Text style={{ color: colors.fg, fontWeight: '700', fontSize: 15 }}>{label}</Text>

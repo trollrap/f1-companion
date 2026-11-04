@@ -2,15 +2,20 @@
 import { useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { requireOptionalNativeModule } from 'expo-modules-core';
+import { AppState } from 'react-native';
+import { readDurable, writeDurable } from '../lib/durable';
 
 const KEY = 'fun:v1';
 let state = { profile: null, fantasies: [] }; let loaded = false, loading = null, timer = null; const subs = new Set();
 const emit = () => subs.forEach((f) => f());
-const persist = () => { if (timer) clearTimeout(timer); timer = setTimeout(() => AsyncStorage.setItem(KEY, JSON.stringify(state)).catch(() => {}), 250); };
+const flush = () => { if (timer) { clearTimeout(timer); timer = null; } if (!loaded) return; return writeDurable(KEY, JSON.stringify(state)); };
+// Saved shortly after every change, and at once when the app goes to the background (so closing it right away loses nothing).
+const persist = (now) => { if (!loaded) return; if (timer) clearTimeout(timer); if (now) { flush(); return; } timer = setTimeout(flush, 400); };
+try { AppState.addEventListener('change', (st) => { if (st !== 'active') flush(); }); } catch {}
 export const uid = () => Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-4);
 async function load() {
   if (loaded) return; if (loading) return loading;
-  loading = AsyncStorage.getItem(KEY).then((r) => { if (r) { const v = JSON.parse(r); state = { profile: v.profile || null, fantasies: Array.isArray(v.fantasies) ? v.fantasies : [] }; } }).catch(() => {}).finally(() => { loaded = true; emit(); });
+  loading = (async () => { let r = null; try { r = await readDurable(KEY); } catch {} if (!r) { try { r = await AsyncStorage.getItem(KEY); } catch {} } return r; })().then((r) => { if (r) { const v = JSON.parse(r); const saved = Array.isArray(v.fantasies) ? v.fantasies : []; state = { profile: state.profile || v.profile || null, fantasies: [...state.fantasies, ...saved.filter((x) => !state.fantasies.some((y) => y.id === x.id))] }; } }).catch(() => {}).finally(() => { loaded = true; emit(); });
   return loading;
 }
 export function useFun() {
@@ -19,11 +24,11 @@ export function useFun() {
   return {
     loaded, profile: state.profile, fantasies: state.fantasies,
     get: (id) => state.fantasies.find((x) => x.id === id) || null,
-    saveProfile: (p) => { state = { ...state, profile: p }; persist(); emit(); },
-    addFantasy: (f) => { state = { ...state, fantasies: [f, ...state.fantasies] }; persist(); emit(); },
+    saveProfile: (p) => { state = { ...state, profile: p }; persist(true); emit(); },
+    addFantasy: (f) => { state = { ...state, fantasies: [f, ...state.fantasies] }; persist(true); emit(); },
     // fn gets the current fantasy and returns the changed one
     update: (id, fn) => { state = { ...state, fantasies: state.fantasies.map((x) => (x.id === id ? fn(x) : x)) }; persist(); emit(); },
-    remove: (id) => { state = { ...state, fantasies: state.fantasies.filter((x) => x.id !== id) }; persist(); emit(); },
+    remove: (id) => { state = { ...state, fantasies: state.fantasies.filter((x) => x.id !== id) }; persist(true); emit(); },
   };
 }
 

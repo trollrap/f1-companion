@@ -1,5 +1,5 @@
-// Fantasy-season engine: builds a grid of invented teams and drivers and simulates sessions. Everything is random but plausible:
-// a faster car and a better driver win more often, nobody is certain to win, cars break down now and then.
+// Fantasy-season engine. Cars (team) decide most of the result, drivers add talent on top: a great driver in a slow car still beats his team-mate and
+// scores more than the car deserves, but cannot win from the back. Weather, safety cars, reliability, pit stops, penalties and mistakes add the drama.
 import { uid } from './store';
 
 export const POINTS = [25, 18, 15, 12, 10, 8, 6, 4, 2, 1], SPRINT_POINTS = [8, 7, 6, 5, 4, 3, 2, 1];
@@ -11,66 +11,166 @@ const pick = (a, taken) => { for (let i = 0; i < 60; i++) { const v = a[Math.flo
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const gauss = () => { let u = 0, v = 0; while (!u) u = Math.random(); while (!v) v = Math.random(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
 
-// `taken` = car numbers that must not be used (the real grid and your own number).
+// ---- ratings. Every attribute is 30-99. Older fantasies and hand-made drivers without them fall back to `skill`.
+export const DRIVER_ATTRS = [['pace', 'Pace'], ['quali', 'Qualifying'], ['race', 'Racecraft'], ['cons', 'Consistency'], ['wet', 'Wet weather'], ['aggr', 'Aggression']];
+export const TEAM_ATTRS = [['car', 'Car speed'], ['rel', 'Reliability'], ['dev', 'Development'], ['pit', 'Pit crew']];
+export const A = (d) => { const s = d.skill ?? 70; return { pace: d.pace ?? s, quali: d.quali ?? s, race: d.race ?? s, cons: d.cons ?? s - 4, wet: d.wet ?? s, aggr: d.aggr ?? 55, age: d.age ?? 27, pot: d.pot ?? s }; };
+export const ovr = (d) => { const a = A(d); return Math.round(a.pace * 0.4 + a.quali * 0.25 + a.race * 0.25 + a.cons * 0.1); };
+export const TA = (t) => ({ car: t.car ?? 65, rel: t.rel ?? 78, dev: t.dev ?? 60, pit: t.pit ?? 75 });
+// A made-up driver with believable, slightly uneven attributes around an overall level.
+export function makeDriverAttrs(level, age) {
+  const j = () => clamp(Math.round(level + gauss() * 5), 38, 99);
+  const pace = j(), quali = j(), race = j(), cons = clamp(Math.round(level + gauss() * 7), 38, 99), wet = clamp(Math.round(level + gauss() * 8), 38, 99), aggr = clamp(Math.round(55 + gauss() * 16), 20, 95);
+  const o = Math.round(pace * 0.4 + quali * 0.25 + race * 0.25 + cons * 0.1);
+  return { pace, quali, race, cons, wet, aggr, age, pot: age < 26 ? clamp(o + Math.round((26 - age) * 1.5 + Math.random() * 4), o, 99) : o, skill: o };
+}
+
+// `taken` = car numbers that must not be used (your own number).
 export function makeGrid(teamCount, taken = []) {
   const nums = new Set(taken.map(Number)); const firsts = new Set(), lasts = new Set(), tn = new Set();
   const nextNum = () => { for (let i = 0; i < 300; i++) { const n = 2 + Math.floor(Math.random() * 98); if (!nums.has(n)) { nums.add(n); return n; } } for (let n = 2; n < 100; n++) if (!nums.has(n)) { nums.add(n); return n; } return 99; };
   const teams = [], drivers = [];
   for (let i = 0; i < teamCount; i++) {
     const car = clamp(Math.round(88 - (i / Math.max(1, teamCount - 1)) * 36 + gauss() * 4), 35, 96); // the first teams have the best cars
-    const t = { id: uid(), name: i < TEAM_NAMES.length ? TEAM_NAMES[i] : `${pick(LAST, tn)} Racing`, color: TEAM_COLORS[i % TEAM_COLORS.length], logo: null, car };
+    const t = { id: uid(), name: i < TEAM_NAMES.length ? TEAM_NAMES[i] : `${pick(LAST, tn)} Racing`, color: TEAM_COLORS[i % TEAM_COLORS.length], logo: null, car,
+      rel: clamp(Math.round(80 + gauss() * 8 - i * 0.6), 45, 98), dev: clamp(Math.round(62 + gauss() * 12), 35, 95), pit: clamp(Math.round(78 + gauss() * 8 - i * 0.5), 45, 98) };
     teams.push(t);
-    for (let k = 0; k < 2; k++) { const first = pick(FIRST, firsts), last = pick(LAST, lasts); drivers.push({ id: uid(), first, last, name: `${first} ${last}`, number: nextNum(), teamId: t.id, skill: clamp(Math.round(70 + gauss() * 9), 40, 96), photo: null, me: false }); }
+    for (let k = 0; k < 2; k++) {
+      const first = pick(FIRST, firsts), last = pick(LAST, lasts), age = 19 + Math.floor(Math.random() * 20);
+      drivers.push({ id: uid(), first, last, name: `${first} ${last}`, number: nextNum(), teamId: t.id, photo: null, ref: null, ...makeDriverAttrs(clamp(Math.round(74 + gauss() * 8 + (teamCount - i) * 0.15), 55, 96), age) });
+    }
   }
   return { teams, drivers };
 }
-// Gives every driver but `keep` a number that is not taken, used when your own number is added after the grid exists.
+export function randomRookie(existing = [], numbers = []) {
+  const nm = randomDriver(existing), age = 18 + Math.floor(Math.random() * 5);
+  return { id: uid(), ...nm, number: freeNumber(numbers), photo: null, ref: null, ...makeDriverAttrs(clamp(Math.round(66 + gauss() * 6), 52, 82), age), pot: clamp(Math.round(80 + gauss() * 8), 70, 99) };
+}
 // A made-up driver that does not share a name with anyone already in the fantasy.
 export function randomDriver(existing = []) { const names = new Set(existing.map((d) => d.name)); for (let i = 0; i < 80; i++) { const first = FIRST[Math.floor(Math.random() * FIRST.length)], last = LAST[Math.floor(Math.random() * LAST.length)]; if (!names.has(`${first} ${last}`)) return { first, last, name: `${first} ${last}` }; } return { first: 'New', last: 'Driver', name: 'New Driver' }; }
 export const freeNumber = (taken) => { const s = new Set(taken.map(Number)); for (let n = 2; n < 100; n++) if (!s.has(n)) return n; return 99; };
 
 export const sessionsOf = (race) => (race.sprint ? ['Sprint Qualifying', 'Sprint', 'Qualifying', 'Race'] : ['Qualifying', 'Race']);
-const perf = (f, d) => { const t = f.teams.find((x) => x.id === d.teamId); return (t ? t.car : 60) * 0.62 + d.skill * 0.38; };
 const hash = (s) => { let h = 7; for (const c of String(s)) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h; };
 const lapFmt = (t) => { const m = Math.floor(t / 60); return `${m}:${(t - m * 60).toFixed(3).padStart(6, '0')}`; };
 const raceFmt = (t) => { const h = Math.floor(t / 3600), m = Math.floor((t % 3600) / 60), s = t % 60; return `${h}:${String(m).padStart(2, '0')}:${s.toFixed(3).padStart(6, '0')}`; };
+const MECH = ['Engine', 'Gearbox', 'Hydraulics', 'Brakes', 'Power unit', 'Suspension', 'Cooling', 'Electrical', 'Water leak'], CRASH = ['Accident', 'Collision', 'Spun off', 'Damage', 'Puncture'];
+const teamFor = (f, d) => f.teams.find((x) => x.id === d.teamId) || { car: 60 };
+// How good the car-and-driver package is, separately for a single lap and for race pace.
+const quick = (f, d) => { const a = A(d), t = TA(teamFor(f, d)); return t.car * 0.6 + (a.quali * 0.7 + a.pace * 0.3) * 0.4; };
+const pace = (f, d, wet) => { const a = A(d), t = TA(teamFor(f, d)); return t.car * 0.6 + (a.pace * 0.55 + a.race * 0.45 + (wet ? (a.wet - 75) * 0.5 : 0)) * 0.4; };
 
-// Results of one session: [{ driverId, pos, time, gap, points, status }]
-export function simulate(f, race, session, prior) {
-  const ds = f.drivers; const lapBase = 68 + (hash(race.name) % 28); // a "track" gives every circuit its own lap time
-  if (session === 'Qualifying' || session === 'Sprint Qualifying') {
-    const sc = ds.map((d) => ({ d, s: perf(f, d) + gauss() * 3.4 })).sort((a, b) => b.s - a.s); const top = sc[0].s;
-    return sc.map((x, i) => ({ driverId: x.d.id, pos: i + 1, time: lapFmt(lapBase + (top - x.s) * 0.085 + (session === 'Qualifying' ? 0 : 0.6)), gap: i ? `+${((top - x.s) * 0.085).toFixed(3)}` : '', points: 0, status: 'OK' }));
-  }
-  const gridSrc = prior?.[session === 'Sprint' ? 'Sprint Qualifying' : 'Qualifying']; const grid = {}; (gridSrc || []).forEach((r) => { grid[r.driverId] = r.pos; });
-  const laps = session === 'Sprint' ? Math.max(10, Math.round(race.laps / 3)) : race.laps;
-  const sc = ds.map((d) => { const crash = Math.random() < (session === 'Sprint' ? 0.04 : 0.07) + (100 - (f.teams.find((t) => t.id === d.teamId)?.car || 60)) / 1400;
-    return { d, crash, s: perf(f, d) + gauss() * 4.6 - (grid[d.id] ? grid[d.id] * 0.32 : 0) }; });
-  const fin = sc.filter((x) => !x.crash).sort((a, b) => b.s - a.s), out = sc.filter((x) => x.crash).sort(() => Math.random() - 0.5);
-  const pts = session === 'Sprint' ? SPRINT_POINTS : POINTS; let t = laps * lapBase * 1.035; let acc = 0;
-  const rows = fin.map((x, i) => { if (i) acc += 0.9 + Math.random() * 8.5; return { driverId: x.d.id, pos: i + 1, time: i ? (acc > 90 ? `+${Math.floor(acc / (lapBase * 1.035)) + 1} lap` : `+${acc.toFixed(3)}`) : raceFmt(t), gap: '', points: pts[i] || 0, status: 'OK', grid: grid[x.d.id] || null }; });
-  out.forEach((x, i) => rows.push({ driverId: x.d.id, pos: fin.length + i + 1, time: 'DNF', gap: '', points: 0, status: 'DNF', grid: grid[x.d.id] || null }));
-  return rows;
+// One weekend's conditions are drawn once and shared by every session of that weekend.
+const conditions = (f, race) => f.results?.[race.id]?._w || { wet: Math.random() < 0.18, sc: Math.random() < 0.38 ? 1 + (Math.random() < 0.3 ? 1 : 0) : 0, od: 0.3 + (hash(race.name) % 50) / 100 }; // od: how hard overtaking is (0.3-0.8)
+
+function qualifying(f, race, session, w) {
+  const ds = f.drivers, n = ds.length, lapBase = 68 + (hash(race.name) % 28);
+  const q3 = n >= 18 ? 10 : Math.max(3, Math.round(n * 0.45)), q2 = n >= 18 ? 16 : Math.max(q3 + 1, Math.round(n * 0.75));
+  const seg = (list, off) => { const sc = list.map((d) => { const a = A(d); return { d, s: quick(f, d) + gauss() * (1.7 + (100 - a.cons) * 0.03 + (w.wet ? 2.2 : 0)) + (w.wet ? (a.wet - 75) * 0.15 : 0) }; }); const top = Math.max(...sc.map((x) => x.s)); return sc.map((x) => ({ ...x, t: lapBase + off + (top - x.s) * 0.07 })).sort((a, b) => a.t - b.t); };
+  const r1 = seg(ds, 1.1); const in2 = r1.slice(0, q2).map((x) => x.d); const r2 = seg(in2, 0.5); const in3 = r2.slice(0, q3).map((x) => x.d); const r3 = seg(in3, 0);
+  const sprint = session === 'Sprint Qualifying'; const out = [];
+  r3.forEach((x) => out.push({ d: x.d, q1: r1.find((y) => y.d.id === x.d.id).t, q2: r2.find((y) => y.d.id === x.d.id).t, q3: x.t }));
+  r2.slice(q3).forEach((x) => out.push({ d: x.d, q1: r1.find((y) => y.d.id === x.d.id).t, q2: x.t }));
+  r1.slice(q2).forEach((x) => out.push({ d: x.d, q1: x.t }));
+  const pole = out[0]; const best = (x) => x.q3 ?? x.q2 ?? x.q1;
+  return out.map((x, i) => ({ driverId: x.d.id, pos: i + 1, q1: lapFmt(x.q1), q2: x.q2 ? lapFmt(x.q2) : null, q3: x.q3 ? lapFmt(x.q3) : null, time: lapFmt(best(x) + (sprint ? 0 : 0)), gap: i ? `+${(best(x) - best(pole)).toFixed(3)}` : '', seg: x.q3 ? 'Q3' : x.q2 ? 'Q2' : 'Q1', points: 0, status: 'OK' }));
+}
+
+function raceSession(f, race, session, prior, w) {
+  const ds = f.drivers, n = ds.length, isSprint = session === 'Sprint', laps = isSprint ? Math.max(10, Math.round(race.laps / 3)) : race.laps;
+  const lapBase = 68 + (hash(race.name) % 28), lapT = lapBase * 1.035, grid = {}; (prior?.[isSprint ? 'Sprint Qualifying' : 'Qualifying'] || []).forEach((r) => { grid[r.driverId] = r.pos; });
+  const gw = 0.16 + 0.3 * w.od; // grid matters more where overtaking is hard (Monaco-like tracks)
+  const scale = 1 - 0.3 * (w.sc ? 1 : 0); // safety cars bunch the field
+  const rows = ds.map((d) => {
+    const a = A(d), t = TA(teamFor(f, d)); const g = grid[d.id] || n;
+    const crashP = (isSprint ? 0.025 : 0.04) + (a.aggr - 50) * 0.0005 + (100 - a.cons) * 0.0004 + (w.wet ? 0.03 : 0);
+    const mechP = (isSprint ? 0.015 : 0.03) + (100 - t.rel) * 0.0011;
+    const r = Math.random(); const out = r < mechP ? 'mech' : r < mechP + crashP ? 'crash' : null;
+    const stops = isSprint ? 0 : (Math.random() < 0.12 ? 3 : Math.random() < 0.55 ? 2 : 1) + (w.wet && Math.random() < 0.5 ? 1 : 0);
+    const stopLoss = Array.from({ length: stops }, () => 20.5 + (100 - t.pit) * 0.04 + Math.abs(gauss()) * 0.6 + (Math.random() < (100 - t.pit) / 900 ? 3 + Math.random() * 7 : 0)).reduce((x, y) => x + y, 0);
+    const pen = !isSprint && Math.random() < 0.07 ? (Math.random() < 0.7 ? 5 : 10) : 0;
+    const s = pace(f, d, w.wet) + (n - g) * gw + (a.race - 78) * 0.06 + (a.aggr - 55) * 0.012 + gauss() * (2.4 + (100 - a.cons) * 0.045 + (w.wet ? 2.4 : 0));
+    return { d, g, s, out, stops, stopLoss, pen, lap: out ? 2 + Math.floor(Math.random() * (laps - 3)) : laps };
+  });
+  const fin = rows.filter((x) => !x.out), top = Math.max(...fin.map((x) => x.s));
+  fin.forEach((x) => { x.t = (top - x.s) * 2.1 * scale + x.stopLoss + x.pen + Math.random() * 0.4; }); fin.sort((a, b) => a.t - b.t);
+  const base = fin[0]?.t || 0; const pts = isSprint ? SPRINT_POINTS : POINTS; const winT = laps * lapT + base;
+  const flPool = fin.slice(0, Math.min(10, fin.length)); const flDriver = flPool.length ? flPool[Math.floor(Math.pow(Math.random(), 1.6) * flPool.length)] : null;
+  const res = fin.map((x, i) => {
+    const gap = x.t - base, lapped = Math.floor(gap / lapT);
+    return { driverId: x.d.id, pos: i + 1, grid: x.g, time: i === 0 ? raceFmt(winT) : lapped >= 1 ? `+${lapped} lap${lapped > 1 ? 's' : ''}` : `+${gap.toFixed(3)}`, gap: i ? `+${gap.toFixed(3)}` : '', points: pts[i] || 0, status: 'OK', stops: x.stops, pen: x.pen, fl: flDriver === x, flTime: flDriver === x ? lapFmt(lapBase - 0.4 - Math.random() * 0.8) : null, laps };
+  });
+  rows.filter((x) => x.out).sort((a, b) => b.lap - a.lap).forEach((x, i) => {
+    const reason = x.out === 'mech' ? MECH[Math.floor(Math.random() * MECH.length)] : CRASH[Math.floor(Math.random() * CRASH.length)];
+    res.push({ driverId: x.d.id, pos: fin.length + i + 1, grid: x.g, time: reason, gap: '', points: 0, status: 'DNF', reason, lap: x.lap, stops: 0, pen: 0, laps: x.lap });
+  });
+  return res;
+}
+
+// Results of one session. Qualifying rows carry Q1/Q2/Q3 times; race rows carry gaps, stops, penalties and the fastest lap.
+export function simulate(f, race, session, prior, wx) {
+  const w = wx || conditions(f, race);
+  return session === 'Qualifying' || session === 'Sprint Qualifying' ? qualifying(f, race, session, w) : raceSession(f, race, session, prior, w);
 }
 export const nextStep = (f) => {
   for (let i = 0; i < f.races.length; i++) { const r = f.races[i]; for (const s of sessionsOf(r)) if (!f.results?.[r.id]?.[s]) return { race: r, index: i, session: s }; }
   return null;
 };
+// Cars improve and fade during the season: a team with good development finds speed, one without falls back a little.
+function develop(f) {
+  return { ...f, teams: f.teams.map((t) => { const a = TA(t); return { ...t, car: clamp(Math.round((t.car ?? 65) * 10 + ((a.dev - 60) * 0.012 + gauss() * 0.35) * 10) / 10, 30, 99) }; }) };
+}
 export function runStep(f, step) {
-  const prior = f.results?.[step.race.id] || {}; const res = simulate(f, step.race, step.session, prior);
-  return { ...f, results: { ...(f.results || {}), [step.race.id]: { ...prior, [step.session]: res } } };
+  const prior = f.results?.[step.race.id] || {}; const w = conditions(f, step.race);
+  const res = simulate(f, step.race, step.session, prior, w);
+  let g = { ...f, results: { ...(f.results || {}), [step.race.id]: { ...prior, _w: w, [step.session]: res } } };
+  if (step.session === 'Race') g = develop(g);
+  return g;
 }
 export function runWeekend(f) { const st = nextStep(f); if (!st) return f; let g = f; for (const s of sessionsOf(st.race)) { if (!g.results?.[st.race.id]?.[s]) g = runStep(g, { ...st, session: s }); } return g; }
 export function runSeason(f) { let g = f, guard = 0; while (nextStep(g) && guard++ < 500) g = runWeekend(g); return g; }
 
 // Championship tables from the stored results.
 export function standings(f) {
-  const d = {}, t = {}; f.drivers.forEach((x) => { d[x.id] = { ...x, points: 0, wins: 0, podiums: 0, poles: 0, races: 0, dnf: 0 }; }); f.teams.forEach((x) => { t[x.id] = { ...x, points: 0, wins: 0 }; });
+  const d = {}, t = {}; f.drivers.forEach((x) => { d[x.id] = { ...x, points: 0, wins: 0, podiums: 0, poles: 0, races: 0, dnf: 0, fl: 0 }; }); f.teams.forEach((x) => { t[x.id] = { ...x, points: 0, wins: 0 }; });
   f.races.forEach((r) => { const res = f.results?.[r.id]; if (!res) return;
     (res.Qualifying || []).forEach((x) => { if (x.pos === 1 && d[x.driverId]) d[x.driverId].poles++; });
     ['Sprint', 'Race'].forEach((k) => (res[k] || []).forEach((x) => { const a = d[x.driverId]; if (!a) return; a.points += x.points; if (t[a.teamId]) t[a.teamId].points += x.points;
-      if (k === 'Race') { a.races++; if (x.pos === 1) { a.wins++; if (t[a.teamId]) t[a.teamId].wins++; } if (x.pos <= 3 && x.status === 'OK') a.podiums++; if (x.status !== 'OK') a.dnf++; } })); });
-  const rank = (o) => Object.values(o).sort((a, b) => b.points - a.points || b.wins - a.wins || a.name?.localeCompare?.(b.name));
+      if (k === 'Race') { a.races++; if (x.pos === 1) { a.wins++; if (t[a.teamId]) t[a.teamId].wins++; } if (x.pos <= 3 && x.status === 'OK') a.podiums++; if (x.status !== 'OK') a.dnf++; if (x.fl) a.fl++; } })); });
+  const rank = (o) => Object.values(o).sort((a, b) => b.points - a.points || b.wins - a.wins || String(a.name).localeCompare(String(b.name)));
   return { drivers: rank(d), teams: rank(t) };
 }
 export const pointsFor = (pos) => POINTS[pos - 1] || 0;
+
+// ---- between seasons ----
+// Drivers age: the young improve towards their potential, the old fade, the middle years stay level. Cars change by far more than drivers do.
+export function evolveDriver(d) {
+  const a = A(d), age = a.age + 1; let k = 0;
+  if (age <= 25) k = Math.min(3.2, Math.max(0, (a.pot - ovr(d)) * 0.3) + gauss() * 0.8); else if (age <= 33) k = gauss() * 0.7; else k = -(age - 33) * 0.45 + gauss() * 0.6;
+  const up = (v) => clamp(Math.round(v + k + gauss() * 0.5), 35, 99);
+  const n = { ...d, age, pace: up(a.pace), quali: up(a.quali), race: up(a.race), cons: up(a.cons), wet: clamp(Math.round(a.wet + k * 0.5), 35, 99), aggr: a.aggr, pot: a.pot };
+  n.skill = ovr(n); return n;
+}
+export function evolveTeam(t) { const a = TA(t); return { ...t, car: clamp(Math.round((t.car ?? 65) + (a.dev - 60) * 0.06 + gauss() * 6.5), 35, 99), rel: clamp(Math.round(a.rel + gauss() * 4), 40, 99), dev: clamp(Math.round(a.dev + gauss() * 4), 30, 99), pit: clamp(Math.round(a.pit + gauss() * 3), 40, 99) }; }
+
+// Random transfer window: old drivers retire, strong drivers in slow cars sometimes move to faster ones, empty seats go to rookies.
+// Returns { f, log } where log is a list of { kind, text }.
+export function simulateTransfers(f) {
+  const log = []; let drivers = f.drivers.map((d) => ({ ...d })); const teams = f.teams;
+  const order = [...teams].sort((a, b) => TA(b).car - TA(a).car), rank = Object.fromEntries(order.map((t, i) => [t.id, i])); const name = (id) => teams.find((t) => t.id === id)?.name || '';
+  drivers = drivers.filter((d) => {
+    if (d.me) return true; const age = A(d).age, p = Math.max(0, (age - 35) * 0.15) + (ovr(d) < 62 ? 0.1 : 0);
+    if (Math.random() < p) { log.push({ kind: 'retire', text: `${d.name} (${age}) retires from racing.` }); return false; } return true;
+  });
+  const moves = Math.max(1, Math.round(teams.length / 4)); let made = 0;
+  [...drivers].filter((d) => !d.me).sort((a, b) => ovr(b) - ovr(a)).forEach((d) => {
+    if (made >= moves) return; const ra = rank[d.teamId]; if (ra < 3 || Math.random() > 0.35) return;
+    const cands = drivers.filter((e) => !e.me && rank[e.teamId] < ra - 1 && ovr(e) < ovr(d) - 2); if (!cands.length) return;
+    const e = cands[Math.floor(Math.random() * cands.length)]; const ta = d.teamId, tb = e.teamId;
+    d.teamId = tb; e.teamId = ta; made++; log.push({ kind: 'move', text: `${d.name} joins ${name(tb)} from ${name(ta)}; ${e.name} goes the other way.` });
+  });
+  const numbers = drivers.map((d) => d.number);
+  teams.forEach((t) => { let have = drivers.filter((d) => d.teamId === t.id).length; while (have < 2) { const r = { ...randomRookie([...f.drivers, ...drivers], numbers), teamId: t.id }; numbers.push(r.number); drivers.push(r); have++; log.push({ kind: 'rookie', text: `${r.name} (${A(r).age}) makes his debut with ${t.name}.` }); } });
+  if (!log.length) log.push({ kind: 'quiet', text: 'A quiet winter: nobody changed teams.' });
+  return { f: { ...f, drivers, news: log }, log };
+}

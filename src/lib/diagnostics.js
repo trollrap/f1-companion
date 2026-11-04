@@ -1,3 +1,4 @@
+import { driverChampionYears, constructorChampionYears } from '../data/champions';
 // "Check data sources": calls every endpoint the app depends on (uncached) and validates the response shape.
 // Each result is { name, ok, detail, ms }. Nothing here changes app data.
 import { liveJSON } from './cache';
@@ -109,11 +110,7 @@ export async function runDiagnostics(onResult) {
     const bad = r.filter((x) => x.status !== 200); if (bad.length) throw new Error(`failed: ${describe(bad)}`);
     return `paging, sprints and pole filter work (${r[1].mr.total} sprint results, ${r[2].mr.total} poles)`;
   }));
-  push(await step('Jolpica titles', async () => {
-    const r = [await probe('/drivers/max_verstappen/driverstandings/1.json'), await probe('/constructors/ferrari/constructorstandings/1.json')];
-    const bad = r.filter((x) => x.status !== 200); if (bad.length) throw new Error(`failed: ${describe(bad)} (titles show a dash)`);
-    return `${r[0].mr.StandingsTable.StandingsLists.length} Verstappen titles, ${r[1].mr.StandingsTable.StandingsLists.length} Ferrari titles`;
-  }));
+  push(await step('Champions list', async () => `built into the app: ${driverChampionYears('hamilton').length} Hamilton titles, ${constructorChampionYears('ferrari').length} Ferrari titles (no request needed)`));
   push(await step('Jolpica team history', async () => {
     const r = [await probe('/constructors/ferrari/seasons.json?limit=100'), await probe('/constructors/ferrari/results/1.json?limit=1'), await probe('/constructors/ferrari/qualifying/1.json?limit=1')];
     const bad = r.filter((x) => x.status !== 200); if (bad.length) throw new Error(`failed: ${describe(bad)}`);

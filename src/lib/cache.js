@@ -5,7 +5,7 @@ import { bustAt, netOk, netFail, track, dataChanged } from './net';
 export const MIN = 60e3, HOUR = 3600e3, DAY = 86400e3;
 // Requests to one host start at least `gap` ms apart and up to `conc` can be in flight at once, so a slow server (several seconds
 // per call) no longer makes every screen wait in one long line.
-const GAPS = { 'api.jolpi.ca': [260, 4], 'api.openf1.org': [400, 2] };
+const GAPS = { 'api.jolpi.ca': [250, 8], 'api.openf1.org': [700, 1] }; // OpenF1: 3/s and 30/min allowed, so one call at a time
 const hosts = new Map();
 function pump(h) {
   // Background jobs (low priority) only start when nothing a screen is waiting for is queued.
@@ -25,7 +25,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 async function fetchRetry(url, signal) {
   for (let attempt = 1; ; attempt++) {
     const r = await fetch(url, { signal });
-    if (r.status === 429 && attempt < 4) { await sleep(1500 * attempt); continue; }
+    if (r.status === 429 && attempt < 4) { const ra = Number(r.headers?.get?.('retry-after')); await sleep(Number.isFinite(ra) && ra > 0 ? Math.min(ra, 8) * 1000 : 2000 * attempt); continue; }
     return r;
   }
 }

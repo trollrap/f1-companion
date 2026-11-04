@@ -11,7 +11,8 @@ import { Segmented, StatGrid, ResultLine } from '../components/Shared';
 import ExportBar from '../components/ExportBar';
 import { Avatar, Field, Stepper, Btn, Swatches, SessionCard, StandingsCard } from '../components/FunBits';
 import { useFun, pickImage, uid, canPickImage } from '../fun/store';
-import { makeGrid, nextStep, runStep, runWeekend, runSeason, sessionsOf, standings, freeNumber, randomDriver, TEAM_COLORS } from '../fun/sim';
+import { makeGrid, nextStep, runStep, runWeekend, runSeason, sessionsOf, standings, freeNumber, randomDriver, TEAM_COLORS, DRIVER_ATTRS, TEAM_ATTRS, A, TA, ovr, makeDriverAttrs, simulateTransfers } from '../fun/sim';
+import { attrsFor } from '../fun/talent';
 import { driverPic, teamPic, viewOf, seasonList, seasonNo, careerOf, numberClash, closeSeason, isDone } from '../fun/look';
 import { loadRealGrid } from '../fun/realGrid';
 import { nameParts } from './FunScreens';
@@ -23,6 +24,8 @@ import { CIRCUITS } from '../data/circuits';
 import { colors, alpha } from '../theme';
 
 const dash = (v) => (v == null ? '—' : String(v));
+// Changing one attribute keeps the others (older drivers only had a single skill number).
+const attrPatch = (d, k, v) => { const m = { ...A(d), [k]: v }; return { pace: m.pace, quali: m.quali, race: m.race, cons: m.cons, wet: m.wet, aggr: m.aggr, age: m.age, pot: m.pot, skill: ovr(m) }; };
 const sum = (a, b) => (a == null || b == null ? null : a + b);
 const tcol = (f, tid) => f.teams.find((t) => t.id === tid)?.color || colors.muted;
 const teamOf = (f, tid) => f.teams.find((t) => t.id === tid);
@@ -32,7 +35,7 @@ const order = (r, i) => { const k = CIRCUITS.findIndex((c) => c.key === r.id); r
 
 // "That's me" sits on one driver only: choosing it clears it from every other driver and copies your photo, name and number from your profile.
 export function makeMe(f, profile, did) {
-  return { ...f, drivers: f.drivers.map((x) => (x.id === did ? { ...x, ...nameParts(profile.name), name: profile.name || 'Me', number: profile.number || x.number, photo: profile.photo, me: true, ref: null }
+  return { ...f, drivers: f.drivers.map((x) => (x.id === did ? { ...x, ...nameParts(profile.name), name: profile.name || 'Me', number: profile.number || x.number, photo: profile.photo, me: true, ref: null, ...makeDriverAttrs(76, 24) }
     : x.me ? { ...x, me: false, photo: null } : profile.number && x.number === profile.number ? { ...x, number: freeNumber(f.drivers.map((y) => y.number).concat(profile.number)) } : x)) };
 }
 
@@ -87,10 +90,11 @@ function DriverPicker({ exclude, onPick, onClose }) {
     </View>
   );
 }
-const newDriver = (f, teamId, real, taken) => {
+const newDriver = (f, teamId, real) => {
   const nm = real ? { first: real.first, last: real.last, name: real.name } : randomDriver(f.drivers); const used = f.drivers.map((d) => d.number);
   const n = real && Number(real.number) && !used.includes(Number(real.number)) ? Number(real.number) : freeNumber(used);
-  return { id: uid(), ...nm, number: n, teamId, skill: real ? 74 : 66, photo: null, ref: real ? real.driverId : null };
+  const at = real ? attrsFor(real.driverId, real.dob ? Number(String(real.dob).slice(0, 4)) : null) : makeDriverAttrs(68, 19 + Math.floor(Math.random() * 14));
+  return { id: uid(), ...nm, number: n, teamId, photo: null, ref: real ? real.driverId : null, ...at, known: undefined };
 };
 
 /* ------------------------------------------------------------------ one driver's number, with the clash check */
@@ -249,12 +253,12 @@ function Setup({ f, update, profile, navigation, onDelete }) {
           {t.logo ? <Pressable onPress={() => setTeam(t.id, { logo: null })} hitSlop={8} accessibilityLabel="Remove custom logo"><Ionicons name="close-circle" size={22} color={colors.muted} /></Pressable> : null}
         </View>
         <Swatches value={t.color} onChange={(c) => setTeam(t.id, { color: c })} list={TEAM_COLORS} />
-        <Stepper label="Car strength" value={t.car} min={30} max={99} step={3} onChange={(v) => setTeam(t.id, { car: v })} />
+        {TEAM_ATTRS.map(([k, label]) => <Stepper key={k} label={label} value={Math.round(TA(t)[k])} min={30} max={99} step={2} onChange={(v) => setTeam(t.id, { [k]: v })} />)}
         {f.drivers.filter((d) => d.teamId === t.id).map((d) => (
           <Press key={d.id} onPress={() => navigation.navigate('FantasyDriver', { id: f.id, driverId: d.id })}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingTop: 8, borderTopWidth: 1, borderTopColor: colors.line }}>
               <Avatar source={driverPic(d)} color={t.color} label={d.number} size={40} />
-              <View style={{ flex: 1 }}><Text style={{ color: d.me ? colors.gold : colors.fg, fontSize: 17, fontWeight: '700' }} numberOfLines={1}>{d.me ? `★ ${d.name}` : d.name}</Text><Text style={{ color: colors.muted, fontSize: 13 }}>{`#${d.number} · skill ${d.skill}${d.ref ? ' · real driver' : ''}`}</Text></View>
+              <View style={{ flex: 1 }}><Text style={{ color: d.me ? colors.gold : colors.fg, fontSize: 17, fontWeight: '700' }} numberOfLines={1}>{d.me ? `★ ${d.name}` : d.name}</Text><Text style={{ color: colors.muted, fontSize: 13 }}>{`#${d.number} · overall ${ovr(d)} · age ${A(d).age}${d.ref ? ' · real driver' : ''}`}</Text></View>
               <Ionicons name="chevron-forward" size={16} color={colors.muted} />
             </View>
           </Press>))}
@@ -282,7 +286,9 @@ export function FantasyTransfers({ route, navigation }) {
     <Screen header={false}>
       <Card>
         <Eyebrow>{`Season ${seasonNo(f)} · transfers`}</Eyebrow>
-        <Text style={{ color: colors.muted, fontSize: 15, marginTop: 8 }}>Change the team or number of anyone, release drivers, bring in new ones, then pick the calendar. Last season's results are kept under Season {seasonNo(f) - 1}.</Text>
+        <Text style={{ color: colors.muted, fontSize: 15, marginTop: 8 }}>Change the team or number of anyone, release or retire drivers, bring in new ones, then pick the calendar. Last season's results are kept under Season {seasonNo(f) - 1}. Cars changed over the winter; drivers only age.</Text>
+        <View style={{ marginTop: 12 }}><Btn icon="shuffle" onPress={() => upd((g) => simulateTransfers(g).f)}>{f.news?.length ? 'Simulate the transfers again' : 'Simulate transfers (random)'}</Btn></View>
+        {(f.news || []).length ? (<View style={{ gap: 6, marginTop: 12 }}><Eyebrow>Transfer news</Eyebrow>{f.news.map((n, i) => <Text key={i} style={{ color: n.kind === 'retire' ? colors.muted : colors.fg, fontSize: 15 }}>{`${n.kind === 'retire' ? '🏁' : n.kind === 'rookie' ? '🌱' : n.kind === 'move' ? '🔁' : '•'} ${n.text}`}</Text>)}</View>) : null}
       </Card>
       {f.teams.map((t) => (
         <Grad key={t.id} color={t.color} from={0.3} to={0.04} radius={16} border={0.35} style={{ padding: 12, gap: 10 }}>
@@ -291,11 +297,12 @@ export function FantasyTransfers({ route, navigation }) {
             <View key={d.id} style={{ gap: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: colors.line }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                 <Avatar source={driverPic(d)} color={t.color} label={d.number} size={40} />
-                <View style={{ flex: 1 }}><Text style={{ color: d.me ? colors.gold : colors.fg, fontSize: 17, fontWeight: '700' }} numberOfLines={1}>{d.me ? `★ ${d.name}` : d.name}</Text>{was(d.id) && was(d.id) !== d.teamId ? <Text style={{ color: colors.good, fontSize: 13 }}>{`Moved from ${prev.teams.find((x) => x.id === was(d.id))?.name || 'another team'}`}</Text> : !was(d.id) ? <Text style={{ color: colors.good, fontSize: 13 }}>New driver</Text> : null}</View>
+                <View style={{ flex: 1 }}><Text style={{ color: d.me ? colors.gold : colors.fg, fontSize: 17, fontWeight: '700' }} numberOfLines={1}>{d.me ? `★ ${d.name}` : d.name}</Text><Text style={{ color: colors.muted, fontSize: 13 }}>{`Age ${A(d).age} · overall ${ovr(d)}`}</Text>{was(d.id) && was(d.id) !== d.teamId ? <Text style={{ color: colors.good, fontSize: 13 }}>{`Moved from ${prev.teams.find((x) => x.id === was(d.id))?.name || 'another team'}`}</Text> : !was(d.id) ? <Text style={{ color: colors.good, fontSize: 13 }}>New driver</Text> : null}</View>
                 <NumField f={f} d={d} onSet={(k) => setD(d.id, { number: k })} />
               </View>
               <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
                 <View style={{ flex: 1 }}><Dropdown value={d.teamId} options={f.teams.map((x) => [x.id, x.name])} onChange={(tid) => setD(d.id, { teamId: tid })} prefix="Team" /></View>
+                {!d.me ? <Pressable onPress={() => Alert.alert(`Retire ${d.name}?`, 'He stops racing and leaves the grid.', [{ text: 'Cancel', style: 'cancel' }, { text: 'Retire', style: 'destructive', onPress: () => upd((g) => ({ ...g, drivers: g.drivers.filter((x) => x.id !== d.id), news: [...(g.news || []), { kind: 'retire', text: `${d.name} (${A(d).age}) retires from racing.` }] })) }])} hitSlop={8} accessibilityLabel="Retire driver" style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><Ionicons name="flag-outline" size={22} color={colors.muted} /></Pressable> : null}
                 <Pressable onPress={() => Alert.alert(`Release ${d.name}?`, 'They leave the grid. Their past results stay in the history.', [{ text: 'Cancel', style: 'cancel' }, { text: 'Release', style: 'destructive', onPress: () => upd((g) => ({ ...g, drivers: g.drivers.filter((x) => x.id !== d.id) })) }])} hitSlop={8} accessibilityLabel="Release driver" style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><Ionicons name="person-remove-outline" size={22} color={colors.muted} /></Pressable>
               </View>
             </View>))}
@@ -351,6 +358,18 @@ export function FantasyDriver({ route, navigation }) {
         <StatGrid cols={3} items={[['Titles', dash(hasReal ? sum(rt, C.titles) : C.titles)], ['Races', dash(tot('races'))], ['Wins', dash(tot('wins'))], ['Podiums', dash(tot('podiums'))], ['Poles', dash(tot('poles'))], ['Points', dash(tot('points'))], ['Best finish', C.best ? `P${C.best}` : '—'], ['Seasons', dash(hasReal ? sum(rc?.seasons ?? null, C.seasons) : C.seasons)], ['DNF', dash(C.dnf)]]} />
         {hasReal ? <Note>{`Real career before this fantasy: ${dash(rc?.races)} races, ${dash(rc?.wins)} wins, ${dash(rt)} titles. Fantasy results are added on top and never change the real profile.`}</Note> : null}
       </Card>
+      <Card>
+        <Eyebrow>{`Attributes · overall ${ovr(d)} · age ${A(d).age}`}</Eyebrow>
+        <View style={{ gap: 9, marginTop: 12 }}>
+          {DRIVER_ATTRS.map(([k, label]) => { const v = Math.round(A(d)[k]); return (
+            <View key={k} style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <Text style={{ width: 108, color: colors.muted, fontSize: 14 }}>{label}</Text>
+              <View style={{ flex: 1, height: 8, borderRadius: 4, backgroundColor: colors.surface2, overflow: 'hidden' }}><View style={{ width: `${Math.max(4, Math.min(100, (v - 30) / 0.69))}%`, height: 8, borderRadius: 4, backgroundColor: v >= 90 ? colors.gold : color }} /></View>
+              <Text style={{ width: 28, textAlign: 'right', color: colors.fg, fontWeight: '800', fontSize: 15 }}>{v}</Text>
+            </View>); })}
+          {t ? <Text style={{ color: colors.muted, fontSize: 13, marginTop: 4 }}>{`Team: car ${Math.round(TA(t).car)} · reliability ${Math.round(TA(t).rel)} · development ${Math.round(TA(t).dev)} · pit crew ${Math.round(TA(t).pit)}. The car decides most of the result, talent adds on top.`}</Text> : null}
+        </View>
+      </Card>
       {C.bySeason.length ? (<>
         <View><Eyebrow>Fantasy seasons</Eyebrow></View>
         {C.bySeason.map((s) => (<Card key={s.n}><View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}><Text style={{ flex: 1, color: colors.fg, fontSize: 17, fontWeight: '700' }}>{`Season ${s.n} · ${s.team}`}</Text><Text style={{ color: s.title ? colors.gold : colors.fg, fontWeight: '800', fontSize: 17 }}>{s.title ? '🏆 Champion' : `P${s.rank} · ${s.points} pts`}</Text></View></Card>))}
@@ -374,7 +393,8 @@ export function FantasyDriver({ route, navigation }) {
               <Field label="Name" value={d.name} onChange={(x) => upd({ name: x, ...nameParts(x) })} maxLength={28} />
               <View style={{ flexDirection: 'row', gap: 12, alignItems: 'flex-start' }}><NumField f={f} d={d} onSet={(k) => upd({ number: k })} /><View style={{ flex: 1, paddingTop: 22 }}><Text style={{ color: colors.muted, fontSize: 13 }}>Any number from 1 to 99 that nobody else in this fantasy has.</Text></View></View>
             </>)}
-            <Stepper label="Skill" value={d.skill} min={30} max={99} step={2} onChange={(k) => upd({ skill: k })} />
+            {DRIVER_ATTRS.map(([k, label]) => <Stepper key={k} label={label} value={Math.round(A(d)[k])} min={30} max={99} step={2} onChange={(v) => upd(attrPatch(d, k, v))} />)}
+            <Stepper label="Age" value={A(d).age} min={17} max={50} onChange={(v) => upd(attrPatch(d, 'age', v))} />
             {canMove ? <Dropdown value={d.teamId} options={f.teams.map((x) => [x.id, x.name])} onChange={(tid) => upd({ teamId: tid })} prefix="Team" /> : <Note>Drivers change teams between seasons, in the transfers.</Note>}
             {d.ref && !d.me ? <Btn icon="person-outline" onPress={() => upd({ ref: null })}>Make a custom driver (drops the real career)</Btn> : null}
             <View style={{ flexDirection: 'row', gap: 10 }}>
@@ -388,30 +408,48 @@ export function FantasyDriver({ route, navigation }) {
   );
 }
 
-/* ------------------------------------------------------------------ one race: the same session menu and rows as the real results, plus a compact export */
+/* ------------------------------------------------------------------ one race: the same session menu and rows as the real results, plus exports */
+const OVT = (od) => (od > 0.62 ? 'Hard to overtake' : od > 0.45 ? 'Medium overtaking' : 'Easy to overtake');
 export function FantasyRace({ route, navigation }) {
-  const { id, raceId, season, focus } = route.params; const fun = useFun(); const f = fun.get(id); const shot = useRef(null); const [sel, setSel] = useState(null); const [exp, setExp] = useState(false);
+  const { id, raceId, season, focus } = route.params; const fun = useFun(); const f = fun.get(id); const shotList = useRef(null), shotCompact = useRef(null); const [sel, setSel] = useState(null); const [mode, setMode] = useState('photos');
   const v = f ? viewOf(f, season) : null; const race = v?.races.find((r) => r.id === raceId);
   if (!f || !race) return <Screen header={false}><Note>Not found.</Note></Screen>;
-  const isCur = !season || season === seasonNo(f), all = sessionsOf(race), have = all.filter((s) => v.results?.[raceId]?.[s]);
+  const isCur = !season || season === seasonNo(f), all = sessionsOf(race), have = all.filter((x) => v.results?.[raceId]?.[x]);
   const cur = sel && have.includes(sel) ? sel : have.includes('Race') ? 'Race' : have.at(-1); const rows = cur ? v.results[raceId][cur] : [];
-  const drv = (did) => v.drivers.find((d) => d.id === did), team = (tid) => teamOf(v, tid), isQ = cur === 'Qualifying' || cur === 'Sprint Qualifying';
-  const missing = all.find((s) => !v.results?.[raceId]?.[s]);
-  const simulateMissing = () => fun.update(id, (g) => { let h = g; for (const s of all) if (!h.results?.[raceId]?.[s]) h = runStep(h, { race, session: s, index: 0 }); return h; });
+  const drv = (did) => v.drivers.find((d) => d.id === did), team = (tid) => teamOf(v, tid), isQ = cur === 'Qualifying' || cur === 'Sprint Qualifying', w = v.results?.[raceId]?._w;
+  const missing = all.find((x) => !v.results?.[raceId]?.[x]);
+  const simulateMissing = () => fun.update(id, (g) => { let h = g; for (const x of all) if (!h.results?.[raceId]?.[x]) h = runStep(h, { race, session: x, index: 0 }); return h; });
+  const fl = !isQ ? rows.find((r) => r.fl) : null, dnf = !isQ ? rows.filter((r) => r.status !== 'OK').length : 0;
+  const line = (r, i, anim) => {
+    const d = drv(r.driverId); if (!d) return null; const t = team(d.teamId);
+    const tags = isQ ? [] : [r.pen ? { text: `+${r.pen}s penalty`, bad: true } : null, r.stops ? { text: `${r.stops} stop${r.stops > 1 ? 's' : ''}`, bad: false } : null, r.fl ? { text: `Fastest lap ${r.flTime}`, bad: false } : null].filter(Boolean);
+    const sub = isQ ? `${r.seg}${r.gap ? ` · ${r.gap}` : ''}` : [r.grid > 0 ? `Started P${r.grid}` : '', `${r.points} pts`].filter(Boolean).join(' · ');
+    return <ResultLine key={r.driverId} pos={r.pos} first={d.first} last={d.last} color={tcol(v, d.teamId)} right={r.time} sub={sub} tags={tags} fav={d.me} fastest={!!r.fl} flash={focus === d.id} photoSrc={driverPic(d)} logoSrc={teamPic(t)} index={anim ? Math.min(i, 8) : undefined} onPress={anim ? () => navigation.navigate('FantasyDriver', { id, driverId: d.id, season: season || seasonNo(f) }) : undefined} />;
+  };
   const cardRows = rows.map((r) => { const d = drv(r.driverId); return { key: r.driverId, pos: r.pos, color: tcol(v, d?.teamId), name: d ? d.name : '?', team: team(d?.teamId)?.name || '', right: !isQ && r.points ? `${r.time}  +${r.points}` : r.time }; });
+  const chip = (icon, text) => <View key={text} style={{ flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, height: 30, borderRadius: 15, backgroundColor: colors.surface2, borderWidth: 1, borderColor: colors.line }}><Ionicons name={icon} size={14} color={colors.accent} /><Text style={{ color: colors.fg, fontSize: 13, fontWeight: '600' }}>{text}</Text></View>;
   return (
     <Screen header={false}>
       <Grad color={colors.accent} from={0.3} to={0.03} border={0.4} style={{ padding: 14 }}>
         <Text style={{ color: colors.fg, fontSize: 26, fontWeight: '800', fontStyle: 'italic' }} numberOfLines={2}>{race.name}</Text>
         <Text style={{ color: colors.muted, fontSize: 16 }}>{`${race.place || 'Custom race'} · ${race.laps} laps${race.sprint ? ' · sprint weekend' : ''}${season && !isCur ? ` · season ${season}` : ''}`}</Text>
       </Grad>
+      {w ? <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>{chip(w.wet ? 'rainy' : 'sunny', w.wet ? 'Wet race' : 'Dry')}{!isQ && w.sc ? chip('warning', `Safety car${w.sc > 1 ? ` ×${w.sc}` : ''}`) : null}{chip('git-compare', OVT(w.od))}{!isQ && dnf ? chip('close-circle', `${dnf} retired`) : null}</View> : null}
       {missing && isCur && !f.off ? <Btn tone="solid" icon="play-skip-forward" onPress={simulateMissing}>{have.length ? 'Simulate the rest of the weekend' : 'Simulate this weekend'}</Btn> : null}
       {have.length > 0 && (<>
-        <Dropdown value={cur} options={have.map((s) => [s, s])} onChange={setSel} />
-        {rows.map((r, i) => { const d = drv(r.driverId); if (!d) return null; const t = team(d.teamId);
-          return <ResultLine key={r.driverId} pos={r.pos} first={d.first} last={d.last} color={tcol(v, d.teamId)} right={r.time} sub={isQ ? r.gap || t?.name : `${r.gap ? `${r.gap} · ` : ''}${r.points ? `+${r.points} pts` : t?.name || ''}`} fav={d.me} flash={focus === d.id} photoSrc={driverPic(d)} logoSrc={teamPic(t)} index={Math.min(i, 8)} onPress={() => navigation.navigate('FantasyDriver', { id, driverId: d.id, season: season || seasonNo(f) })} />; })}
-        <Btn icon="share-social-outline" onPress={() => setExp(!exp)}>{exp ? 'Hide the export picture' : `Export ${cur} as a compact picture`}</Btn>
-        {exp ? <><SessionCard shotRef={shot} title={race.name} sub={cur} rows={cardRows} /><ExportBar target={shot} /></> : null}
+        <Dropdown value={cur} options={have.map((x) => [x, x])} onChange={setSel} />
+        <View ref={shotList} collapsable={false} style={{ borderRadius: 18, padding: 10, paddingTop: 12, backgroundColor: colors.bg, borderWidth: 1, borderColor: alpha(colors.accent, 0.35) }}>
+          <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', paddingHorizontal: 4 }}>
+            <Text style={{ color: colors.fg, fontSize: 19, fontWeight: '800', fontStyle: 'italic', flexShrink: 1 }} numberOfLines={1}>{race.name}</Text>
+            <Text style={{ color: colors.muted, fontFamily: 'label', fontSize: 11, letterSpacing: 1.5 }}>{String(cur).toUpperCase()}</Text>
+          </View>
+          {fl ? <Text style={{ color: colors.purple, fontSize: 13, paddingHorizontal: 4, marginTop: 4 }}>{`Fastest lap: ${drv(fl.driverId)?.name} · ${fl.flTime}`}</Text> : null}
+          {rows.map((r, i) => line(r, i, true))}
+          <Text style={{ color: colors.muted, fontFamily: 'label', fontSize: 9, letterSpacing: 2, textAlign: 'center', marginTop: 10 }}>FANTASY · F1 COMPANION</Text>
+        </View>
+        <Segmented value={mode} onChange={setMode} items={[['photos', 'Export with photos'], ['compact', 'Export compact']]} />
+        {mode === 'compact' ? <SessionCard shotRef={shotCompact} title={race.name} sub={cur} rows={cardRows} /> : null}
+        <ExportBar target={mode === 'compact' ? shotCompact : shotList} />
       </>)}
       {!have.length && <Note>Nothing simulated for this race yet.</Note>}
     </Screen>

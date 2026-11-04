@@ -1,9 +1,8 @@
-import { standings, nextStep, freeNumber } from './sim';
+import { standings, nextStep, freeNumber, evolveDriver, evolveTeam } from './sim';
 import { driverPhoto, teamLogo } from '../lib/media';
 // Pictures: your own upload wins, then the real photo/logo for real drivers and teams.
 export const driverPic = (d) => (d?.photo ? { uri: d.photo } : d?.ref ? driverPhoto(d.ref) : null);
 export const teamPic = (t) => (t?.logo ? { uri: t.logo } : t?.ref ? teamLogo(t.ref) : null);
-const gauss = () => { let u = 0, v = 0; while (!u) u = Math.random(); while (!v) v = Math.random(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
 export const isDone = (f) => !!f.races?.length && !nextStep(f);
 export const seasonNo = (f) => f.season || 1;
 
@@ -33,10 +32,9 @@ export const numberClash = (f, driverId, n) => f.drivers.find((d) => d.id !== dr
 
 // Closes the finished season into the history and opens the transfer window for the next one (`off`): ratings change a little, the calendar stays as a draft.
 export function closeSeason(f, evolve) {
-  const n = seasonNo(f), st = standings(f), cl = (v, a, b) => Math.max(a, Math.min(b, v));
+  const n = seasonNo(f), st = standings(f);
   const snap = { n, races: f.races, results: f.results || {}, drivers: f.drivers, teams: f.teams, champion: st.drivers[0]?.id || null, teamChampion: st.teams[0]?.id || null };
-  return { ...f, season: n + 1, history: [...(f.history || []), snap], results: {}, off: true,
-    drivers: f.drivers.map((d) => (evolve ? { ...d, skill: cl(Math.round(d.skill + gauss() * 3), 35, 99) } : d)),
-    teams: f.teams.map((t) => (evolve ? { ...t, car: cl(Math.round(t.car + gauss() * 4), 35, 99) } : t)) };
+  return { ...f, season: n + 1, history: [...(f.history || []), snap], results: {}, off: true, news: [],
+    drivers: f.drivers.map((d) => (evolve ? evolveDriver(d) : d)), teams: f.teams.map((t) => (evolve ? evolveTeam(t) : t)) };
 }
 export { freeNumber };

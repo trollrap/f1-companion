@@ -14,9 +14,17 @@ const Plot = React.memo(function Plot({ w, height, series, rounds, lo, hi, n, to
     <Svg width={w} height={height}>
       {ticks.map((v) => (<React.Fragment key={v}><Line x1={L} x2={w - R} y1={y(v)} y2={y(v)} stroke={colors.line} strokeWidth={1} /><SvgText x={L - 6} y={y(v) + 4} fontSize={10} fill={colors.muted} textAnchor="end">{String(v)}</SvgText></React.Fragment>))}
       {rounds.map((r, i) => (i >= Math.ceil(lo - 0.001) && i <= hi + 0.001 && ((i - Math.ceil(lo)) % every === 0 || i === n - 1) ? <SvgText key={r.round} x={x(i)} y={height - 6} fontSize={10} fill={colors.muted} textAnchor="middle">{String(r.round)}</SvgText> : null))}
-      <Svg x={L} y={0} width={innerW} height={height}>
-        {series.map((s) => (s.values.length > 1 ? <Polyline key={s.id} points={s.values.map((v, i) => `${xi(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ')} fill="none" stroke={s.color} strokeWidth={2.4} strokeDasharray={s.dash ? '6,4' : undefined} strokeLinejoin="round" strokeLinecap="round" /> : null))}
-      </Svg>
+      {series.map((s) => {
+        const vals = s.values.map((v) => (Number.isFinite(v) ? v : 0)), last = vals.length - 1; if (last < 1) return null;
+        // Only the part inside the window is drawn, with the ends cut exactly at the edges (no nested Svg: Android ignores its offset).
+        const at = (t) => { const i0 = Math.max(0, Math.min(last, Math.floor(t))), i1 = Math.min(last, i0 + 1); return vals[i0] + (vals[i1] - vals[i0]) * (t - i0); };
+        const l = Math.max(0, lo), h = Math.min(last, hi); if (h <= l) return null;
+        const p = [[l, at(l)]]; for (let i = Math.floor(l) + 1; i < h; i++) p.push([i, vals[i]]); p.push([h, at(h)]);
+        return (<React.Fragment key={s.id}>
+          <Polyline points={p.map(([t, v]) => `${x(t).toFixed(1)},${y(v).toFixed(1)}`).join(' ')} fill="none" stroke={s.color} strokeWidth={2.4} strokeDasharray={s.dash ? '6,4' : undefined} strokeLinejoin="round" strokeLinecap="round" />
+          {hi >= last - 0.001 ? <Circle cx={x(last)} cy={y(vals[last])} r={3.5} fill={s.color} /> : null}
+        </React.Fragment>);
+      })}
     </Svg>
   );
 });

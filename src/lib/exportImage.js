@@ -26,6 +26,18 @@ export async function saveImage(ref) {
       lastError = 'photo access not allowed';
     } catch (e) { lastError = String(e?.message || e); }
   }
+  // Second way, no permission needed: write the picture into a folder the user picks once (Pictures is a good choice); the choice is remembered.
+  try {
+    const FS = require('expo-file-system/legacy'), SAF = FS.StorageAccessFramework, AS = require('@react-native-async-storage/async-storage').default;
+    if (SAF) {
+      const write = async (dir) => { const f = await SAF.createFileAsync(dir, `f1-companion-${Date.now()}`, 'image/png'); const b64 = await FS.readAsStringAsync(uri, { encoding: FS.EncodingType.Base64 }); await FS.writeAsStringAsync(f, b64, { encoding: FS.EncodingType.Base64 }); };
+      let dir = null; try { dir = await AS.getItem('saveDir'); } catch {}
+      if (dir) { try { await write(dir); return 'folder'; } catch { dir = null; } }
+      const p = await SAF.requestDirectoryPermissionsAsync();
+      if (p.granted) { try { await AS.setItem('saveDir', p.directoryUri); } catch {} await write(p.directoryUri); return 'folder'; }
+      lastError = 'no folder chosen';
+    }
+  } catch (e) { lastError = `${lastError} ${e?.message || e}`.trim(); }
   try { const Sharing = require('expo-sharing'); if (await Sharing.isAvailableAsync()) { await Sharing.shareAsync(uri, { mimeType: 'image/png', dialogTitle: 'Save picture' }); return 'shared'; } } catch (e) { lastError = `${lastError} ${e?.message || ''}`.trim(); }
   return 'error';
 }

@@ -13,7 +13,7 @@ import { useAsync } from '../hooks/useAsync';
 import { useFavs } from '../hooks/useFavs';
 import { useSeason } from '../hooks/useSeason';
 import { useTeamColor, usePaddockMeta } from '../hooks/useTeams';
-import { driverTeamsList, driverInfo, driverSeasonResults, driverSeasonQuali, driverCareer, driverTitles, driverStandings, driverSeasons } from '../api/jolpica';
+import { driverTeamsList, driverInfo, driverSeasonResults, driverSeasonQuali, driverCareer, driverPoints, driverTitles, driverStandings, driverSeasons } from '../api/jolpica';
 import SeasonSwitch from '../components/SeasonSwitch';
 import { clinched } from '../lib/champion';
 import { engineerOf } from '../data/engineers';
@@ -40,13 +40,13 @@ export default function DriverScreen({ route, navigation }) {
   const activeNow = !nowStand.v || nowStand.v.some((x) => x.driverId === driverId); // judged by this season's standings, not by a cached career list
   const year = pick != null ? pick : !activeNow && raced && raced.length ? raced.find((y) => y < YEAR) ?? YEAR : YEAR; const isCur = year === YEAR;
   const season = useAsync(async () => {
-    const rows = await driverSeasonResults(year, driverId);
-    const q = await driverSeasonQuali(year, driverId).catch(() => ({ poles: null, q3: null }));
+    const [rows, q] = await Promise.all([driverSeasonResults(year, driverId), driverSeasonQuali(year, driverId).catch(() => ({ poles: null, q3: null }))]); // side by side
     return { rows, stats: seasonStats(rows, q.poles, q.q3) };
   }, [driverId, year]);
   // The season tab is what opens first, so it gets the connection to itself: career totals, titles and the team list start once another tab is opened.
   const [wantMore, setWantMore] = useState(false); React.useEffect(() => { if (tab !== 'season') setWantMore(true); }, [tab]);
   const career = useAsync(() => (wantMore ? driverCareer(driverId, YEAR) : Promise.resolve(null)), [driverId, wantMore]);
+  const pts = useAsync(() => (wantMore ? driverPoints(driverId) : Promise.resolve(null)), [driverId, wantMore]);
   const titles = useAsync(() => (wantMore ? driverTitles(driverId, YEAR) : Promise.resolve(null)), [driverId, wantMore]);
   const teamsList = useAsync(() => (wantMore ? driverTeamsList(driverId) : Promise.resolve(null)), [driverId, wantMore]);
   const standAll = useAsync(() => driverStandings(year), [year]);
@@ -141,9 +141,9 @@ export default function DriverScreen({ route, navigation }) {
         {tab === 'career' && (
           <Card>
             <Eyebrow>Career</Eyebrow>
-            {career.loading && <><Skeleton /><Note>Loading career totals. The first time can take several seconds.</Note></>}
+            {career.loading && <><Skeleton /><Note>Loading career totals…</Note></>}
             {career.error && <ErrorNote error={career.error} onRetry={career.reload} />}
-            {C && <StatGrid cols={3} items={[['Seasons', dash(C.seasons)], ['Races', dash(C.races)], ['Wins', dash(C.wins)], ['Podiums', dash(C.podiums)], ['Poles', dash(C.poles)], ['Fast laps', dash(C.fastest)], ['Titles', titles.loading ? '…' : dash(titles.v)], ['Points', dash(C.points)], ['First year', dash(C.first)]]} />}
+            {C && <StatGrid cols={3} items={[['Seasons', dash(C.seasons)], ['Races', dash(C.races)], ['Wins', dash(C.wins)], ['Podiums', dash(C.podiums)], ['Poles', dash(C.poles)], ['Fast laps', dash(C.fastest)], ['Titles', titles.loading ? '…' : dash(titles.v)], ['Points', pts.loading ? '…' : dash(pts.v)], ['First year', dash(C.first)]]} />}
           </Card>
         )}
         {tab === 'career' && (teamsList.v || []).length > 0 && (

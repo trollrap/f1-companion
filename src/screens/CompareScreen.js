@@ -14,7 +14,7 @@ import { driverPhoto } from '../lib/media';
 import { matches } from '../lib/search';
 import { useAsync } from '../hooks/useAsync';
 import { useTeamColor } from '../hooks/useTeams';
-import { driverStandings, driverSeasonResults, driverSeasonQuali, driverCareer, driverTitles, driverSeasons, allDrivers } from '../api/jolpica';
+import { driverStandings, driverSeasonResults, driverSeasonQuali, driverCareer, driverPoints, driverTitles, driverSeasons, allDrivers } from '../api/jolpica';
 import { YEAR } from '../api/openf1';
 import { seasonStats, headToHead, fix } from '../lib/stats';
 import { colors, alpha } from '../theme';
@@ -50,9 +50,10 @@ export function SearchBox({ value, onChange, placeholder }) {
 
 export default function CompareScreen({ route }) {
   const { a } = route.params; const year0 = route.params.year || YEAR;
-  const [b, setB] = useState(null); const [tab, setTab] = useState('season'); const [gridYear, setGridYear] = useState(year0); const [q, setQ] = useState(''); const [pickYear, setPickYear] = useState(null);
+  const [b, setB] = useState(null); const [tab, setTab] = useState('career'); const [gridYear, setGridYear] = useState(year0); const [q, setQ] = useState(''); const [pickYear, setPickYear] = useState(null);
   const tc = useTeamColor(); const shotRef = useRef(null);
-  const grid = useAsync(() => driverStandings(gridYear), [gridYear]);
+  const sa0 = useAsync(() => driverSeasons(a.driverId), [a.driverId]); const myYears = sa0.v && sa0.v.length ? sa0.v : [year0]; const gy = myYears.includes(gridYear) ? gridYear : myYears[0];
+  const grid = useAsync(() => driverStandings(gy), [gy]);
   const every = useAsync(() => allDrivers(), []);
   const found = useMemo(() => (q.trim().length >= 2 && every.v ? every.v.filter((d) => d.driverId !== a.driverId && matches(q, d.name, d.code)).slice(0, 30) : []), [q, every.v]);
   const pickB = (x) => setB({ driverId: x.driverId, name: x.name, first: x.first, last: x.last, teamId: x.teamId || null, team: x.team || null, number: x.number || x.permNumber });
@@ -65,14 +66,16 @@ export default function CompareScreen({ route }) {
     const A = new Set([...sa.v, ...cur(a.driverId)]), B = new Set([...sb.v, ...cur(b.driverId)]);
     return [...A].filter((y) => B.has(y)).sort((x, y) => y - x);
   }, [b, sa.v, sb.v, nowStand.v]);
-  const cyear = pickYear && common?.includes(pickYear) ? pickYear : common?.includes(year0) ? year0 : common?.[0] ?? null;
+  const cyear = pickYear && common?.includes(pickYear) ? pickYear : common?.[0] ?? null; // a shared season, never the one the page was opened from
   const hasSeason = !!common?.length, mode = hasSeason ? tab : 'career';
-  const loadSeason = async (id, y) => { const rows = await driverSeasonResults(y, id); const qq = await driverSeasonQuali(y, id).catch(() => ({ poles: null, q3: null })); return { rows, stats: seasonStats(rows, qq.poles, qq.q3) }; };
+  const loadSeason = async (id, y) => { const [rows, qq] = await Promise.all([driverSeasonResults(y, id), driverSeasonQuali(y, id).catch(() => ({ poles: null, q3: null }))]); return { rows, stats: seasonStats(rows, qq.poles, qq.q3) }; };
   const seasonA = useAsync(() => (cyear ? loadSeason(a.driverId, cyear) : Promise.resolve(null)), [a.driverId, cyear]);
   const seasonB = useAsync(() => (b && cyear ? loadSeason(b.driverId, cyear) : Promise.resolve(null)), [b?.driverId, cyear]);
   const tableY = useAsync(() => (cyear ? driverStandings(cyear) : Promise.resolve(null)), [cyear]);
   const cA = useAsync(() => driverCareer(a.driverId, YEAR), [a.driverId]);
   const cB = useAsync(() => (b ? driverCareer(b.driverId, YEAR) : Promise.resolve(null)), [b?.driverId]);
+  const pA = useAsync(() => driverPoints(a.driverId), [a.driverId]);
+  const pB = useAsync(() => (b ? driverPoints(b.driverId) : Promise.resolve(null)), [b?.driverId]);
   const tA = useAsync(() => driverTitles(a.driverId, YEAR), [a.driverId]);
   const tB = useAsync(() => (b ? driverTitles(b.driverId, YEAR) : Promise.resolve(null)), [b?.driverId]);
   const teamOf = (S, d) => S?.rows?.at(-1)?.teamId || d.teamId;
@@ -108,7 +111,7 @@ export default function CompareScreen({ route }) {
             </Pressable>))}
         </View>
       ) : (<>
-        <SeasonSwitch compact year={gridYear} years={YEARS} onChange={setGridYear} />
+        <SeasonSwitch compact year={gy} years={myYears} onChange={setGridYear} caption="seasons he raced" />
         {grid.loading && <Skeleton rows={4} />}
         {grid.error && <ErrorNote error={grid.error} onRetry={grid.reload} />}
         {grid.v && (
@@ -125,9 +128,9 @@ export default function CompareScreen({ route }) {
   const [ahead, behind] = ready ? headToHead(seasonA.v.rows, seasonB.v.rows) : [0, 0];
   const standA = tableY.v?.find((x) => x.driverId === a.driverId), standB = tableY.v?.find((x) => x.driverId === b.driverId);
   const R = (label, x, y, lower) => <Row key={label} label={label} a={x} b={y} lower={lower} ca={colA} cb={colB} />;
-  const tabs = hasSeason ? [['season', `${cyear} season`], ['career', 'Career']] : null;
+  const tabs = hasSeason ? [['career', 'Career'], ['season', `${cyear} season`]] : null;
   return (
-    <Screen header={false} swipe={tabs ? { index: mode === 'career' ? 1 : 0, count: 2, onIndex: (i) => setTab(i ? 'career' : 'season') } : undefined}>
+    <Screen header={false} swipe={tabs ? { index: mode === 'career' ? 0 : 1, count: 2, onIndex: (i) => setTab(i ? 'season' : 'career') } : undefined}>
       <View ref={shotRef} collapsable={false} style={{ gap: 10, padding: 10, borderRadius: 20, backgroundColor: colors.bg, borderWidth: 1, borderColor: alpha(colors.accent, 0.35) }}>
         <LinearGradient pointerEvents="none" colors={[colors.cardA, colors.deep]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, borderRadius: 20 }} />
         <View style={{ flexDirection: 'row', alignItems: 'stretch', gap: 8 }}>{hero(a, colA, 'left')}{hero(b, colB, 'right')}</View>
@@ -150,7 +153,7 @@ export default function CompareScreen({ route }) {
             {(cA.error || cB.error) && <ErrorNote error={cA.error || cB.error} onRetry={() => { cA.reload(); cB.reload(); }} />}
             {ca && cb && (<>
               {R('Seasons', dash(ca.seasons), dash(cb.seasons))}{R('Races', dash(ca.races), dash(cb.races))}{R('Wins', dash(ca.wins), dash(cb.wins))}{R('Podiums', dash(ca.podiums), dash(cb.podiums))}
-              {R('Poles', dash(ca.poles), dash(cb.poles))}{R('Fastest laps', dash(ca.fastest), dash(cb.fastest))}{R('Titles', tA.loading ? '…' : dash(tA.v), tB.loading ? '…' : dash(tB.v))}{R('Points', dash(ca.points), dash(cb.points))}
+              {R('Poles', dash(ca.poles), dash(cb.poles))}{R('Fastest laps', dash(ca.fastest), dash(cb.fastest))}{R('Titles', tA.loading ? '…' : dash(tA.v), tB.loading ? '…' : dash(tB.v))}{R('Points', pA.loading ? '…' : dash(pA.v), pB.loading ? '…' : dash(pB.v))}
             </>)}
           </View>)}
       </View>
