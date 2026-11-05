@@ -6,7 +6,8 @@ import { AppState } from 'react-native';
 import { readDurable, writeDurable } from '../lib/durable';
 
 const KEY = 'fun:v1';
-let state = { profile: null, fantasies: [] }; let loaded = false, loading = null, timer = null; const subs = new Set();
+export const DEFAULT_SETTINGS = { evolve: true, transfers: 'manual', animSessions: true, animSeason: true };
+let state = { profile: null, fantasies: [], settings: DEFAULT_SETTINGS }; const undoStack = {}; let lastPush = {}; let loaded = false, loading = null, timer = null; const subs = new Set();
 const emit = () => subs.forEach((f) => f());
 const flush = () => { if (timer) { clearTimeout(timer); timer = null; } if (!loaded) return; return writeDurable(KEY, JSON.stringify(state)); };
 // Saved shortly after every change, and at once when the app goes to the background (so closing it right away loses nothing).
@@ -15,19 +16,27 @@ try { AppState.addEventListener('change', (st) => { if (st !== 'active') flush()
 export const uid = () => Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-4);
 async function load() {
   if (loaded) return; if (loading) return loading;
-  loading = (async () => { let r = null; try { r = await readDurable(KEY); } catch {} if (!r) { try { r = await AsyncStorage.getItem(KEY); } catch {} } return r; })().then((r) => { if (r) { const v = JSON.parse(r); const saved = Array.isArray(v.fantasies) ? v.fantasies : []; state = { profile: state.profile || v.profile || null, fantasies: [...state.fantasies, ...saved.filter((x) => !state.fantasies.some((y) => y.id === x.id))] }; } }).catch(() => {}).finally(() => { loaded = true; emit(); });
+  loading = (async () => { let r = null; try { r = await readDurable(KEY); } catch {} if (!r) { try { r = await AsyncStorage.getItem(KEY); } catch {} } return r; })().then((r) => { if (r) { const v = JSON.parse(r); const saved = Array.isArray(v.fantasies) ? v.fantasies : []; state = { profile: state.profile || v.profile || null, settings: { ...DEFAULT_SETTINGS, ...(v.settings || {}), ...(state.settings !== DEFAULT_SETTINGS ? state.settings : {}) }, fantasies: [...state.fantasies, ...saved.filter((x) => !state.fantasies.some((y) => y.id === x.id))] }; } }).catch(() => {}).finally(() => { loaded = true; emit(); });
   return loading;
 }
 export function useFun() {
   const [, force] = useState(0);
   useEffect(() => { const f = () => force((n) => n + 1); subs.add(f); load(); return () => subs.delete(f); }, []);
   return {
-    loaded, profile: state.profile, fantasies: state.fantasies,
+    loaded, profile: state.profile, fantasies: state.fantasies, settings: state.settings || DEFAULT_SETTINGS,
+    setSettings: (p) => { state = { ...state, settings: { ...(state.settings || DEFAULT_SETTINGS), ...p } }; persist(true); emit(); },
+    canUndo: (id) => (undoStack[id] || []).length > 0,
+    undo: (id) => { const st = undoStack[id]; if (!st || !st.length) return false; const prev = st.pop(); state = { ...state, fantasies: state.fantasies.map((x) => (x.id === id ? prev : x)) }; persist(true); emit(); return true; },
     get: (id) => state.fantasies.find((x) => x.id === id) || null,
     saveProfile: (p) => { state = { ...state, profile: p }; persist(true); emit(); },
     addFantasy: (f) => { state = { ...state, fantasies: [f, ...state.fantasies] }; persist(true); emit(); },
     // fn gets the current fantasy and returns the changed one
-    update: (id, fn) => { state = { ...state, fantasies: state.fantasies.map((x) => (x.id === id ? fn(x) : x)) }; persist(); emit(); },
+    // Every change can be undone (the last 25 are kept while the app is open); quick successive changes, like dragging a slider, count as one.
+    update: (id, fn) => {
+      const cur = state.fantasies.find((x) => x.id === id); const next = cur ? fn(cur) : null;
+      if (cur && next && next !== cur) { const now = Date.now(); if (!lastPush[id] || now - lastPush[id] > 900) { const st = (undoStack[id] = undoStack[id] || []); st.push(cur); if (st.length > 25) st.shift(); } lastPush[id] = now; }
+      state = { ...state, fantasies: state.fantasies.map((x) => (x.id === id ? next || x : x)) }; persist(); emit();
+    },
     remove: (id) => { state = { ...state, fantasies: state.fantasies.filter((x) => x.id !== id) }; persist(true); emit(); },
   };
 }

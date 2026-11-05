@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Image, Pressable, TextInput } from 'react-native';
+import React, { useRef, useState, useEffect } from 'react';
+import { View, Image, Pressable, TextInput, PanResponder } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Text } from './Text';
 import { colors, alpha } from '../theme';
@@ -77,10 +77,10 @@ export function StandingsCard({ title, sub, rows, shotRef, limit = 22 }) {
       {rows.slice(0, limit).map((r, i) => (
         <View key={r.key} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 3 }}>
           <Text style={{ width: 22, color: i === 0 ? colors.gold : colors.muted, fontWeight: '800', fontSize: 14, textAlign: 'right' }}>{i + 1}</Text>
-          <View style={{ width: 3, height: 16, borderRadius: 2, backgroundColor: r.color }} />
-          {r.photo !== undefined ? <Avatar source={r.photo} color={r.color} label={r.code} size={22} radius={11} /> : null}
+          <View style={{ width: 3, height: 18, borderRadius: 2, backgroundColor: r.color }} />
+          {r.teamRow ? (r.logo ? <Image source={r.logo} resizeMode="contain" style={{ width: 22, height: 22 }} /> : <View style={{ width: 22, height: 22, borderRadius: 6, backgroundColor: alpha(r.color || colors.muted, 0.5) }} />) : (r.photo !== undefined ? <Avatar source={r.photo} color={r.color} label={r.code} size={22} radius={11} /> : null)}
           <Text style={{ flex: 1, color: colors.fg, fontSize: 15, fontWeight: '700' }} numberOfLines={1}>{r.name}</Text>
-          {r.logo ? <Image source={r.logo} resizeMode="contain" style={{ width: 18, height: 18 }} /> : null}
+          {!r.teamRow && r.logo ? <Image source={r.logo} resizeMode="contain" style={{ width: 18, height: 18 }} /> : null}
           <Text style={{ color: colors.muted, fontSize: 13, maxWidth: 110 }} numberOfLines={1}>{r.team}</Text>
           <Text style={{ minWidth: 40, textAlign: 'right', color: colors.fg, fontSize: 15, fontWeight: '800' }}>{r.points}</Text>
         </View>))}
@@ -105,7 +105,8 @@ export function SummaryCard({ title, sub, hero, rows, shotRef }) {
         </View>) : null}
       {rows.map((r) => (
         <View key={r.k} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 4, borderBottomWidth: 1, borderBottomColor: colors.line }}>
-          <Text style={{ width: 96, color: colors.muted, fontSize: 13 }}>{r.k}</Text>
+          <Text style={{ width: 92, color: colors.muted, fontSize: 13 }}>{r.k}</Text>
+          {r.photo !== undefined ? <Avatar source={r.photo} color={r.color} label={r.code} size={24} radius={12} /> : null}
           {r.logo ? <Image source={r.logo} resizeMode="contain" style={{ width: 18, height: 18 }} /> : null}
           <Text style={{ flex: 1, color: colors.fg, fontSize: 15, fontWeight: '700' }} numberOfLines={1}>{r.v}</Text>
           <Text style={{ color: colors.fg, fontSize: 15, fontWeight: '800' }}>{r.n}</Text>
@@ -113,4 +114,33 @@ export function SummaryCard({ title, sub, hero, rows, shotRef }) {
       <Text style={{ color: colors.muted, fontFamily: 'label', fontSize: 9, letterSpacing: 2, textAlign: 'center', marginTop: 8 }}>FANTASY · F1 COMPANION</Text>
     </View>
   );
+}
+
+// A slider that moves in steps of one and follows the finger smoothly; the value is committed as it changes.
+export function Slide({ label, value, min = 30, max = 99, onChange, color = colors.accent }) {
+  const [w, setW] = useState(0); const [live, setLive] = useState(null); const geo = useRef({ w: 0, min, max, last: value, start: 0 }); geo.current.w = w; geo.current.min = min; geo.current.max = max;
+  const cb = useRef(onChange); cb.current = onChange; const shown = live ?? value;
+  useEffect(() => { if (live == null) geo.current.last = value; }, [value]);
+  const at = (x) => { const g = geo.current; if (!g.w) return g.last; return Math.max(g.min, Math.min(g.max, Math.round(g.min + (Math.max(0, Math.min(g.w, x)) / g.w) * (g.max - g.min)))); };
+  const pan = useRef(PanResponder.create({
+    onStartShouldSetPanResponder: () => true, onMoveShouldSetPanResponder: () => true, onPanResponderTerminationRequest: () => false,
+    onPanResponderGrant: (e) => { const v = at(e.nativeEvent.locationX); geo.current.start = e.nativeEvent.locationX - 0; geo.current.x0 = e.nativeEvent.pageX; geo.current.v0x = e.nativeEvent.locationX; setLive(v); if (v !== geo.current.last) { geo.current.last = v; cb.current(v); } },
+    onPanResponderMove: (e, gs) => { const v = at(geo.current.v0x + gs.dx); setLive(v); if (v !== geo.current.last) { geo.current.last = v; cb.current(v); } },
+    onPanResponderRelease: () => setLive(null), onPanResponderTerminate: () => setLive(null),
+  })).current;
+  const pct = ((shown - min) / (max - min)) * 100;
+  return (
+    <View style={{ gap: 6 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center' }}><Text style={{ flex: 1, color: colors.fg, fontSize: 16, fontWeight: '600' }}>{label}</Text><Text style={{ color: colors.fg, fontSize: 18, fontWeight: '800', minWidth: 34, textAlign: 'right' }}>{shown}</Text></View>
+      <View onLayout={(e) => setW(e.nativeEvent.layout.width)} {...pan.panHandlers} style={{ height: 34, justifyContent: 'center' }}>
+        <View pointerEvents="none" style={{ height: 8, borderRadius: 4, backgroundColor: colors.surface2, borderWidth: 1, borderColor: colors.line, overflow: 'hidden' }}><View style={{ width: `${pct}%`, height: 8, backgroundColor: color }} /></View>
+        <View pointerEvents="none" style={{ position: 'absolute', left: `${pct}%`, marginLeft: -11, width: 22, height: 22, borderRadius: 11, backgroundColor: '#fff', borderWidth: 3, borderColor: color }} />
+      </View>
+    </View>
+  );
+}
+// "Undo last change" chip, shown only when there is something to undo.
+export function UndoChip({ show, onPress }) {
+  if (!show) return null;
+  return (<Pressable onPress={onPress} accessibilityRole="button" style={({ pressed }) => [{ alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, height: 34, borderRadius: 17, backgroundColor: colors.surface2, borderWidth: 1, borderColor: colors.accent }, pressed && { opacity: 0.7 }]}><Ionicons name="arrow-undo" size={16} color={colors.accent} /><Text style={{ color: colors.fg, fontWeight: '700', fontSize: 14 }}>Undo last change</Text></Pressable>);
 }

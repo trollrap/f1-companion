@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, UIManager, Platform, AppState } from 'react-native';
+import { View, UIManager, Platform, AppState, Pressable } from 'react-native';
+import { HeaderBackButton } from '@react-navigation/elements';
 import { refreshAll } from './lib/net';
 import { useFonts } from 'expo-font';
 import { Rajdhani_400Regular, Rajdhani_500Medium, Rajdhani_600SemiBold, Rajdhani_700Bold } from '@expo-google-fonts/rajdhani';
@@ -40,7 +41,7 @@ import TeamCompareScreen from './screens/TeamCompareScreen';
 import { MotoHome, MotoCalendar, MotoStandings, MotoEvent, MotoRider, MotoPaddock, MotoTeam } from './screens/MotoScreens';
 import { FootScores, FootTable, FootMatch, FootTeam } from './screens/FootScreens';
 import { FunHome, FunProfile } from './screens/FunScreens';
-import { FantasyNew, Fantasy, FantasyRace, FantasyDriver, FantasyTransfers } from './screens/FantasyScreens';
+import { FantasyNew, Fantasy, FantasyRace, FantasyDriver, FantasyTransfers, FunSettings } from './screens/FantasyScreens';
 import SettingsScreen from './screens/SettingsScreen';
 import AlertScheduler from './components/AlertScheduler';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -102,7 +103,9 @@ function Tabs() {
     </Tab.Navigator>
   );
 }
-const detail = { headerStyle: { backgroundColor: colors.bg }, headerTintColor: colors.fg, headerShadowVisible: false, animation: 'slide_from_right', animationDuration: 280, contentStyle: { backgroundColor: colors.bg }, get headerTitleStyle() { return { fontFamily: ui.lang === 'el' ? 'RobotoCondensed_600SemiBold' : 'ChakraPetch_600SemiBold', fontSize: 16 }; }, headerBackButtonDisplayMode: 'minimal' };
+const detailBase = { headerStyle: { backgroundColor: colors.bg }, headerTintColor: colors.fg, headerShadowVisible: false, animation: 'slide_from_right', animationDuration: 280, contentStyle: { backgroundColor: colors.bg }, get headerTitleStyle() { return { fontFamily: ui.lang === 'el' ? 'RobotoCondensed_600SemiBold' : 'ChakraPetch_600SemiBold', fontSize: 16 }; }, headerBackButtonDisplayMode: 'minimal' };
+// Every inner screen has a back arrow and a home button: one tap back to the first tab screen instead of going back page after page.
+const detail = ({ navigation }) => ({ ...detailBase, headerLeft: (p) => (p.canGoBack ? (<View style={{ flexDirection: 'row', alignItems: 'center' }}><HeaderBackButton {...p} tintColor={colors.fg} onPress={() => navigation.goBack()} /><Pressable onPress={() => navigation.popToTop()} hitSlop={8} accessibilityRole="button" accessibilityLabel="Home" style={({ pressed }) => ({ width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.6 : 1 })}><Ionicons name="home" size={20} color={colors.fg} /></Pressable></View>) : null) });
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) UIManager.setLayoutAnimationEnabledExperimental(true);
 function Shell() {
@@ -151,6 +154,7 @@ function Shell() {
               <Stack.Screen name="Chart" component={ChartScreen} options={{ title: tr('Season chart') }} />
               <Stack.Screen name="Grid" component={GridScreen} options={{ title: tr('Next season grid') }} />
               <Stack.Screen name="FunProfile" component={FunProfile} options={{ title: 'Your driver' }} />
+              <Stack.Screen name="FunSettings" component={FunSettings} options={{ title: 'Fantasy settings' }} />
               <Stack.Screen name="FantasyNew" component={FantasyNew} options={{ title: 'New fantasy season' }} />
               <Stack.Screen name="Fantasy" component={Fantasy} options={{ title: 'Fantasy' }} />
               <Stack.Screen name="FantasyRace" component={FantasyRace} options={({ route }) => ({ title: 'Race result' })} />

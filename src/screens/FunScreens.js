@@ -57,6 +57,7 @@ export function FunHome({ navigation }) {
           </Press>);
       })}
       <Btn icon="add-circle-outline" tone="solid" onPress={() => navigation.navigate('FantasyNew')}>New fantasy season</Btn>
+      <Btn icon="settings-outline" onPress={() => navigation.navigate('FunSettings')}>Fantasy settings</Btn>
     </Screen>
   );
 }

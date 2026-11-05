@@ -48,8 +48,8 @@ export function allTime(f) {
     const closed = isDone(v) || (!!f.ended && n === seasonNo(f)); races += rn;
     st.drivers.forEach((d, i) => {
       if (!d.races && !d.points && !d.poles) return;
-      const x = D.get(d.id) || { id: d.id, seasons: 0, races: 0, wins: 0, podiums: 0, poles: 0, points: 0, fl: 0, dnf: 0, titles: 0 }; D.set(d.id, x);
-      x.d = d; x.team = v.teams.find((t) => t.id === d.teamId); x.seasons++; x.races += d.races; x.wins += d.wins; x.podiums += d.podiums; x.poles += d.poles; x.points += d.points; x.fl += d.fl || 0; x.dnf += d.dnf;
+      const x = D.get(d.id) || { id: d.id, last: n, seasons: 0, races: 0, wins: 0, podiums: 0, poles: 0, points: 0, fl: 0, dnf: 0, titles: 0 }; D.set(d.id, x);
+      x.d = d; x.last = n; x.team = v.teams.find((t) => t.id === d.teamId); x.seasons++; x.races += d.races; x.wins += d.wins; x.podiums += d.podiums; x.poles += d.poles; x.points += d.points; x.fl += d.fl || 0; x.dnf += d.dnf;
       if (closed && i === 0) x.titles++;
       best('wins', d.wins, { name: d.name, n }); best('points', d.points, { name: d.name, n });
     });
@@ -60,7 +60,7 @@ export function allTime(f) {
       if (b) { const m = a.points - b.points; best('margin', m, { name: a.name, n }); best('tight', m, { name: a.name, n }, false); }
     }
   });
-  const byD = (a, b) => b.titles - a.titles || b.wins - a.wins || b.podiums - a.podiums || b.points - a.points;
+  const byD = (a, b) => b.titles - a.titles || b.points - a.points || b.wins - a.wins;
   return { seasons: seasonList(f).length, races, champs, rec, drivers: [...D.values()].sort(byD), teams: [...T.values()].sort((a, b) => b.titles - a.titles || b.wins - a.wins || b.points - a.points) };
 }
 
@@ -72,4 +72,27 @@ export function seasonSummary(v, closed) {
   const a = st.drivers[0], b = st.drivers[1];
   return { races, closed, champion: a || null, team: team(a?.teamId), tchamp: st.teams[0] || null, margin: a && b ? a.points - b.points : null, winners: st.drivers.filter((d) => d.wins > 0).length,
     wins: top('wins'), poles: top('poles'), podiums: top('podiums'), fl: top('fl'), dnf: top('dnf'), twins: top('wins', st.teams), tpoints: st.teams[0] ? { val: st.teams[0].points, who: [st.teams[0]] } : null };
+}
+
+// Is the title already decided, or can it be decided at the next round? Only describes the table, never changes anything.
+// `kind`: 'drivers' (race 25, sprint 8 per driver) or 'teams' (race 25 + 18, sprint 8 + 7 per team).
+const MAXP = { drivers: { Race: 25, Sprint: 8 }, teams: { Race: 43, Sprint: 15 } };
+export function titleStatus(v, kind = 'drivers') {
+  const st = standings(v), rows = kind === 'drivers' ? st.drivers : st.teams; if (rows.length < 2) return null;
+  const left = v.races.map((r) => ({ r, race: !v.results?.[r.id]?.Race, sprint: !!r.sprint && !v.results?.[r.id]?.Sprint })).filter((x) => x.race || x.sprint);
+  if (!left.length) return null;
+  const worth = (x) => (x.race ? MAXP[kind].Race : 0) + (x.sprint ? MAXP[kind].Sprint : 0);
+  const total = left.reduce((a, x) => a + worth(x), 0), next = left[0], thisMax = worth(next), after = total - thisMax;
+  const L = rows[0], title = kind === 'drivers' ? "drivers' title" : "constructors' title", they = kind === 'teams';
+  const live = rows.slice(1).filter((r) => L.points - r.points <= total); // rivals who could still catch the leader
+  const racesLeft = left.filter((x) => x.race).length;
+  if (!live.length) return { decided: true, id: L.id, who: L.name, kind, racesLeft, text: `${L.name} ${they ? 'have' : 'has'} won the ${title}${racesLeft ? ` with ${racesLeft} race${racesLeft === 1 ? '' : 's'} to go` : ''}.` };
+  // Swing (leader's points minus the rival's in this round) needed to be safe from this rival for the rest of the season.
+  const need = live.map((r) => ({ r, n: after - (L.points - r.points) + 1 }));
+  const worst = need.sort((a, b) => b.n - a.n)[0];
+  if (worst.n <= thisMax) {
+    const n = worst.n, text = n > 0 ? `${they ? 'they outscore' : 'he outscores'} ${worst.r.name} by ${n} point${n === 1 ? '' : 's'} or more` : `${they ? 'they do' : 'he does'} not lose more than ${-n} point${n === -1 ? '' : 's'} to ${worst.r.name}`;
+    return { decided: false, match: true, id: L.id, who: L.name, kind, round: next.r, text: `Match point at ${next.r.name}: ${L.name} ${they ? 'win' : 'wins'} the ${title} this weekend if ${text}.` };
+  }
+  return null;
 }

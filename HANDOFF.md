@@ -116,3 +116,8 @@ Expo Go (SDK 53+) does not include the `expo-notifications` native module; impor
 
 ## V1.12.0
 - MotoGP paddock: only the two main riders per team (mainRiders), team colours by team name then bike (estimates), rider/home colours via bikeColor. Team points still count every rider.
+
+## V1.13.0
+- Fantasy: undo (store keeps last 25 per fantasy, UndoChip), Fun settings (store.settings: evolve, transfers manual/auto/none, animSessions, animSeason; FunSettingsCard in Setup tab + FunSettings screen), full-screen Shows (components/Shows.js: TransferShow, ChampionShow, SessionShow), title decided / match point banners (look.js titleStatus), Stats tab rewrite (Fold lists, compact all-time rows, pretty season summary), retired drivers open from history, driver profile seasons dropdown + results Fold, Slide sliders (FunBits), TeamEditor (collapsed team cards, team stats editable in transfers), team `dev` stat removed (rare small random drift), nationality/flags (fun/geo.js) for made-up drivers and races, custom race laps input + country, default calendar = all races minus Sepang with 2026 sprint weekends, exports use surnames, logos next to team colour in team export.
+- Save picture: remembered folder is used first (AsyncStorage + durable 'saveDir'), chosen once in Fantasy settings or on first save.
+- Navigation: inner screens have back arrow + home button (Main.js detail uses HeaderBackButton from @react-navigation/elements, a transitive dependency).
