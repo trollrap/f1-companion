@@ -13,6 +13,7 @@ import { checkResults } from '../lib/resultAlerts';
 import { SOURCES } from '../api/news';
 import { checkNews } from '../lib/newsAlerts';
 import { ensurePermission } from '../lib/notifications';
+import { checkOta, applyOta } from '../lib/ota';
 import { checkUpdate, currentVersion, updatesConfigured, installUpdate, canInstallInApp } from '../lib/update';
 import { clearCache } from '../lib/cache';
 import Reveal from '../components/Reveal';
@@ -51,7 +52,7 @@ export default function SettingsScreen() {
   const check = async () => { setResults([]); setRunning(true); try { await runDiagnostics((r) => setResults((x) => [...x, r])); } finally { setRunning(false); } };
   const on = SESSION_TYPES.filter((t) => prefs.types[t]).length;
   const [pickC, setPickC] = useState(o.accent || colors.accent); const [custom, setCustom] = useState(false);
-  const applyColour = async (hex) => { setMsg('Saving the colour…'); const ok = await setOpt('accent', hex); if (ok === false) { setMsg('The colour could not be saved on this phone. Try again.'); return; } setMsg('Colour saved. The app restarts to use it everywhere. If it does not, close it completely and open it again.'); setTimeout(async () => { const r = await restartApp(); if (!r) setMsg('Colour saved. Close the app completely (swipe it away) and open it again to see it everywhere.'); }, 900); };
+  const applyColour = async (hex) => { setMsg('Saving the colour…'); await setOpt('accent', hex).catch(() => {}); setMsg('Colour saved. The app restarts to use it everywhere. If it does not, close it completely and open it again.'); setTimeout(async () => { const r = await restartApp(); if (!r) setMsg('Colour saved. Close the app completely (swipe it away) and open it again to see it everywhere.'); }, 900); };
   return (
     <Screen header={false}>
       <Section icon="language-outline" title="Language" summary={o.lang === 'el' ? 'Ελληνικά · Beta' : 'English'}>
@@ -83,7 +84,14 @@ export default function SettingsScreen() {
       </Section>
       <Section icon="notifications-outline" title="Notifications" summary={`${on} sessions · ${prefs.results ? 'results on' : 'results off'}`}>
         {!notificationsAvailable() && <Note>Alerts only work in the installed app, not in Expo Go.</Note>}
-        {SESSION_TYPES.map((t) => <Sw key={t} label={t} value={prefs.types[t]} onChange={() => toggle(t)} />)}
+        <Text style={s.hint}>Tap the sessions you want an alert for.</Text>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
+          {SESSION_TYPES.filter((t) => o.sport !== 'motogp' || !['Practice 3', 'Sprint Qualifying'].includes(t)).map((t) => { const sel = !!prefs.types[t]; return (
+            <Pressable key={t} onPress={() => toggle(t)} accessibilityRole="switch" accessibilityState={{ checked: sel }} style={({ pressed }) => [{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 22, borderWidth: 1, borderColor: sel ? colors.accent : colors.line, backgroundColor: sel ? colors.accentSoft : colors.surface2 }, pressed && { opacity: 0.7 }]}>
+              <Ionicons name={sel ? 'notifications' : 'notifications-off-outline'} size={16} color={sel ? colors.accent : colors.muted} />
+              <Text style={{ color: sel ? colors.fg : colors.muted, fontWeight: sel ? '700' : '500', fontSize: 15 }}>{t}</Text>
+            </Pressable>); })}
+        </View>
         <View style={{ marginTop: 10 }}><NotifPrefs title="Remind me before" /></View>
         <Sw label="Session results" hint="A notification once a qualifying, sprint or race result is published. Android can be minutes late." value={prefs.results} onChange={toggleResults} />
         <Btn onPress={async () => { const n = await checkResults({ force: true }); setMsg(n ? `Sent ${n} result alert${n > 1 ? 's' : ''}.` : 'No new results to send right now.'); }}>Check for results now</Btn>
@@ -114,7 +122,7 @@ export default function SettingsScreen() {
       </Section>
       <Section icon="cloud-download-outline" title="App updates" summary={`Installed ${currentVersion()}`}>
         <Note>{updatesConfigured() ? 'Checks GitHub for a newer release.' : 'Not set up: add your GitHub repository in src/config.js.'}</Note>
-        {updatesConfigured() ? <Btn onPress={async () => { setUpd('Checking…'); const r = await checkUpdate(true); setUpd(r.status === 'available' ? `Version ${r.version} is available.` : r.status === 'current' ? 'You have the latest version.' : r.status === 'none' ? 'No release has been published on GitHub yet, so there is nothing to update to.' : r.status === 'error' ? `Could not check: ${r.error}` : ''); if (r.status === 'available') { if (canInstallInApp() && /\.apk$/i.test(r.url)) { setUpd(`Downloading ${r.version}… 0%`); const i = await installUpdate(r, (p) => setUpd(`Downloading ${r.version}… ${Math.round(p * 100)}%`)); setUpd(i.ok ? 'Download finished. Confirm the install on the Android screen.' : `Could not install here (${i.error}). Opening the download instead.`); if (!i.ok) Linking.openURL(r.url).catch(() => {}); } else Linking.openURL(r.url).catch(() => {}); } }}>Check for updates</Btn> : null}
+        {updatesConfigured() ? <Btn onPress={async () => { setUpd('Checking…'); const o = await checkOta(); if (o.status === 'ready') { setUpd('Update downloaded. Restarting…'); if (await applyOta()) return; setUpd('Update downloaded. Close the app completely and open it again to use it.'); return; } const r = await checkUpdate(true); setUpd(r.status === 'available' ? `Version ${r.version} is available.` : r.status === 'current' ? 'You have the latest version.' : r.status === 'none' ? 'No release has been published on GitHub yet, so there is nothing to update to.' : r.status === 'error' ? `Could not check: ${r.error}` : ''); if (r.status === 'available') { if (canInstallInApp() && /\.apk$/i.test(r.url)) { setUpd(`Downloading ${r.version}… 0%`); const i = await installUpdate(r, (p) => setUpd(`Downloading ${r.version}… ${Math.round(p * 100)}%`)); setUpd(i.ok ? 'Download finished. Confirm the install on the Android screen.' : `Could not install here (${i.error}). Opening the download instead.`); if (!i.ok) Linking.openURL(r.url).catch(() => {}); } else Linking.openURL(r.url).catch(() => {}); } }}>Check for updates</Btn> : null}
         {upd ? <Note>{upd}</Note> : null}
       </Section>
       <Section icon="pulse-outline" title="Data check" summary="Test every service from this phone">

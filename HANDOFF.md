@@ -135,3 +135,15 @@ Expo Go (SDK 53+) does not include the `expo-notifications` native module; impor
 - In-app updater (Android): tapping the update banner (Home) or "Check for updates" (Settings) downloads the release .apk into the app cache with a progress bar, then opens Android's installer (Android always asks for one confirmation; the first time it also asks to allow installs from this app). The downloaded file is deleted on the next start (`cleanupUpdates`), and only the newest download is ever kept. Falls back to opening the download link in the browser if anything fails.
 - New native module `expo-intent-launcher` (run `npm install`) and permission REQUEST_INSTALL_PACKAGES, added by the new `app.config.js` (reads app.json, adds the permission; app.json untouched). New APK needed; the first install of 1.15.0 is manual, later updates use the in-app installer.
 - Every update is still a full APK download (~100 MB). JS-only changes could be delivered with EAS Update (expo-updates is already a dependency) but that needs runtimeVersion/updates config in app.json and `eas update`.
+
+## V1.16.0
+- Fantasy is now tabbed with a bottom bar: Home (countdown, last race report, top 3, headlines), Calendar, Standings (Drivers/Teams), News, Stats, Settings (fantasy settings, archive, End save, Setup). Ended saves open on Stats (totals first). `Screen` got a `footer` prop.
+- `src/fun/articles.js`: `buildNews(f, v, st, n)` writes articles from what happened in the save (race reports, title fight, teams, team-mate rows, rookies, profiles/rumours for custom drivers; real drivers only get facts from the simulation). Seeded, so stable.
+- Archive: `archived` flag on a fantasy; Fun home shows an Archived section; restore from the save's Settings tab.
+- MotoGP: weekend schedule grouped by day, result session chips, winner's 3 letters in the calendar (`winnersByEvent`), notification session chips (MotoGP hides P3 and Sprint Qualifying), MotoGP race result alert (`checkMotoResults`).
+- News alerts: per-source baseline keys are no longer trimmed away (that silently muted a source after a few days); foreground check every 5 min.
+- Predict picture: podium row first, pole below.
+- NOT verified on device: tab UI rendering, MotoGP winners/alerts (live API), predict layout. Android bundle export passes.
+
+## V1.16.1
+- runtimeVersion is now computed in app.config.js (hash of dependencies + permissions + plugins). No manual "1"/"2" bookkeeping; app.json untouched.

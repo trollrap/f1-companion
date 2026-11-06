@@ -19,6 +19,7 @@ export async function checkNews({ force = false } = {}) {
       for (const x of fresh.slice(0, 3)) { if (Date.now() - x.date > 36 * 3600e3 && x.date) continue; if (await notifyNow(s.name, x.title)) sent++; }
     } catch {}
   }
-  AsyncStorage.setItem(SEEN, JSON.stringify([...have].slice(-300))).catch(() => {});
+  const all = [...have]; const bases = all.filter((k) => k.startsWith('base:')); // the per-source markers must never be trimmed away, or the source would be treated as new again and stay silent
+  AsyncStorage.setItem(SEEN, JSON.stringify([...bases, ...all.filter((k) => !k.startsWith('base:')).slice(-400)])).catch(() => {});
   return sent;
 }

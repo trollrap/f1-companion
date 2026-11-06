@@ -9,7 +9,7 @@ export function Avatar({ uri, source, size = 48, color = colors.muted, label, ra
   const src = source || (uri ? { uri } : null);
   return (
     <View style={{ width: size, height: size, borderRadius: radius ?? size * 0.28, overflow: 'hidden', backgroundColor: alpha(color, 0.35), alignItems: 'center', justifyContent: 'center' }}>
-      {src ? <Image source={src} resizeMode="cover" style={{ width: size, height: size }} /> : <Text style={{ color: colors.fg, fontFamily: 'display', fontWeight: '800', fontSize: size * 0.4 }}>{String(label ?? '').slice(0, 3)}</Text>}
+      {src ? <Image source={src} resizeMode="cover" style={{ width: size, height: size }} /> : <Text style={{ color: colors.fg, fontFamily: 'display', fontWeight: '800', fontSize: size * 0.4 }}>{Array.from(String(label ?? '')).slice(0, 3).join('')}</Text>}
     </View>
   );
 }

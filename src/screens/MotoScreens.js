@@ -13,7 +13,7 @@ import { Segmented, Countdown } from '../components/Shared';
 import { hm, dayName } from '../lib/time';
 import { useAsync } from '../hooks/useAsync';
 import { useNow } from '../hooks/useSeason';
-import { seasons, events, categories, sessions, classification, standings, lastRace, flagOf, mgDate, groupStandings, riderSeason, teamSeason, bikeColor, mainRiders } from '../api/motogp';
+import { seasons, events, categories, sessions, classification, standings, lastRace, flagOf, mgDate, groupStandings, winnersByEvent, riderSeason, teamSeason, bikeColor, mainRiders } from '../api/motogp';
 import { up } from '../lib/i18n';
 import { useMotoFavs } from '../hooks/useMotoFavs';
 import { StarButton } from '../components/Shared';
@@ -95,6 +95,7 @@ export function MotoCalendar({ navigation }) {
   const m = useMoto(); const now = useNow(60000);
   const evs = useAsync(() => (m.season ? events(m.season.id, m.season.year) : Promise.resolve(null)), [m.season?.id]);
   const upKey = evs.v?.find((e) => Date.parse(e.end) >= now)?.id;
+  const win = useAsync(() => (m.season ? winnersByEvent(m.season.id, m.season.year) : Promise.resolve({})), [m.season?.id]);
   return (
     <Screen>
       {m.years.length > 0 && <SeasonSwitch year={m.season?.year} years={m.years} max={m.years[0]} onChange={m.setYear} />}
@@ -112,7 +113,7 @@ export function MotoCalendar({ navigation }) {
                 <Text style={s.name} numberOfLines={1}>{`${flagOf(e.iso)} ${e.short || e.name}`}</Text>
                 <Text style={s.sub} numberOfLines={1}>{`${mgDate(e)} · ${e.circuit}`}</Text>
               </View>
-              {live ? <Pill color={colors.accent} solid>In progress</Pill> : isNext ? <Pill color={colors.accent}>Next</Pill> : done ? <Ionicons name="checkmark-circle" size={20} color={colors.good} /> : null}
+              {live ? <Pill color={colors.accent} solid>In progress</Pill> : isNext ? <Pill color={colors.accent}>Next</Pill> : done ? (win.v?.[e.id] ? <View style={{ alignItems: 'flex-end' }}><Text style={{ color: colors.gold, fontSize: 18, fontWeight: '800', letterSpacing: 1 }}>{win.v[e.id].code}</Text><Text style={{ color: colors.muted, fontSize: 10 }}>WINNER</Text></View> : <Ionicons name="checkmark-circle" size={20} color={colors.good} />) : null}
             </Grad>
           </Press>);
       })}
@@ -269,6 +270,35 @@ export function MotoTeam({ route, navigation }) {
   );
 }
 
+// Session kinds drive the colour bar of the weekend schedule.
+const KIND = { RAC: 'race', SPR: 'sprint', Q1: 'quali', Q2: 'quali', NQ: 'quali', FP1: 'practice', FP2: 'practice', PR: 'practice', WUP: 'warm' };
+const KCOL = { race: colors.accent, sprint: colors.gold, quali: '#2D8CFF', practice: colors.muted, warm: colors.line };
+// Weekend schedule grouped by day, so it reads as a timeline instead of one long list. The warm-up is a small line, the session in progress glows.
+function Schedule({ list, now }) {
+  const rows = list.filter((x) => x.date && !Number.isNaN(Date.parse(x.date))).map((x) => ({ ...x, a: Date.parse(x.date), kind: KIND[x.type] || 'practice' })).sort((p, q) => p.a - q.a);
+  const days = []; rows.forEach((x) => { const k = new Date(x.a).toDateString(); let d = days.find((y) => y.k === k); if (!d) days.push(d = { k, a: x.a, items: [] }); d.items.push(x); });
+  const nextId = rows.find((x) => x.a + 45 * 60000 > now)?.id;
+  return (
+    <Card>
+      <Eyebrow>Weekend schedule</Eyebrow>
+      <View style={{ marginTop: 10, gap: 14 }}>{days.map((d) => (
+        <View key={d.k} style={{ gap: 6 }}>
+          <Text style={{ color: colors.muted, fontFamily: 'label', fontSize: 11, letterSpacing: 1.6 }}>{up(dayName(d.a, null))}</Text>
+          {d.items.map((x) => { const over = x.a + 45 * 60000 <= now, live = x.a <= now && now < x.a + 45 * 60000, nxt = x.id === nextId && !live; const c = KCOL[x.kind];
+            return (
+              <View key={x.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 12, backgroundColor: live ? alpha(c, 0.22) : colors.surface2, borderWidth: 1, borderColor: live || nxt ? c : colors.line, paddingVertical: x.kind === 'warm' ? 6 : 10, paddingHorizontal: 12, opacity: over ? 0.55 : 1 }}>
+                <View style={{ width: 4, alignSelf: 'stretch', borderRadius: 2, backgroundColor: c }} />
+                <Text style={{ width: 54, color: colors.fg, fontSize: 17, fontWeight: '800' }}>{hm(x.a, null)}</Text>
+                <Text style={{ flex: 1, color: colors.fg, fontSize: x.kind === 'warm' ? 14 : 17, fontWeight: x.kind === 'race' || x.kind === 'sprint' ? '800' : '600' }} numberOfLines={1}>{x.name}</Text>
+                {live ? <Pill color={colors.accent} solid>Live</Pill> : over ? <Ionicons name="checkmark-circle" size={18} color={colors.good} /> : nxt ? <Pill color={c}>Next</Pill> : null}
+              </View>); })}
+        </View>))}
+      </View>
+      <Note>Times follow your device's timezone. Shown for the class selected below.</Note>
+    </Card>
+  );
+}
+
 export function MotoEvent({ route }) {
   const { event, season } = route.params; const now = useNow(60000);
   const cats = useAsync(() => categories(season.id), [season.id]); const [cat, setCat] = useState(null); const [sel, setSel] = useState(null);
@@ -286,19 +316,11 @@ export function MotoEvent({ route }) {
         <Text style={s.sub}>{[event.circuit, event.place, event.country].filter(Boolean).join(' · ')}</Text>
         <View style={{ marginTop: 8 }}><Pill color={done ? colors.good : colors.accent}>{done ? 'Completed' : Date.parse(event.start) <= now ? 'In progress' : 'Upcoming'}</Pill></View>
       </Grad>
-      {ss.v?.length > 0 && (
-        <Card>
-          <Eyebrow>Weekend schedule</Eyebrow>
-          <View style={{ marginTop: 8 }}>{ss.v.filter((x) => x.date && !Number.isNaN(Date.parse(x.date))).map((x) => {
-            const a = Date.parse(x.date), over = a < now, live = a <= now && now < a + 45 * 60000;
-            return (<View key={x.id} style={s.row}><View style={{ flex: 1 }}><Text style={[s.name, over && !live && { color: colors.muted }]}>{x.name}</Text><Text style={s.sub}>{`${dayName(a, null)} · ${hm(a, null)}`}</Text></View>{live ? <Pill color={colors.accent} solid>Live</Pill> : over ? <Ionicons name="checkmark-circle" size={18} color={colors.good} /> : null}</View>);
-          })}</View>
-          <Note>Times follow your device's timezone. Shown for the class selected below.</Note>
-        </Card>)}
+      {ss.v?.length > 0 && <Schedule list={ss.v} now={now} />}
       <Card>
         <Eyebrow>Results</Eyebrow>
         {cats.v?.length > 0 && <View style={{ marginTop: 12 }}><Dropdown value={catId} options={cats.v.map((c) => [c.id, c.name])} onChange={(v) => { setSel(null); setCat(v); }} /></View>}
-        {withRes.length > 0 && <View style={{ marginTop: 10 }}><Dropdown value={cur?.id} options={withRes.map((x) => [x.id, x.name])} onChange={setSel} /></View>}
+        {withRes.length > 0 && <View style={{ marginTop: 10 }}><Segmented value={cur?.id} onChange={setSel} items={withRes.filter((x) => KIND[x.type] !== 'practice' || withRes.length <= 4).slice(-4).map((x) => [x.id, KIND[x.type] === 'race' ? 'Race' : KIND[x.type] === 'sprint' ? 'Sprint' : KIND[x.type] === 'quali' ? (x.type === 'Q1' ? 'Q1' : 'Quali') : (x.name || x.type).replace('Practice Nr. ', 'FP').replace('Practice ', 'FP').slice(0, 7)])} /></View>}
         {(cats.loading || ss.loading || cl.loading) && <Skeleton rows={5} />}
         {(cats.error || ss.error || cl.error) && <Note>{`Results unavailable: ${cats.error || ss.error || cl.error}`}</Note>}
         {ss.v && !withRes.length && <Note>No session results are published yet.</Note>}

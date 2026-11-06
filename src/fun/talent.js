@@ -4,7 +4,7 @@
 export const TALENT = {
   max_verstappen: [99, 96, 99, 95, 98, 80], hamilton: [94, 95, 95, 92, 97, 60], alonso: [92, 91, 98, 95, 95, 70], norris: [95, 95, 93, 88, 88, 55], leclerc: [96, 98, 91, 84, 86, 65],
   russell: [93, 95, 91, 90, 88, 58], piastri: [93, 92, 92, 92, 88, 50], antonelli: [90, 88, 85, 76, 80, 60], sainz: [89, 89, 91, 91, 86, 60], albon: [86, 84, 88, 90, 85, 50],
-  gasly: [86, 85, 86, 86, 86, 60], ocon: [84, 82, 86, 86, 82, 70], stroll: [78, 74, 78, 76, 84, 60], hadjar: [84, 84, 80, 76, 80, 65], colapinto: [82, 82, 80, 76, 80, 65],
+  gasly: [86, 85, 86, 86, 86, 60], ocon: [84, 82, 86, 86, 82, 70], rafael_camara: [78, 80, 76, 74, 74, 70], stroll: [78, 74, 78, 76, 84, 60], hadjar: [84, 84, 80, 76, 80, 65], colapinto: [82, 82, 80, 76, 80, 65],
   lawson: [83, 84, 82, 78, 80, 65], arvid_lindblad: [78, 78, 74, 70, 72, 60], bearman: [85, 84, 84, 80, 82, 62], hulkenberg: [86, 90, 87, 90, 86, 55], bortoleto: [83, 83, 80, 76, 78, 60],
   perez: [83, 82, 86, 80, 82, 70], bottas: [83, 82, 84, 88, 82, 45], tsunoda: [84, 85, 82, 76, 80, 70], ricciardo: [90, 88, 92, 82, 86, 75], vettel: [95, 97, 94, 88, 88, 60],
   raikkonen: [91, 92, 92, 88, 86, 55], button: [88, 86, 90, 92, 98, 40], massa: [87, 89, 84, 80, 82, 60], webber: [86, 87, 86, 86, 84, 55], rosberg: [92, 94, 90, 90, 86, 55],
@@ -16,7 +16,7 @@ export const TALENT = {
   jones: [88, 86, 92, 88, 86, 60], scheckter: [86, 84, 90, 86, 84, 55], keke_rosberg: [88, 87, 90, 80, 90, 75], hawthorn: [86, 86, 88, 80, 84, 60], phil_hill: [86, 86, 88, 84, 86, 50],
 };
 // Birth years of the drivers who race now (everybody else is treated as being in their prime).
-export const BORN = { max_verstappen: 1997, hamilton: 1985, alonso: 1981, norris: 1999, leclerc: 1997, russell: 1998, piastri: 2001, antonelli: 2006, sainz: 1994, albon: 1996, gasly: 1996, ocon: 1996, stroll: 1998, hadjar: 2004, colapinto: 2003, lawson: 2002, arvid_lindblad: 2007, bearman: 2005, hulkenberg: 1987, bortoleto: 2004, perez: 1990, bottas: 1989, tsunoda: 2000, ricciardo: 1989, vettel: 1987, raikkonen: 1979, button: 1980, massa: 1981, webber: 1976, rosberg: 1985 };
+export const BORN = { rafael_camara: 2005, max_verstappen: 1997, hamilton: 1985, alonso: 1981, norris: 1999, leclerc: 1997, russell: 1998, piastri: 2001, antonelli: 2006, sainz: 1994, albon: 1996, gasly: 1996, ocon: 1996, stroll: 1998, hadjar: 2004, colapinto: 2003, lawson: 2002, arvid_lindblad: 2007, bearman: 2005, hulkenberg: 1987, bortoleto: 2004, perez: 1990, bottas: 1989, tsunoda: 2000, ricciardo: 1989, vettel: 1987, raikkonen: 1979, button: 1980, massa: 1981, webber: 1976, rosberg: 1985 };
 const jitter = (id, i) => { let h = 7 + i; for (const c of String(id)) h = (h * 31 + c.charCodeAt(0)) >>> 0; return (h % 9) - 4; };
 export function attrsFor(ref, dobYear) {
   const t = TALENT[ref] || [0, 1, 2, 3, 4, 5].map((i) => 72 + jitter(ref, i)); const born = BORN[ref] || (dobYear && dobYear >= 1985 ? dobYear : null);

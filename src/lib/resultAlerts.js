@@ -11,6 +11,7 @@ import { notifyNow } from './notifications';
 import { shortName } from './time';
 import { tr, setLang } from './i18n';
 import { checkNews } from './newsAlerts';
+import { currentSeason, lastRace } from '../api/motogp';
 
 export const TASK = 'f1-results-check';
 const BASE = 'https://api.jolpi.ca/ergast/f1/current/last';
@@ -27,6 +28,7 @@ async function prefsNow() { try { return JSON.parse(await AsyncStorage.getItem('
 export async function checkResults({ force = false } = {}) {
   const prefs = await prefsNow(); setLang(prefs.opts?.lang === 'el' ? 'el' : 'en');
   if (!force && !prefs.results) return 0;
+  if (prefs.opts?.sport === 'motogp') return checkMotoResults(prefs, force);
   let seen = null; try { seen = JSON.parse(await AsyncStorage.getItem(SEEN)); } catch {}
   const baseline = !Array.isArray(seen); const done = new Set(baseline ? [] : seen); let sent = 0;
   for (const k of KINDS) {
@@ -43,6 +45,19 @@ export async function checkResults({ force = false } = {}) {
     } catch {}
   }
   AsyncStorage.setItem(SEEN, JSON.stringify([...done].slice(-60))).catch(() => {});
+  return sent;
+}
+
+// MotoGP: one alert when the race classification of the latest finished event is published (same record-first-then-notify rule as Formula 1).
+async function checkMotoResults(prefs, force) {
+  let seen = null; try { seen = JSON.parse(await AsyncStorage.getItem('motoResultsSeen')); } catch {}
+  const baseline = !Array.isArray(seen); const done = new Set(baseline ? [] : seen); let sent = 0;
+  try {
+    const s = await currentSeason(); const r = s ? await lastRace(s.id, s.year) : null; if (!r) return 0;
+    const id = `${s.year}-${r.event.id}`;
+    if (!done.has(id)) { done.add(id); if ((!baseline || force) && prefs.types?.Race !== false) { const w = r.rows[0]; if (await notifyNow(`${r.event.short || r.event.name} · ${tr('Race result')}`, w ? `${w.name} won. ${tr('Results are available.')}` : tr('Results are available.'))) sent++; } }
+  } catch {}
+  AsyncStorage.setItem('motoResultsSeen', JSON.stringify([...done].slice(-60))).catch(() => {});
   return sent;
 }
 

@@ -51,6 +51,13 @@ export async function lastRace(seasonId, year) {
   }
   return null;
 }
+// Winner of the MotoGP race of every finished event (three letters of the surname for the calendar). Three events are read at a time, the service is rate limited.
+export async function winnersByEvent(seasonId, year) {
+  const evs = (await events(seasonId, year)).filter((e) => Date.parse(e.end) < Date.now()); const top = (await categories(seasonId))[0]; const out = {}; if (!top) return out;
+  const one = async (e) => { try { const race = (await sessions(e.id, top.id)).find((x) => x.type === 'RAC'); if (!race) return; const w = (await classification(race.id, year)).find((r) => Number(r.position) === 1); if (w) { const parts = w.name.trim().split(/\s+/); out[e.id] = { name: w.name, code: parts.slice(1).join('').replace(/[^A-Za-z]/g, '').slice(0, 3).toUpperCase() || parts[0].slice(0, 3).toUpperCase() }; } } catch {} };
+  for (let i = 0; i < evs.length; i += 3) await Promise.all(evs.slice(i, i + 3).map(one));
+  return out;
+}
 export const flagOf = (iso) => (/^[A-Za-z]{2}$/.test(iso || '') ? String.fromCodePoint(...[...iso.toUpperCase()].map((c) => 127397 + c.charCodeAt(0))) : '🏁');
 export const mgDate = (e) => { const a = new Date(e.start), b = new Date(e.end || e.start), mo = (d) => d.toLocaleString('en-GB', { month: 'short', timeZone: 'UTC' }); return a.getUTCMonth() === b.getUTCMonth() ? `${a.getUTCDate()}–${b.getUTCDate()} ${mo(a)}` : `${a.getUTCDate()} ${mo(a)} – ${b.getUTCDate()} ${mo(b)}`; };
 
@@ -97,4 +104,8 @@ const BIKE = [[/ducati/i, '#E10600'], [/aprilia/i, '#8A2BE2'], [/ktm|gas ?gas|te
 const TEAMS = [[/pramac/i, '#E040FB'], [/gresini/i, '#4FB3FF'], [/vr46|mooney/i, '#E6E600'], [/trackhouse/i, '#2F6BFF'], [/\blcr\b/i, '#D6D6D6'], [/tech ?3/i, '#FF8A00'], [/red bull ktm|ktm factory/i, '#FF6600'], [/honda hrc/i, '#E4572E'], [/ducati lenovo/i, '#E10600'], [/monster energy yamaha/i, '#1E5BC6'], [/aprilia racing/i, '#9B1FE8']];
 export const bikeColor = (bike, team, fallback) => { const t = TEAMS.find(([r]) => r.test(team || '')); if (t) return t[1]; const h = BIKE.find(([r]) => r.test(`${bike || ''} ${team || ''}`)); return h ? h[1] : fallback; };
 // Only the two main riders of each team (most points): wild cards, replacements and test riders are left out.
-export const mainRiders = (rows) => { const by = new Map(); rows.forEach((r) => { const k = r.team || r.name; (by.get(k) || by.set(k, []).get(k)).push(r); }); return [...by.values()].flatMap((l) => [...l].sort((a, b) => (b.points || 0) - (a.points || 0)).slice(0, 2)).sort((a, b) => (a.position ?? 999) - (b.position ?? 999)); };
+// Stand-ins who are not the team's own riders (they show up in the results when a rider is injured).
+const STAND_INS = [/crutchlow/i];
+// The two LCR entries (and any "Pro" variant of a name) are one team.
+const teamKey = (t) => (/\blcr\b/i.test(t || '') ? 'LCR Honda' : String(t || '').replace(/^pro\s+/i, ''));
+export const mainRiders = (rows) => { const by = new Map(); rows.filter((r) => !STAND_INS.some((x) => x.test(r.name || ''))).forEach((r) => { const k = teamKey(r.team) || r.name; (by.get(k) || by.set(k, []).get(k)).push({ ...r, team: k === 'LCR Honda' || r.team ? (/\blcr\b/i.test(r.team || '') ? 'LCR Honda' : r.team) : r.team }); }); return [...by.values()].flatMap((l) => [...l].sort((a, b) => (b.points || 0) - (a.points || 0)).slice(0, 2)).sort((a, b) => (a.position ?? 999) - (b.position ?? 999)); };

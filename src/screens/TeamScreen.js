@@ -65,7 +65,7 @@ export default function TeamScreen({ route, navigation }) {
       {nowTeam ? (
         <Press onPress={() => navigation.push('Team', { teamId: nowTeam, name: NOW_NAMES[nowTeam] || nowTeam })}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 4 }}>
-            <Ionicons name="swap-horizontal" size={16} color={colors.accent} />
+            <Ionicons name="swap-horizontal" size={16} color={color} />
             <Text style={{ color: colors.muted, fontSize: 14, flex: 1 }}>{`Raced as ${tName}${isCur ? '' : ` in ${year}`}. Today this team is ${NOW_NAMES[nowTeam] || nowTeam}.`}</Text>
           </View>
         </Press>) : null}
@@ -93,8 +93,8 @@ export default function TeamScreen({ route, navigation }) {
           </View>
         </View>) : null}
       <Press onPress={() => navigation.navigate('TeamCompare', { a: { teamId, name: tName }, year: isCur ? undefined : year })}>
-        <View style={{ height: 48, borderRadius: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: colors.accentSoft, borderWidth: 1, borderColor: colors.accent }}>
-          <Ionicons name="git-compare" size={18} color={colors.accent} /><Text style={{ color: colors.fg, fontWeight: '700', fontSize: 16 }}>Compare with another team</Text>
+        <View style={{ height: 48, borderRadius: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: alpha(color, 0.18), borderWidth: 1, borderColor: alpha(color, 0.55) }}>
+          <Ionicons name="git-compare" size={18} color={color} /><Text style={{ color: colors.fg, fontWeight: '700', fontSize: 16 }}>Compare with another team</Text>
         </View>
       </Press>
       <Card>

@@ -1,0 +1,26 @@
+# Push a tag such as v1.16.0 (git tag v1.16.0 && git push --tags): EAS builds the APK and it is attached to a new GitHub release.
+# Needs the repository secret EXPO_TOKEN. Use it only when a new APK is needed (new native package or permission).
+name: Release APK
+on:
+  push:
+    tags: ['v*']
+permissions:
+  contents: write
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: npm install
+      - uses: expo/expo-github-action@v8
+        with: { eas-version: latest, token: '${{ secrets.EXPO_TOKEN }}' }
+      - run: eas build -p android --profile preview --non-interactive --wait --json > build.json
+      - name: Attach the APK to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          URL=$(node -e "const b=JSON.parse(require('fs').readFileSync('build.json','utf8'));const x=Array.isArray(b)?b[0]:b;console.log(x.artifacts.buildUrl)")
+          curl -L "$URL" -o "f1-companion-${GITHUB_REF_NAME#v}.apk"
+          gh release create "$GITHUB_REF_NAME" "f1-companion-${GITHUB_REF_NAME#v}.apk" --title "$GITHUB_REF_NAME" --generate-notes

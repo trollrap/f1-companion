@@ -34,7 +34,8 @@ export default function AlertScheduler() {
     const run = () => { checkResults().catch(() => {}); checkNews().catch(() => {}); };
     run();
     const sub = AppState.addEventListener('change', (st) => { if (st === 'active') run(); });
-    return () => sub.remove();
+    const timer = setInterval(run, 5 * 60 * 1000); // while the app is open, look every five minutes
+    return () => { sub.remove(); clearInterval(timer); };
   }, [prefs.results, JSON.stringify(prefs.opts?.newsAlerts || {})]);
   return null;
 }

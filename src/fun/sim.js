@@ -2,6 +2,7 @@
 // scores more than the car deserves, but cannot win from the back. Weather, safety cars, reliability, pit stops, penalties and mistakes add the drama.
 import { uid } from './store';
 import { randomCountry } from './geo';
+import { realRookie, demonymToCountry } from './juniors';
 
 export const POINTS = [25, 18, 15, 12, 10, 8, 6, 4, 2, 1], SPRINT_POINTS = [8, 7, 6, 5, 4, 3, 2, 1];
 const TEAM_NAMES = ['Apex Dynamics', 'Nova GP', 'Vortex Racing', 'Halcyon Motorsport', 'Ember Racing', 'Cobalt Works', 'Sable Racing', 'Meridian GP', 'Tempest Racing', 'Aurora Speed', 'Falcon Rush', 'Obsidian GP', 'Zenith Racing', 'Quasar Motorsport', 'Titan Forge', 'Helix Racing'];
@@ -37,21 +38,34 @@ export function makeGrid(teamCount, taken = []) {
       rel: clamp(Math.round(80 + gauss() * 8 - i * 0.6), 45, 98), dev: clamp(Math.round(62 + gauss() * 12), 35, 95), pit: clamp(Math.round(78 + gauss() * 8 - i * 0.5), 45, 98) };
     teams.push(t);
     for (let k = 0; k < 2; k++) {
-      const first = pick(FIRST, firsts), last = pick(LAST, lasts), age = 19 + Math.floor(Math.random() * 20);
-      drivers.push({ id: uid(), first, last, name: `${first} ${last}`, number: nextNum(), teamId: t.id, photo: null, ref: null, ...makeDriverAttrs(clamp(Math.round(74 + gauss() * 8 + (teamCount - i) * 0.15), 55, 96), age) });
+      const nm = randomDriver(drivers), first = nm.first, last = nm.last, age = 19 + Math.floor(Math.random() * 20);
+      drivers.push({ id: uid(), first, last, name: nm.name, nat: nm.nat, number: nextNum(), teamId: t.id, photo: null, ref: null, ...makeDriverAttrs(clamp(Math.round(74 + gauss() * 8 + (teamCount - i) * 0.15), 55, 96), age) });
     }
   }
   return { teams, drivers };
 }
 // Rookies mostly come from F2 (about two in three) and F3; now and then from elsewhere.
 export function randomRookie(existing = [], numbers = []) {
-  const r = Math.random(), from = r < 0.64 ? 'F2' : r < 0.94 ? 'F3' : 'Other series';
-  const nm = randomDriver(existing), age = from === 'F3' ? 18 + Math.floor(Math.random() * 2) : from === 'F2' ? 19 + Math.floor(Math.random() * 4) : 20 + Math.floor(Math.random() * 6);
-  const base = from === 'F2' ? 68 : from === 'F3' ? 63 : 65;
-  return { id: uid(), ...nm, from, number: freeNumber(numbers), photo: null, ref: null, ...makeDriverAttrs(clamp(Math.round(base + gauss() * 5), 50, 82), age), pot: clamp(Math.round(80 + gauss() * 8), 70, 99) };
+  const r = Math.random(), from = r < 0.64 ? 'F2' : r < 0.94 ? 'F3' : 'Academy';
+  const used = new Set(existing.map((d) => String(d.name || `${d.first} ${d.last}`).toLowerCase()));
+  const real = realRookie(used);
+  const nm = real ? { first: real[0], last: real[1], name: `${real[0]} ${real[1]}`, nat: demonymToCountry(real[2]) } : randomDriver(existing);
+  const age = from === 'F3' ? 18 + Math.floor(Math.random() * 2) : from === 'F2' ? 19 + Math.floor(Math.random() * 4) : 20 + Math.floor(Math.random() * 6);
+  const base = real ? real[3] - 2 : from === 'F2' ? 68 : 63;
+  return { id: uid(), ...nm, from, number: freeNumber(numbers), photo: null, ref: null, junior: !!real, ...makeDriverAttrs(clamp(Math.round(base + gauss() * 4), 50, 84), age), pot: clamp(Math.round(base + 8 + gauss() * 6), 66, 97) };
 }
 // A made-up driver that does not share a name with anyone already in the fantasy.
-export function randomDriver(existing = []) { const names = new Set(existing.map((d) => d.name)); for (let i = 0; i < 80; i++) { const first = FIRST[Math.floor(Math.random() * FIRST.length)], last = LAST[Math.floor(Math.random() * LAST.length)]; if (!names.has(`${first} ${last}`)) return { first, last, name: `${first} ${last}`, nat: randomCountry() }; } return { first: 'New', last: 'Driver', name: 'New Driver', nat: randomCountry() }; }
+export function randomDriver(existing = []) {
+  const names = new Set(existing.map((d) => String(d.name || '').toLowerCase())), lasts = new Set(existing.map((d) => String(d.last || '').toLowerCase()));
+  const rnd = (a) => a[Math.floor(Math.random() * a.length)];
+  // Prefer a surname nobody has; then at least a full name nobody has; never the same name twice.
+  for (const needFreeSurname of [true, false]) for (let i = 0; i < 120; i++) {
+    const first = rnd(FIRST), last = rnd(LAST); if (names.has(`${first} ${last}`.toLowerCase()) || (needFreeSurname && lasts.has(last.toLowerCase()))) continue;
+    return { first, last, name: `${first} ${last}`, nat: randomCountry() };
+  }
+  const first = rnd(FIRST), last = rnd(LAST); let k = 2, nm = `${last} ${['II', 'III', 'IV', 'V'][0]}`; while (names.has(`${first} ${nm}`.toLowerCase())) { nm = `${last} ${k}`; k++; }
+  return { first, last: nm, name: `${first} ${nm}`, nat: randomCountry() };
+}
 export const freeNumber = (taken) => { const s = new Set(taken.map(Number)); for (let n = 2; n < 100; n++) if (!s.has(n)) return n; return 99; };
 
 export const sessionsOf = (race) => (race.sprint ? ['Sprint Qualifying', 'Sprint', 'Qualifying', 'Race'] : ['Qualifying', 'Race']);
@@ -187,7 +201,7 @@ export function simulateTransfers(f) {
   }
   // Seats nobody can step into go to rookies.
   const numbers = drivers.map((d) => d.number);
-  [...order].reverse().forEach((t) => { while (cnt(t.id) < 2) { const r = { ...randomRookie([...f.drivers, ...drivers], numbers), teamId: t.id }; numbers.push(r.number); drivers.push(r); log.push({ kind: 'rookie', who: snap(r), to: t.id, origin: r.from, text: `${r.name} (${A(r).age}), from ${r.from === 'Other series' ? 'another series' : r.from}, makes his debut with ${t.name}.` }); } });
+  [...order].reverse().forEach((t) => { while (cnt(t.id) < 2) { const r = { ...randomRookie([...(f.history || []).flatMap((h) => h.drivers || []), ...f.drivers, ...drivers], numbers), teamId: t.id }; numbers.push(r.number); drivers.push(r); log.push({ kind: 'rookie', who: snap(r), to: t.id, origin: r.from, text: `${r.name} (${A(r).age}), from ${r.from === 'Other series' ? 'another series' : r.from}, makes his debut with ${t.name}.` }); } });
   teams.forEach((t) => { if (cnt(t.id) === 0) { const d = drivers.filter((x) => !x.me && cnt(x.teamId) === 2).sort((x, y) => ovr(x) - ovr(y))[0]; if (d) { d.teamId = t.id; log.push({ kind: 'move', who: snap(d), from: null, to: t.id, text: `${d.name} moves to ${t.name}.` }); } } });
   if (!log.length) log.push({ kind: 'quiet', text: 'A quiet winter: nobody changed teams.' });
   return { f: { ...f, drivers, news: log }, log };

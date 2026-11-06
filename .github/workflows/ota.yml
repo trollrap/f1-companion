@@ -1,0 +1,18 @@
+# Every push to main that changes the app's code publishes an over-the-air update (EAS Update): installed apps pick it up on their own.
+# Needs the repository secret EXPO_TOKEN (expo.dev > Account settings > Access tokens). Does nothing for changes that need a new APK.
+name: Publish update
+on:
+  push:
+    branches: [main]
+    paths: ['src/**', 'App.js', 'package.json']
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: npm install
+      - uses: expo/expo-github-action@v8
+        with: { eas-version: latest, token: '${{ secrets.EXPO_TOKEN }}' }
+      - run: eas update --branch preview --message "${{ github.event.head_commit.message }}" --non-interactive

@@ -41,7 +41,7 @@ export function FunHome({ navigation }) {
       </Press>
       <View><Eyebrow>Fantasy seasons</Eyebrow></View>
       {fun.loaded && !fun.fantasies.length && <Note>No fantasy season yet. Make one: pick how many teams there are, choose the races and simulate.</Note>}
-      {fun.fantasies.map((f) => {
+      {fun.fantasies.filter((f) => !f.archived).map((f) => {
         const done = f.races.filter((r) => sessionsOf(r).every((s) => f.results?.[r.id]?.[s])).length; const lead = done ? standings(f).drivers[0] : null;
         return (
           <Press key={f.id} onPress={() => navigation.navigate('Fantasy', { id: f.id })}>
@@ -56,6 +56,7 @@ export function FunHome({ navigation }) {
             </Card>
           </Press>);
       })}
+      {fun.fantasies.some((f) => f.archived) ? (<View style={{ gap: 10 }}><Eyebrow>Archived</Eyebrow>{fun.fantasies.filter((f) => f.archived).map((f) => (<Press key={f.id} onPress={() => navigation.navigate('Fantasy', { id: f.id })}><Card><View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}><Ionicons name="archive-outline" size={20} color={colors.muted} /><View style={{ flex: 1 }}><Text style={{ color: colors.fg, fontSize: 18, fontWeight: '700' }} numberOfLines={1}>{f.name}</Text><Text style={{ color: colors.muted, fontSize: 14 }}>{`Season ${f.season || 1} · tap to open or restore`}</Text></View><Ionicons name="chevron-forward" size={18} color={colors.muted} /></View></Card></Press>))}</View>) : null}
       <Btn icon="add-circle-outline" tone="solid" onPress={() => navigation.navigate('FantasyNew')}>New fantasy season</Btn>
       <Btn icon="bookmarks-outline" onPress={() => navigation.navigate('FantasyPresets')}>Presets: drivers, races and grids</Btn>
       <Btn icon="settings-outline" onPress={() => navigation.navigate('FunSettings')}>Fantasy settings</Btn>

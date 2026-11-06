@@ -89,8 +89,8 @@ export default function DriverScreen({ route, navigation }) {
       </Grad>
 
       {noHistory ? <Card><Eyebrow>No race record</Eyebrow><Note>No Formula 1 race results were found for this driver. Reserve and test drivers only appear in practice sessions.</Note></Card> : (<>
-        <Pressable onPress={() => navigation.navigate('Compare', { a: { driverId, name, first: nm.first, last: nm.last, teamId: sTeamId, team: sTeam }, year: isCur ? undefined : year })} style={({ pressed }) => [s.btn, pressed && { opacity: 0.85 }]}>
-          <Ionicons name="git-compare" size={18} color={colors.accent} /><Text style={s.btnText}>Compare with another driver</Text>
+        <Pressable onPress={() => navigation.navigate('Compare', { a: { driverId, name, first: nm.first, last: nm.last, teamId: sTeamId, team: sTeam }, year: isCur ? undefined : year })} style={({ pressed }) => [s.btn, { backgroundColor: alpha(color, 0.18), borderColor: alpha(color, 0.55) }, pressed && { opacity: 0.85 }]}>
+          <Ionicons name="git-compare" size={18} color={color} /><Text style={s.btnText}>Compare with another driver</Text>
         </Pressable>
         <Segmented value={tab} onChange={setTab} items={[['season', `${year}`], ['career', 'Career'], ['profile', 'Profile']]} />
 
@@ -121,7 +121,7 @@ export default function DriverScreen({ route, navigation }) {
           <View>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
               <Eyebrow>{isCur ? 'Last 5 races' : `Last 5 races of ${year}`}</Eyebrow>
-              {rows.length > 5 ? <Pressable onPress={() => setAll(!all)} hitSlop={8}><Text style={{ color: colors.accent, fontWeight: '700', fontSize: 15 }}>{all ? 'Hide' : `View all ${rows.length}`}</Text></Pressable> : null}
+              {rows.length > 5 ? <Pressable onPress={() => setAll(!all)} hitSlop={8}><Text style={{ color, fontWeight: '700', fontSize: 15 }}>{all ? 'Hide' : `View all ${rows.length}`}</Text></Pressable> : null}
             </View>
             {season.v && !rows.length && <Note>{isCur ? 'No races yet this season.' : 'No races found for this season.'}</Note>}
             {rows.length > 0 && <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingTop: 10 }}>{[...rows].reverse().slice(0, 5).map((r) => <RaceCard key={r.round} r={r} color={color} onPress={() => openRace(r)} />)}</ScrollView>}
@@ -132,8 +132,8 @@ export default function DriverScreen({ route, navigation }) {
               </View>
             )}
             {rows.length > 0 && (
-              <Pressable onPress={() => navigation.navigate('DriverSeasons', { driverId, name, teamId: sTeamId, color })} style={({ pressed }) => [s.btn, { marginTop: 14 }, pressed && { opacity: 0.85 }]}>
-                <Ionicons name="time-outline" size={18} color={colors.accent} /><Text style={s.btnText}>Results from previous seasons</Text>
+              <Pressable onPress={() => navigation.navigate('DriverSeasons', { driverId, name, teamId: sTeamId, color })} style={({ pressed }) => [s.btn, { backgroundColor: alpha(color, 0.18), borderColor: alpha(color, 0.55) }, { marginTop: 14 }, pressed && { opacity: 0.85 }]}>
+                <Ionicons name="time-outline" size={18} color={color} /><Text style={s.btnText}>Results from previous seasons</Text>
               </Pressable>)}
           </View>
         )}

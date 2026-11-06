@@ -218,6 +218,8 @@ export async function lineups(year) {
   else (await driverStandings(year)).forEach((x) => add(x.teamId, { driverId: x.driverId, name: x.name, first: x.first, last: x.last, code: x.code, team: x.team }));
   // Only the two race seats: test, reserve and one-off drivers are left out (the ones with the most points keep the seats).
   const st = await driverStandings(year).catch(() => []); const pts = (id) => st.find((x) => x.driverId === id)?.points ?? -1;
+  // Seat changes the results feed has not caught up with (a one-off stand-in shows up where the full-time driver now sits).
+  Object.keys(out).forEach((k) => { out[k] = out[k].map((d) => (/hirakawa/i.test(d.last || d.name || '') ? { ...d, driverId: 'rafael_camara', name: 'Rafael Câmara', first: 'Rafael', last: 'Câmara', code: 'CAM' } : d)); });
   Object.keys(out).forEach((k) => { if (out[k].length > 2) out[k] = [...out[k]].sort((a, b) => pts(b.driverId) - pts(a.driverId)).slice(0, 2); });
   return out;
 }

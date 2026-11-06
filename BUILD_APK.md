@@ -50,7 +50,7 @@ Changes to screens, text, data and logic can be sent straight to installed apps.
 **Setup (once, then build one APK):**
 1. `npm install --legacy-peer-deps` (adds `expo-updates`).
 2. `eas update:configure`. It adds `runtimeVersion` and `updates.url` to `app.json` and a `channel` to the `preview` profile in `eas.json`.
-3. In `app.json` make the runtime version follow the app version: `"runtimeVersion": { "policy": "appVersion" }`.
+3. The runtime version is set automatically by `app.config.js`; leave app.json as it is.
 4. Build a new APK (`eas build -p android --profile preview`) and install it. Only builds made after this step can receive updates.
 **Important:** after step 2 your `app.json` and `eas.json` hold your project's settings. When you unzip a new version of the project, do NOT overwrite those two files; I will say so when one of them needs a change.
 **Every time you change the app:** run `npm run ota` (it is `eas update --channel preview --environment preview`) and type a short message. Installed apps download it in the background and use it the next time they are opened (sometimes after closing and opening twice).

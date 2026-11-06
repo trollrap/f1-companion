@@ -14,6 +14,7 @@ import { flag } from '../lib/time';
 import { driverPhoto, teamLogo, numberImage, principalPhoto } from '../lib/media';
 import { principalsOf } from '../data/principals';
 import { useNavigation } from '@react-navigation/native';
+import { YEAR } from '../api/openf1';
 import { useFavs } from '../hooks/useFavs';
 import Reveal from './Reveal';
 import Press from './Press';
@@ -132,14 +133,14 @@ export const ResultLine = React.memo(function ResultLine({ pos, first, last, col
   const out = onPress ? <Press onPress={onPress} scale={0.985}>{body}</Press> : body;
   return index == null ? out : <Reveal index={index} dx={14}>{out}</Reveal>;
 });
-export const driverParams = (r) => ({ driverId: r.driverId, name: r.name || `${r.first} ${r.last}`.trim(), first: r.first, last: r.last, teamId: r.teamId, team: r.team });
+export const driverParams = (r, year) => ({ driverId: r.driverId, name: r.name || `${r.first} ${r.last}`.trim(), first: r.first, last: r.last, teamId: r.teamId, team: r.team, ...(year && year < YEAR ? { year } : {}) });
 // Race and sprint results from Jolpica. Tap a row to open the driver.
-export function ResultRow({ r, photo = true, index, tags, flash, rowRef }) {
+export function ResultRow({ r, photo = true, index, tags, flash, rowRef, year }) {
   const favs = useFavs(); const tc = useTeamColor(); const nav = useNavigation();
   const start = r.grid > 0 ? `Started P${r.grid}` : r.grid === 0 ? 'Pit lane' : '';
   const sub = [start, Number.isFinite(r.points) ? `${r.points} pts` : ''].filter(Boolean).join(' · ');
   return <ResultLine pos={r.position} first={r.first} last={r.last} color={tc(r.teamId)} right={r.time} sub={sub} fav={r.driverId && favs.isDriver(r.driverId)} fastest={r.fastest} index={index} tags={tags} flash={flash} rowRef={rowRef}
-    logoId={r.teamId} photoId={photo ? r.driverId : null} onPress={r.driverId ? () => nav.navigate('Driver', driverParams(r)) : undefined} />;
+    logoId={r.teamId} photoId={photo ? r.driverId : null} onPress={r.driverId ? () => nav.navigate('Driver', driverParams(r, year)) : undefined} />;
 }
 export function CircuitBox({ meeting }) {
   const nav = useNavigation(); const c = circuitFor(meeting);
