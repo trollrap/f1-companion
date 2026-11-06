@@ -1,6 +1,6 @@
 {
   "name": "f1-companion",
-  "version": "1.16.1",
+  "version": "1.16.2",
   "main": "node_modules/expo/AppEntry.js",
   "scripts": {
     "start": "expo start",

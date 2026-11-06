@@ -147,3 +147,6 @@ Expo Go (SDK 53+) does not include the `expo-notifications` native module; impor
 
 ## V1.16.1
 - runtimeVersion is now computed in app.config.js (hash of dependencies + permissions + plugins). No manual "1"/"2" bookkeeping; app.json untouched.
+
+## V1.16.2
+- Fantasy bottom tab bar was hidden under the Android navigation area: padded with safe-area insets, plain Pressable tabs.

@@ -2,17 +2,20 @@
   "expo": {
     "name": "F1 Companion",
     "slug": "f1-companion",
-    "version": "1.16.1",
+    "version": "1.16.2",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
     "backgroundColor": "#0A0506",
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.f1companion.app"
+      "bundleIdentifier": "com.f1companion.app",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "com.f1companion.app",
-      "versionCode": 11601,
+      "versionCode": 11602,
       "adaptiveIcon": {
         "foregroundImage": "./assets/app/adaptive-icon.png",
         "backgroundColor": "#0A0506"
