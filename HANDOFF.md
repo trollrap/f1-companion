@@ -130,3 +130,8 @@ Expo Go (SDK 53+) does not include the `expo-notifications` native module; impor
 - Race report card (winner, pole, fastest lap, biggest climb, driver of the day, retirements) on every race and the last race on the Season tab.
 - Champion/transfer/session full-screen shows rebuilt: real gradient, more detail, in-flow Continue button and X; always mounted with `visible` (fixes the shows not closing).
 - Accent colour: settings writes made before the saved prefs were read could overwrite the saved accent; they now wait for the load. App.js also reads the accent from prefs:v2.
+
+## V1.15.0
+- In-app updater (Android): tapping the update banner (Home) or "Check for updates" (Settings) downloads the release .apk into the app cache with a progress bar, then opens Android's installer (Android always asks for one confirmation; the first time it also asks to allow installs from this app). The downloaded file is deleted on the next start (`cleanupUpdates`), and only the newest download is ever kept. Falls back to opening the download link in the browser if anything fails.
+- New native module `expo-intent-launcher` (run `npm install`) and permission REQUEST_INSTALL_PACKAGES, added by the new `app.config.js` (reads app.json, adds the permission; app.json untouched). New APK needed; the first install of 1.15.0 is manual, later updates use the in-app installer.
+- Every update is still a full APK download (~100 MB). JS-only changes could be delivered with EAS Update (expo-updates is already a dependency) but that needs runtimeVersion/updates config in app.json and `eas update`.

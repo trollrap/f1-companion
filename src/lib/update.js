@@ -24,3 +24,36 @@ export async function checkUpdate(force = false) {
     return isNewer(version, currentVersion()) ? v : { status: 'current', version };
   } catch (e) { return { status: 'error', error: String(e.message || e) }; }
 }
+
+// ---- installing from inside the app (Android) ----
+// The .apk is downloaded to the app's cache, handed to Android's installer (one confirmation tap, Android always asks), and the file is deleted
+// on the next start, so old downloads never pile up. Needs expo-intent-launcher and the REQUEST_INSTALL_PACKAGES permission (added by app.config.js).
+const dirOf = (FS) => `${FS.cacheDirectory}update/`;
+export const canInstallInApp = () => { if (Platform.OS !== 'android') return false; try { require('expo-intent-launcher'); return true; } catch { return false; } };
+// Removes downloaded installers that are already installed (or older). Called on every start.
+export async function cleanupUpdates() {
+  try {
+    const FS = require('expo-file-system/legacy'); const dir = dirOf(FS); const info = await FS.getInfoAsync(dir); if (!info.exists) return;
+    const cur = currentVersion();
+    for (const f of await FS.readDirectoryAsync(dir)) {
+      const m = /(\d+\.\d+\.\d+)/.exec(f);
+      if (!m || !isNewer(m[1], cur)) await FS.deleteAsync(dir + f, { idempotent: true });
+    }
+  } catch {}
+}
+// Downloads and opens the installer. onProgress(0..1). Returns { ok: true } or { ok: false, error }.
+export async function installUpdate(u, onProgress) {
+  try {
+    const FS = require('expo-file-system/legacy'); const IL = require('expo-intent-launcher');
+    const dir = dirOf(FS); await FS.makeDirectoryAsync(dir, { intermediates: true }).catch(() => {});
+    for (const f of await FS.readDirectoryAsync(dir).catch(() => [])) await FS.deleteAsync(dir + f, { idempotent: true }); // only the newest download is kept
+    const dest = `${dir}f1-companion-${u.version}.apk`;
+    const dl = FS.createDownloadResumable(u.url, dest, {}, (p) => { if (p.totalBytesExpectedToWrite > 0 && onProgress) onProgress(p.totalBytesWritten / p.totalBytesExpectedToWrite); });
+    const res = await dl.downloadAsync();
+    if (!res || res.status !== 200) throw new Error(`Download failed (${res?.status ?? 'no answer'})`);
+    const info = await FS.getInfoAsync(dest); if (!info.exists || info.size < 1e6) throw new Error('The downloaded file is incomplete.');
+    const uri = await FS.getContentUriAsync(dest);
+    await IL.startActivityAsync('android.intent.action.VIEW', { data: uri, flags: 1, type: 'application/vnd.android.package-archive' });
+    return { ok: true };
+  } catch (e) { return { ok: false, error: String(e?.message || e) }; }
+}

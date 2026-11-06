@@ -13,7 +13,7 @@ import { checkResults } from '../lib/resultAlerts';
 import { SOURCES } from '../api/news';
 import { checkNews } from '../lib/newsAlerts';
 import { ensurePermission } from '../lib/notifications';
-import { checkUpdate, currentVersion, updatesConfigured } from '../lib/update';
+import { checkUpdate, currentVersion, updatesConfigured, installUpdate, canInstallInApp } from '../lib/update';
 import { clearCache } from '../lib/cache';
 import Reveal from '../components/Reveal';
 import ColorPicker from '../components/ColorPicker';
@@ -114,7 +114,7 @@ export default function SettingsScreen() {
       </Section>
       <Section icon="cloud-download-outline" title="App updates" summary={`Installed ${currentVersion()}`}>
         <Note>{updatesConfigured() ? 'Checks GitHub for a newer release.' : 'Not set up: add your GitHub repository in src/config.js.'}</Note>
-        {updatesConfigured() ? <Btn onPress={async () => { setUpd('Checking…'); const r = await checkUpdate(true); setUpd(r.status === 'available' ? `Version ${r.version} is available.` : r.status === 'current' ? 'You have the latest version.' : r.status === 'none' ? 'No release has been published on GitHub yet, so there is nothing to update to.' : r.status === 'error' ? `Could not check: ${r.error}` : ''); if (r.status === 'available') Linking.openURL(r.url).catch(() => {}); }}>Check for updates</Btn> : null}
+        {updatesConfigured() ? <Btn onPress={async () => { setUpd('Checking…'); const r = await checkUpdate(true); setUpd(r.status === 'available' ? `Version ${r.version} is available.` : r.status === 'current' ? 'You have the latest version.' : r.status === 'none' ? 'No release has been published on GitHub yet, so there is nothing to update to.' : r.status === 'error' ? `Could not check: ${r.error}` : ''); if (r.status === 'available') { if (canInstallInApp() && /\.apk$/i.test(r.url)) { setUpd(`Downloading ${r.version}… 0%`); const i = await installUpdate(r, (p) => setUpd(`Downloading ${r.version}… ${Math.round(p * 100)}%`)); setUpd(i.ok ? 'Download finished. Confirm the install on the Android screen.' : `Could not install here (${i.error}). Opening the download instead.`); if (!i.ok) Linking.openURL(r.url).catch(() => {}); } else Linking.openURL(r.url).catch(() => {}); } }}>Check for updates</Btn> : null}
         {upd ? <Note>{upd}</Note> : null}
       </Section>
       <Section icon="pulse-outline" title="Data check" summary="Test every service from this phone">
