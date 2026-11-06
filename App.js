@@ -11,8 +11,8 @@ export default function App() {
   const [Main, setMain] = useState(null);
   useEffect(() => {
     let on = true;
-    Promise.all([AsyncStorage.getItem('prefs'), readDurable('accent')])
-      .then(([r, acc]) => { let a = acc; try { a = a || (r && JSON.parse(r)?.opts?.accent); } catch {} if (a) applyAccent(a); })
+    Promise.all([AsyncStorage.getItem('prefs'), readDurable('accent'), readDurable('prefs:v2')])
+      .then(([r, acc, dur]) => { let a = acc; try { a = a || (dur && JSON.parse(dur)?.opts?.accent) || (r && JSON.parse(r)?.opts?.accent); } catch {} if (a) applyAccent(a); })
       .catch(() => {})
       .finally(() => { if (on) setMain(() => require('./src/Main').default); });
     return () => { on = false; };

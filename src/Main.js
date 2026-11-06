@@ -41,7 +41,8 @@ import TeamCompareScreen from './screens/TeamCompareScreen';
 import { MotoHome, MotoCalendar, MotoStandings, MotoEvent, MotoRider, MotoPaddock, MotoTeam } from './screens/MotoScreens';
 import { FootScores, FootTable, FootMatch, FootTeam } from './screens/FootScreens';
 import { FunHome, FunProfile } from './screens/FunScreens';
-import { FantasyNew, Fantasy, FantasyRace, FantasyDriver, FantasyTransfers, FunSettings } from './screens/FantasyScreens';
+import { FantasyNew, Fantasy, FantasyRace, FantasyDriver, FantasyTransfers, FunSettings, PresetNew, PresetGrid } from './screens/FantasyScreens';
+import { FantasyPresets } from './screens/PresetScreens';
 import SettingsScreen from './screens/SettingsScreen';
 import AlertScheduler from './components/AlertScheduler';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -156,6 +157,9 @@ function Shell() {
               <Stack.Screen name="FunProfile" component={FunProfile} options={{ title: 'Your driver' }} />
               <Stack.Screen name="FunSettings" component={FunSettings} options={{ title: 'Fantasy settings' }} />
               <Stack.Screen name="FantasyNew" component={FantasyNew} options={{ title: 'New fantasy season' }} />
+              <Stack.Screen name="FantasyPresets" component={FantasyPresets} options={{ title: 'Presets' }} />
+              <Stack.Screen name="PresetNew" component={PresetNew} options={{ title: 'New grid preset' }} />
+              <Stack.Screen name="PresetGrid" component={PresetGrid} options={{ title: 'Grid preset' }} />
               <Stack.Screen name="Fantasy" component={Fantasy} options={{ title: 'Fantasy' }} />
               <Stack.Screen name="FantasyRace" component={FantasyRace} options={({ route }) => ({ title: 'Race result' })} />
               <Stack.Screen name="FantasyDriver" component={FantasyDriver} options={{ title: 'Driver' }} />

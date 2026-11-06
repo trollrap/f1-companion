@@ -51,7 +51,7 @@ export default function SettingsScreen() {
   const check = async () => { setResults([]); setRunning(true); try { await runDiagnostics((r) => setResults((x) => [...x, r])); } finally { setRunning(false); } };
   const on = SESSION_TYPES.filter((t) => prefs.types[t]).length;
   const [pickC, setPickC] = useState(o.accent || colors.accent); const [custom, setCustom] = useState(false);
-  const applyColour = async (hex) => { setMsg('Saving the colour…'); const ok = await setOpt('accent', hex); if (ok === false) { setMsg('The colour could not be saved on this phone. Try again.'); return; } setMsg('Colour saved. The app restarts to use it everywhere. If it does not, close it completely and open it again.'); setTimeout(() => { restartApp(); }, 900); };
+  const applyColour = async (hex) => { setMsg('Saving the colour…'); const ok = await setOpt('accent', hex); if (ok === false) { setMsg('The colour could not be saved on this phone. Try again.'); return; } setMsg('Colour saved. The app restarts to use it everywhere. If it does not, close it completely and open it again.'); setTimeout(async () => { const r = await restartApp(); if (!r) setMsg('Colour saved. Close the app completely (swipe it away) and open it again to see it everywhere.'); }, 900); };
   return (
     <Screen header={false}>
       <Section icon="language-outline" title="Language" summary={o.lang === 'el' ? 'Ελληνικά · Beta' : 'English'}>

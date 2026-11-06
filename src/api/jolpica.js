@@ -4,6 +4,7 @@
 import { cachedJSON, memo, MIN, HOUR, DAY } from '../lib/cache';
 import { YEAR } from './openf1';
 import { driverChampionYears, constructorChampionYears } from '../data/champions';
+import * as LH from './history';
 const BASE = 'https://api.jolpi.ca/ergast/f1';
 // Finished seasons never change, so they are kept (almost) for good: the second visit is instant.
 const PAST = 58 * DAY, ttlFor = (year, ttl) => (Number(year) < YEAR ? PAST : ttl);
@@ -21,7 +22,7 @@ const N = (v, d = null) => { const x = Number(v); return v == null || v === '' |
 const resultRows = (d) => d.RaceTable.Races.flatMap((race) => race.Results.map((r) => ({ race, r })));
 const qualiRows = (d) => d.RaceTable.Races.flatMap((race) => race.QualifyingResults.map((r) => ({ race, r })));
 
-const mapRow = (r) => ({
+const mapRow = (r) => (LH.learn(r.Driver.driverId, r.Driver.givenName, r.Driver.familyName), {
   position: Number(r.position), positionText: r.positionText, driver: `${r.Driver.givenName} ${r.Driver.familyName}`, first: r.Driver.givenName, last: r.Driver.familyName, code: r.Driver.code,
   driverId: r.Driver.driverId, team: r.Constructor?.name, teamId: r.Constructor?.constructorId, grid: N(r.grid, -1),
   time: r.Time?.time ?? r.status, points: N(r.points, 0), fastest: r.FastestLap?.rank === '1', status: r.status,
@@ -35,18 +36,20 @@ export async function sessionResults(year, round, kind /* results | qualifying |
   const d = await get(`/${year}/${round}/${kind}.json`, ttlFor(year, 5 * MIN));
   const race = d.RaceTable.Races[0];
   if (!race) return null;
-  if (kind === 'qualifying') return race.QualifyingResults.map((r) => ({
+  if (kind === 'qualifying') return race.QualifyingResults.map((r) => (LH.learn(r.Driver.driverId, r.Driver.givenName, r.Driver.familyName), {
     position: Number(r.position), driver: `${r.Driver.givenName} ${r.Driver.familyName}`, first: r.Driver.givenName, last: r.Driver.familyName, driverId: r.Driver.driverId, team: r.Constructor.name, teamId: r.Constructor.constructorId, q1: r.Q1, q2: r.Q2, q3: r.Q3 }));
   return (race.SprintResults || race.Results).map(mapRow);
 }
 export async function driverStandings(year) {
+  if (LH.localYear(year)) { const l = LH.localDriverStandings(year); if (l && l.length) return l; }
   const d = await get(`/${year}/driverstandings.json`, ttlFor(year, 10 * MIN));
   const list = d.StandingsTable.StandingsLists[0];
-  return Object.assign((list?.DriverStandings || []).map((s) => ({
+  return Object.assign((list?.DriverStandings || []).map((s) => (LH.learn(s.Driver.driverId, s.Driver.givenName, s.Driver.familyName), {
     position: Number(s.position), points: Number(s.points), wins: Number(s.wins), driverId: s.Driver.driverId,
     name: `${s.Driver.givenName} ${s.Driver.familyName}`, first: s.Driver.givenName, last: s.Driver.familyName, code: s.Driver.code, permNumber: s.Driver.permanentNumber, teamId: s.Constructors?.at(-1)?.constructorId, team: s.Constructors?.at(-1)?.name })), { round: Number(list?.round) });
 }
 export async function constructorStandings(year) {
+  if (LH.localYear(year)) { const l = LH.localConstructorStandings(year); if (l && l.length) return l; }
   const d = await get(`/${year}/constructorstandings.json`, ttlFor(year, 10 * MIN));
   const list = d.StandingsTable.StandingsLists[0];
   return Object.assign((list?.ConstructorStandings || []).map((s) => ({
@@ -74,7 +77,10 @@ const seasonRow = (race, r) => ({
   round: Number(race.round), race: race.raceName, country: race.Circuit?.Location?.country, date: race.date, grid: N(r.grid, -1), position: N(r.position, 99), positionText: r.positionText,
   points: N(r.points, 0), status: r.status, fastest: r.FastestLap?.rank === '1', teamId: r.Constructor?.constructorId, team: r.Constructor?.name,
 });
+// Is this driver racing in the live season? (the current standings are cached and tiny)
+const racingNow = async (id) => { try { return (await driverStandings(YEAR)).some((x) => x.driverId === id); } catch { return false; } };
 export async function driverInfo(id) {
+  const lo = LH.localDriverInfo(id); if (lo) return lo;
   const d = (await get(`/drivers/${id}.json`, 7 * 24 * HOUR)).DriverTable.Drivers[0];
   return d && { id: d.driverId, name: `${d.givenName} ${d.familyName}`, number: d.permanentNumber, code: d.code, born: d.dateOfBirth, nationality: d.nationality, url: d.url };
 }
@@ -83,10 +89,12 @@ export async function constructorInfo(id) {
   return c && { id: c.constructorId, name: c.name, nationality: c.nationality, url: c.url };
 }
 export async function driverSeasonResults(year, id) {
+  if (LH.localYear(year)) { const l = LH.localSeasonResults(year, id); if (l) return l; }
   const d = await get(`/${year}/drivers/${id}/results.json?limit=100`, ttlFor(year, 10 * MIN));
   return d.RaceTable.Races.map((race) => seasonRow(race, race.Results[0]));
 }
 export async function driverSeasonQuali(year, id) {
+  if (LH.localYear(year)) { const l = LH.localSeasonQuali(year, id); if (l) return l; }
   const rows = await pageAll(`/${year}/drivers/${id}/qualifying.json`, qualiRows, ttlFor(year, 30 * MIN), 1);
   return { poles: rows.filter((x) => x.r.position === '1').length, q3: rows.filter((x) => !!x.r.Q3).length };
 }
@@ -111,6 +119,16 @@ const lowGet = (path, ttl) => cachedJSON(`${BASE}${path}`, ttl, { low: true }).t
 // A driver's career from small "count only" requests (limit=1) that all run at once, instead of paging every result: a few KB instead of ~15 pages.
 // Points need every result row, so they load separately (driverPoints) and fill in afterwards.
 export async function driverCareer(id, year) {
+  const lo = LH.localCareer(id);
+  if (lo) {
+    // Finished seasons come from the built-in history; the live season (if he is racing in it) is added on top.
+    let c = { races: lo.races, wins: lo.wins, podiums: lo.podiums, poles: lo.poles, fastest: lo.fastest, seasons: lo.seasons, first: lo.first };
+    if (await racingNow(id)) {
+      const rows = await settle(driverSeasonResults(YEAR, id)); const q = await settle(driverSeasonQuali(YEAR, id));
+      if (rows) { c = { races: c.races + rows.length, wins: c.wins + rows.filter((r) => r.position === 1 && r.positionText === '1').length, podiums: c.podiums + rows.filter((r) => ['1', '2', '3'].includes(r.positionText)).length, poles: c.poles + (q ? q.poles : 0), fastest: c.fastest + rows.filter((r) => r.fastest).length, seasons: c.seasons + (rows.length && lo.last < YEAR ? 1 : 0), first: c.first } ; }
+    }
+    return { ...c, points: undefined };
+  }
   const scope = `/drivers/${id}`;
   const cnt = (kind, pos) => settle(get(`${scope}/${kind}${pos ? `/${pos}` : ''}.json?limit=1`, DAY).then((d) => Number(d.total)));
   const seasonsP = settle(get(`${scope}/seasons.json?limit=100`, DAY).then((d) => d.SeasonTable.Seasons.map((x) => Number(x.season))));
@@ -124,12 +142,26 @@ export async function driverCareer(id, year) {
 }
 // Total career points (all results plus sprints): the slow part of a career, loaded on its own.
 export async function driverPoints(id) {
+  const lo = LH.localCareer(id);
+  if (lo) {
+    let extra = 0;
+    if (await racingNow(id)) {
+      const [rows, spr] = await Promise.all([settle(driverSeasonResults(YEAR, id)), settle(pageAll(`/${YEAR}/drivers/${id}/sprint.json`, sprintRows, 10 * MIN, 1))]);
+      extra = (rows ? rows.reduce((a, r) => a + r.points, 0) : 0) + (spr ? sumPts(spr) : 0);
+    }
+    return Math.round((lo.points + extra) * 10) / 10;
+  }
   const scope = `/drivers/${id}`;
   const [rows, sprint] = await Promise.all([settle(pageAll(`${scope}/results.json`, resultRows, DAY, 10)), settle(pageAll(`${scope}/sprint.json`, sprintRows, DAY, 3))]);
   return rows && sprint ? Math.round((sumPts(rows) + sumPts(sprint)) * 10) / 10 : null;
 }
 // Team totals. A figure the server cannot give is null and shown as a dash, never a guess.
 export async function constructorCareer(id, year) {
+  const lo = LH.localTeamCareer(id);
+  if (lo) {
+    const cur = await settle(constructorSeason(YEAR, id));
+    return { wins: lo.wins + (cur?.wins || 0), poles: lo.poles + (cur?.poles || 0), seasons: lo.seasons + (cur && cur.races ? 1 : 0), first: lo.first };
+  }
   const scope = `/constructors/${id}`;
   const winsP = settle(total(`${scope}/results.json`)).then((n) => (n == null ? null : countAt(scope, 'results', 1, n)));
   const polesP = settle(total(`${scope}/qualifying.json`)).then((n) => (n == null ? null : countAt(scope, 'qualifying', 1, n)));
@@ -141,21 +173,34 @@ export async function constructorCareer(id, year) {
 }
 // Seasons a team entered, newest first.
 export async function constructorSeasonsList(id) {
+  const lo = LH.localTeamSeasons(id);
+  if (lo) { const cur = await settle(constructorSeason(YEAR, id)); return cur && cur.races ? [YEAR, ...lo.filter((y) => y !== YEAR)] : lo; }
   const d = await get(`/constructors/${id}/seasons.json?limit=100`, 7 * DAY);
   return d.SeasonTable.Seasons.map((x) => Number(x.season)).sort((a, b) => b - a);
 }
 export async function teamDrivers(year, id) {
+  if (LH.localYear(year)) { const l = LH.localTeamDrivers(year, id); if (l && l.length) return l; }
   const d = await get(`/${year}/constructors/${id}/drivers.json`, ttlFor(year, 6 * HOUR));
-  return d.DriverTable.Drivers.map((x) => ({ driverId: x.driverId, name: `${x.givenName} ${x.familyName}`, first: x.givenName, last: x.familyName, number: x.permanentNumber, code: x.code }));
+  return d.DriverTable.Drivers.map((x) => (LH.learn(x.driverId, x.givenName, x.familyName), { driverId: x.driverId, name: `${x.givenName} ${x.familyName}`, first: x.givenName, last: x.familyName, number: x.permanentNumber, code: x.code }));
 }
 
 // Seasons a driver has raced in, newest first: one small request.
 export async function driverSeasons(id) {
+  const lo = LH.localSeasons(id);
+  if (lo) { if (!lo.includes(YEAR) && (await racingNow(id))) return [YEAR, ...lo]; return lo; }
   const d = await get(`/drivers/${id}/seasons.json?limit=100`, 7 * DAY);
   return d.SeasonTable.Seasons.map((x) => Number(x.season)).sort((a, b) => b - a);
 }
 // Teams a driver raced for, oldest first, with the first and last season and the number of races (same pages as driverCareer, so cached).
 export async function driverTeamsList(id) {
+  const lo = LH.localTeamsList(id);
+  if (lo) {
+    if (await racingNow(id)) {
+      const rows = await settle(driverSeasonResults(YEAR, id));
+      if (rows && rows.length) { const t = rows.at(-1); const first = lo[0]; if (first && first.teamId === t.teamId) { first.to = YEAR; first.races += rows.length; } else lo.unshift({ teamId: t.teamId, name: t.team, from: YEAR, to: YEAR, races: rows.length }); }
+    }
+    return lo;
+  }
   const rows = await pageAll(`/drivers/${id}/results.json`, resultRows, DAY, 10);
   const out = [];
   [...rows].sort((a, b) => Number(a.race.season) - Number(b.race.season) || Number(a.race.round) - Number(b.race.round)).forEach((x) => {
@@ -178,6 +223,7 @@ export async function lineups(year) {
 }
 // One team's season so far, from both cars' results. A figure that fails to load is null and shows as a dash.
 export async function constructorSeason(year, id) {
+  if (LH.localYear(year)) { const l = LH.localTeamSeason(year, id); if (l) return l; }
   const scope = `/${year}/constructors/${id}`;
   const [rows, quali] = await Promise.all([settle(pageAll(`${scope}/results.json`, resultRows, ttlFor(year, 10 * MIN), 3)), settle(pageAll(`${scope}/qualifying.json`, qualiRows, ttlFor(year, 30 * MIN), 2))]);
   const ok = (x) => !Number.isNaN(Number(x.r.positionText));
@@ -195,6 +241,7 @@ export async function constructorSeason(year, id) {
 
 // Points after every round of a season (race plus sprint points), per driver and per team, for the season chart.
 export async function seasonPoints(year) {
+  if (LH.localYear(year)) { const l = LH.localSeasonPoints(year); if (l) return l; }
   const [res, spr] = await Promise.all([pageAll(`/${year}/results.json`, resultRows, ttlFor(year, HOUR), 6), settle(pageAll(`/${year}/sprint.json`, sprintRows, ttlFor(year, HOUR), 3))]);
   const rows = [...res, ...(spr || [])];
   const names = {}; res.forEach((x) => { names[Number(x.race.round)] = x.race.raceName; });
@@ -221,6 +268,14 @@ export async function entryList(year) {
 
 // Everyone who ever raced / every team that ever entered (for search). Big lists, so they are kept for a month.
 export async function allDrivers() {
+  // Everyone who raced up to last season comes from the built-in history (instant); newcomers of the live season are added from the standings.
+  try {
+    await driverStandings(YEAR).catch(() => []);
+    const base = LH.localAllDrivers().map(({ last_year, first_year, ...x }) => x);
+    const have = new Set(base.map((x) => x.driverId));
+    const extra = (await driverStandings(YEAR).catch(() => [])).filter((x) => !have.has(x.driverId)).map((x) => ({ driverId: x.driverId, name: x.name, first: x.first, last: x.last, code: x.code, number: x.permNumber, nationality: '', dob: null }));
+    return [...base, ...extra];
+  } catch {}
   const q = (o) => `/drivers.json?limit=100&offset=${o}`;
   const first = await get(q(0), 30 * DAY); const pages = Math.ceil(Number(first.total) / 100);
   // The other pages load side by side; a page that fails is skipped (and tried again next time) instead of losing the whole list.
@@ -229,6 +284,11 @@ export async function allDrivers() {
   return rows.map((d) => ({ driverId: d.driverId, name: `${d.givenName} ${d.familyName}`, first: d.givenName, last: d.familyName, code: d.code, number: d.permanentNumber, nationality: d.nationality, dob: d.dateOfBirth }));
 }
 export async function allConstructors() {
+  try {
+    const base = LH.localAllTeams(); const have = new Set(base.map((x) => x.teamId));
+    const cur = await constructorStandings(YEAR).catch(() => []);
+    return [...base, ...cur.filter((x) => !have.has(x.teamId)).map((x) => ({ teamId: x.teamId, name: x.name, nationality: '' }))];
+  } catch {}
   const rows = await pageAll('/constructors.json', (d) => d.ConstructorTable.Constructors, 30 * DAY, 6);
   return rows.map((c) => ({ teamId: c.constructorId, name: c.name, nationality: c.nationality }));
 }

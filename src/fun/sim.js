@@ -160,14 +160,14 @@ export function evolveTeam(t) { const a = TA(t); const mv = (v, lo, hi, k) => (M
 
 // Random transfer window: old drivers retire, strong drivers in slow cars sometimes move to faster ones, empty seats go to rookies.
 // Returns { f, log } where log is a list of { kind, text }.
-const snap = (d) => ({ id: d.id, first: d.first, last: d.last, name: d.name, number: d.number, photo: d.photo || null, ref: d.ref || null });
+const snap = (d) => ({ id: d.id, first: d.first, last: d.last, name: d.name, number: d.number, photo: d.photo || null, ref: d.ref || null, ovr: ovr(d), age: A(d).age, pot: A(d).pot, nat: d.nat || null });
 export function simulateTransfers(f) {
   const log = []; let drivers = f.drivers.map((d) => ({ ...d })); const teams = f.teams;
   const order = [...teams].sort((a, b) => TA(b).car - TA(a).car), rank = Object.fromEntries(order.map((t, i) => [t.id, i])); const name = (id) => teams.find((t) => t.id === id)?.name || '';
   // Retirement is never certain: older drivers are only a little more likely to go. At least one driver per team must remain.
   const gone = []; const keep = Math.max(teams.length, 1);
   drivers = drivers.filter((d) => {
-    if (d.me) return true; const age = A(d).age, p = Math.min(0.3, 0.02 + Math.max(0, age - 33) * 0.03 + (ovr(d) < 55 ? 0.03 : 0));
+    if (d.me || d.noRetire) return true; const age = A(d).age, p = Math.min(0.3, 0.02 + Math.max(0, age - 33) * 0.03 + (ovr(d) < 55 ? 0.03 : 0));
     if (drivers.length - gone.length > keep && Math.random() < p) { gone.push(d); log.push({ kind: 'retire', who: snap(d), from: d.teamId, text: `${d.name} (${age}) retires from racing.` }); return false; } return true;
   });
   const moves = Math.max(1, Math.round(teams.length / 4)); let made = 0;

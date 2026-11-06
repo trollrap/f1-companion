@@ -13,6 +13,7 @@ const DEFAULT = { opts: OPTS, results: false, leads: [15], types: { 'Practice 1'
 const Ctx = createContext(null);
 export function PrefsProvider({ children }) {
   const [prefs, setPrefs] = useState(DEFAULT); const [ready, setReady] = useState(false); const cur = useRef(DEFAULT); const chain = useRef(Promise.resolve());
+  const loadDone = useRef(null); const loadedFlag = useRef(false); if (!loadDone.current) loadDone.current = new Promise((res) => { loadDone.resolve = res; });
   useEffect(() => {
     Promise.all([AsyncStorage.getItem('prefs'), readDurable('welcomed'), readDurable('accent'), readDurable('prefs:v2')]).then(([raw, wel, acc, dur]) => {
       let r = raw; try { if (dur) { const d = JSON.parse(dur); const m = raw ? JSON.parse(raw) : null; if (!m || (d.t || 0) >= (m.t || 0)) r = JSON.stringify(d); } } catch {}
@@ -22,11 +23,13 @@ export function PrefsProvider({ children }) {
       const leads = Array.isArray(v.leads) && v.leads.length ? v.leads : typeof v.lead === 'number' ? [v.lead] : DEFAULT.leads; // older versions stored one lead time
       const n = { ...DEFAULT, opts: { ...OPTS, ...(v.opts || {}) }, results: !!v.results, types: { ...DEFAULT.types, ...v.types }, leads: leads.filter((m) => m !== 1440).length ? leads.filter((m) => m !== 1440) : DEFAULT.leads }; // (the 1-day option was removed)
       cur.current = n; sync(n); setPrefs(n);
-    }).catch(() => {}).finally(() => setReady(true));
+    }).catch(() => {}).finally(() => { loadedFlag.current = true; loadDone.resolve && loadDone.resolve(); setReady(true); });
   }, []);
   // Writes are confirmed before anything (such as an app restart) depends on them: one retry, then read back.
   // Changes are applied to the latest state (not the one from the last render), so quick successive changes are not lost.
-  const save = useCallback((fn) => {
+  const save = useCallback(function save(fn) {
+    // A change made before the saved settings were read would be built on the defaults and wipe the saved accent colour and options: it waits for the load first.
+    if (!loadedFlag.current) return loadDone.current.then(() => save(fn));
     const n = { ...fn(cur.current), t: Date.now() }; cur.current = n; sync(n); setPrefs(n);
     const str = JSON.stringify(n);
     const put = async (k, v) => { for (let i = 0; i < 2; i++) { try { await AsyncStorage.setItem(k, v); if ((await AsyncStorage.getItem(k)) === v) return true; } catch {} } return false; };
