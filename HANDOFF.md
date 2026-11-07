@@ -150,3 +150,13 @@ Expo Go (SDK 53+) does not include the `expo-notifications` native module; impor
 
 ## V1.16.2
 - Fantasy bottom tab bar was hidden under the Android navigation area: padded with safe-area insets, plain Pressable tabs.
+
+## V1.16.3
+- app.config.js sets updates.checkAutomatically NEVER (native config, takes effect with the next APK build): OTA updates only download/apply when the user taps the banner or Settings button.
+
+- 1.16.3 also: longer realistic articles (src/fun/articles.js) with stats + team-colour banner instead of photos, no profile link; back from an article/tab returns to the fantasy Home (beforeRemove listener).
+
+## V1.17.0 (first public release)
+- Big fantasy driver photos (driver page hero, season summary champion card) now sit directly on the card (new `Cutout` in FunBits) instead of a tinted rounded square; champion name shrinks to fit.
+- Screen `revealKey`: content re-animates (staggered) on every fantasy tab change and scrolls to top.
+- Version stays 1.x on purpose: Android versionCode = maj*10000+min*100+pat must keep growing, 1.0.0 would be rejected as a downgrade.

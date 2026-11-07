@@ -10,7 +10,7 @@ import Dropdown from '../components/Dropdown';
 import Skeleton from '../components/Skeleton';
 import { Segmented, StatGrid, ResultLine } from '../components/Shared';
 import ExportBar from '../components/ExportBar';
-import { Avatar, Field, Stepper, Btn, Swatches, SessionCard, StandingsCard, SummaryCard, Slide, UndoChip } from '../components/FunBits';
+import { Avatar, Cutout, Field, Stepper, Btn, Swatches, SessionCard, StandingsCard, SummaryCard, Slide, UndoChip } from '../components/FunBits';
 import { TransferShow, ChampionShow, SessionShow } from '../components/Shows';
 import { flagOfPlace, flagOfCountry, countryNames } from '../fun/geo';
 import { useFun, pickImage, uid, canPickImage } from '../fun/store';
@@ -236,6 +236,13 @@ export function FantasyNew({ navigation }) {
 export function Fantasy({ route, navigation }) {
   const { id } = route.params; const fun = useFun(); const insets = useSafeAreaInsets(); const f = fun.get(id); const [tab, setTab] = useState(f?.ended ? 'stats' : 'home'); const [sub, setSub] = useState('drivers'); const [art, setArt] = useState(null); const [busy, setBusy] = useState(false); const [sel, setSel] = useState(null); const [exp, setExp] = useState(false); const [shw, setShw] = useState(null); const shotD = useRef(null), shotT = useRef(null);
   useEffect(() => { if (f) navigation.setOptions({ title: f.name }); }, [f?.name]);
+  // Back (button or swipe) from an article or from another tab lands on this fantasy's Home, and only from Home leaves the fantasy.
+  const sref = useRef(null); useEffect(() => { sref.current?.scrollTo?.({ y: 0, animated: false }); }, [tab, art]);
+  const nav = useRef({ art, tab, leave: false }); nav.current.art = art; nav.current.tab = tab;
+  useEffect(() => navigation.addListener('beforeRemove', (e) => {
+    const { art: a, tab: t, leave } = nav.current; if (leave || (!a && t === 'home')) return;
+    e.preventDefault(); setArt(null); setTab('home');
+  }), [navigation]);
   if (!f) return <Screen header={false}><Note>{fun.loaded ? 'This season no longer exists.' : 'Loading…'}</Note></Screen>;
   const cur = seasonNo(f), n = sel && seasonList(f).includes(sel) ? sel : cur, isCur = n === cur, v = viewOf(f, n), st = standings(v), off = !!f.off && isCur;
   const ended = !!f.ended && isCur, step = isCur && !off && !ended ? nextStep(f) : null, done = v.races.filter((r) => sessionsOf(r).every((s) => v.results?.[r.id]?.[s])).length, complete = isDone(v) && !off;
@@ -245,13 +252,14 @@ export function Fantasy({ route, navigation }) {
   const ts = isCur && !ended && !off && !complete ? titleStatus(v, 'drivers') : null, tsT = isCur && !ended && !off && !complete ? titleStatus(v, 'teams') : null;
   const banner = (x) => (x ? <Grad color={x.decided ? colors.gold : colors.accent} from={0.3} to={0.04} radius={14} border={0.6} style={{ padding: 12, flexDirection: 'row', alignItems: 'center', gap: 10 }}><Text style={{ fontSize: 22 }}>{x.decided ? '🏆' : '🚩'}</Text><Text style={{ flex: 1, color: colors.fg, fontSize: 15, fontWeight: '600' }}>{x.text}</Text></Grad> : null);
   const sessRows = (g, raceId, ses) => { const gv = g; const rs = gv.results?.[raceId]?.[ses] || []; return rs.map((r) => { const d = gv.drivers.find((x) => x.id === r.driverId); const t = d && teamOf(gv, d.teamId); return { key: r.driverId, pos: r.pos, name: surname(d), code: codeOf(d), photo: d ? driverPic(d) : null, logo: teamPic(t), color: t?.color || colors.muted, right: r.points ? `${r.time}  +${r.points}` : r.time }; }); };
-  const champ = complete ? st.drivers[0] : null, tchamp = complete ? st.teams[0] : null; const tabs = ['home', 'calendar', 'standings', 'news', 'stats', 'settings']; const news = tab === 'news' || tab === 'home' ? buildNews(f, v, st, n) : [];
-  const bar = (<View style={{ flexDirection: 'row', backgroundColor: colors.surface, borderTopWidth: 1, borderTopColor: colors.line, paddingBottom: Math.max(insets.bottom, 10) + 4, paddingTop: 4, minHeight: 64 }}>{[['home', 'home', 'Home'], ['calendar', 'calendar', 'Calendar'], ['standings', 'trophy', 'Standings'], ['news', 'newspaper', 'News'], ['stats', 'stats-chart', 'Stats'], ['settings', 'settings', 'Settings']].map(([k, ic, lb]) => (<Pressable key={k} onPress={() => setTab(k)} style={{ flex: 1, alignItems: 'center', paddingVertical: 6, gap: 2 }}><Ionicons name={tab === k ? ic : `${ic}-outline`} size={22} color={tab === k ? colors.accent : colors.muted} /><Text style={{ fontSize: 10, color: tab === k ? colors.accent : colors.muted, fontWeight: tab === k ? '700' : '500' }}>{lb}</Text></Pressable>))}</View>);
+  const champ = complete ? st.drivers[0] : null, tchamp = complete ? st.teams[0] : null; const tabs = ['home', 'calendar', 'standings', 'news', 'stats', 'settings']; const news = tab === 'news' || tab === 'home' || art ? buildNews(f, v, st, n) : [];
+  const shown = art ? 'article' : tab;
+  const bar = (<View style={{ flexDirection: 'row', backgroundColor: colors.surface, borderTopWidth: 1, borderTopColor: colors.line, paddingBottom: Math.max(insets.bottom, 10) + 4, paddingTop: 4, minHeight: 64 }}>{[['home', 'home', 'Home'], ['calendar', 'calendar', 'Calendar'], ['standings', 'trophy', 'Standings'], ['news', 'newspaper', 'News'], ['stats', 'stats-chart', 'Stats'], ['settings', 'settings', 'Settings']].map(([k, ic, lb]) => (<Pressable key={k} onPress={() => { setArt(null); setTab(k); }} style={{ flex: 1, alignItems: 'center', paddingVertical: 6, gap: 2 }}><Ionicons name={tab === k ? ic : `${ic}-outline`} size={22} color={tab === k ? colors.accent : colors.muted} /><Text style={{ fontSize: 10, color: tab === k ? colors.accent : colors.muted, fontWeight: tab === k ? '700' : '500' }}>{lb}</Text></Pressable>))}</View>);
   const openDriver = (d) => navigation.navigate('FantasyDriver', { id, driverId: d.id, season: n });
   const driverRows = st.drivers.map((d) => ({ key: d.id, name: surname(d), team: teamOf(v, d.teamId)?.name || '', color: tcol(v, d.teamId), points: d.points, photo: driverPic(v.drivers.find((x) => x.id === d.id)), code: codeOf(d), logo: teamPic(teamOf(v, d.teamId)) }));
   const teamRows = st.teams.map((t) => ({ key: t.id, name: t.name, team: `${t.wins} wins`, color: t.color, points: t.points, logo: teamPic(t), teamRow: true }));
   return (
-    <Screen header={false} footer={bar} swipe={{ index: tabs.indexOf(tab), count: 6, onIndex: (i) => setTab(tabs[i]) }}>
+    <Screen header={false} scrollRef={sref} revealKey={`${shown}:${sub}`} footer={bar} swipe={{ index: tabs.indexOf(tab), count: 6, onIndex: (i) => { setArt(null); setTab(tabs[i]); } }}>
       {seasonList(f).length > 1 ? <Dropdown value={n} options={seasonList(f).map((k) => [k, k === cur ? `Season ${k} · ${off ? 'transfers' : 'current'}` : `Season ${k}`])} onChange={(k) => { setSel(k); setExp(false); }} prefix="Season" /> : null}
       <UndoChip show={fun.canUndo(id)} onPress={() => fun.undo(id)} />
       <SessionShow visible={shw?.type === 'session'} title={(shw?.type === 'session' && f.races.find((r) => r.id === shw.raceId)?.name) || ''} sub={shw?.session} rows={shw?.type === 'session' ? sessRows(f, shw.raceId, shw.session) : []} onClose={() => setShw(null)} />
@@ -260,7 +268,7 @@ export function Fantasy({ route, navigation }) {
         stats={st.drivers[0] ? [['Points', st.drivers[0].points], ['Wins', st.drivers[0].wins], ['Podiums', st.drivers[0].podiums], ['Poles', st.drivers[0].poles], ['Fastest laps', st.drivers[0].fl || 0], ['Margin', st.drivers[1] ? `${st.drivers[0].points - st.drivers[1].points} pts` : '—']] : []}
         podium={st.drivers.slice(0, 3).map((d) => ({ name: surname(d), photo: driverPic(d), color: tcol(f, d.teamId), number: d.number, points: d.points }))}
         teamPodium={st.teams.slice(0, 3).map((t) => ({ name: t.name, logo: teamPic(t), color: t.color, points: t.points }))} onClose={() => setShw(null)} />
-      {tab === 'home' && (<>
+      {shown === 'home' && (<>
         {banner(ts)}
         {ended ? (
           <Card>
@@ -312,9 +320,9 @@ export function Fantasy({ route, navigation }) {
             <View style={{ height: 6, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.12)', overflow: 'hidden' }}><View style={{ width: `${Math.round(pct * 100)}%`, height: 6, backgroundColor: colors.accent }} /></View>
           </Grad>); })() : null}
         {st.drivers.length && done ? (<View style={{ gap: 8 }}><Eyebrow>Top 3</Eyebrow>{st.drivers.slice(0, 3).map((d, i) => { const t = teamOf(v, d.teamId); return <ResultLine key={d.id} pos={i + 1} first={d.first} last={d.last} color={tcol(v, d.teamId)} right={String(d.points)} sub={`${d.wins} wins · ${t?.name || ''}`} fav={d.me} photoSrc={driverPic(d)} logoSrc={teamPic(t)} onPress={() => openDriver(d)} />; })}<Btn icon="trophy-outline" onPress={() => setTab('standings')}>Full standings</Btn></View>) : null}
-        {news.length ? (<View style={{ gap: 8 }}><Eyebrow>Headlines</Eyebrow>{news.slice(0, 3).map((a) => <NewsCard key={a.id} a={a} compact onPress={() => { setArt(a); setTab('news'); }} />)}</View>) : null}
+        {news.length ? (<View style={{ gap: 8 }}><Eyebrow>Headlines</Eyebrow>{news.slice(0, 3).map((a) => <NewsCard key={a.id} a={a} compact onPress={() => setArt(a)} />)}</View>) : null}
       </>)}
-      {tab === 'calendar' && (<>
+      {shown === 'calendar' && (<>
         {banner(ts)}
         <View><Eyebrow>{`Calendar · ${done}/${v.races.length}`}</Eyebrow></View>
         {v.races.map((r, i) => {
@@ -329,14 +337,14 @@ export function Fantasy({ route, navigation }) {
             </Press>);
         })}
       </>)}
-      {tab === 'standings' && <Segmented value={sub} onChange={setSub} items={[['drivers', 'Drivers'], ['teams', 'Teams']]} />}
-      {tab === 'standings' && sub === 'drivers' && (<>
+      {shown === 'standings' && <Segmented value={sub} onChange={setSub} items={[['drivers', 'Drivers'], ['teams', 'Teams']]} />}
+      {shown === 'standings' && sub === 'drivers' && (<>
         {banner(ts)}
         <Btn icon="share-social-outline" onPress={() => setExp(!exp)}>{exp ? 'Hide the export picture' : 'Export the drivers standings'}</Btn>
         {exp ? <><StandingsCard shotRef={shotD} title={`${f.name} · drivers`} sub={`Season ${n}`} rows={driverRows} /><ExportBar target={shotD} /></> : null}
         {st.drivers.map((d, i) => { const t = teamOf(v, d.teamId); return <ResultLine key={d.id} pos={i + 1} first={d.first} last={d.last} color={tcol(v, d.teamId)} right={String(d.points)} sub={`${d.nat ? flagOfCountry(d.nat) + ' ' : ''}${d.wins} wins · ${t?.name || ''}`} fav={d.me} champion={complete && i === 0} photoSrc={driverPic(d)} logoSrc={teamPic(t)} onPress={() => openDriver(d)} />; })}
       </>)}
-      {tab === 'standings' && sub === 'teams' && (<>
+      {shown === 'standings' && sub === 'teams' && (<>
         {banner(tsT)}
         <Btn icon="share-social-outline" onPress={() => setExp(!exp)}>{exp ? 'Hide the export picture' : 'Export the teams standings'}</Btn>
         {exp ? <><StandingsCard shotRef={shotT} title={`${f.name} · teams`} sub={`Season ${n}`} rows={teamRows} /><ExportBar target={shotT} /></> : null}
@@ -349,21 +357,22 @@ export function Fantasy({ route, navigation }) {
           </Grad>))}
       </>)}
 
-      {tab === 'news' && (art ? (<>
-        <Btn icon="arrow-back" onPress={() => setArt(null)}>All news</Btn>
-        <NewsCard a={art} full onPress={art.who ? () => { const d = v.drivers.find((x) => x.id === art.who); if (d) openDriver(d); } : null} />
-      </>) : (<>
+      {shown === 'article' && (<>
+        <Btn icon="arrow-back" onPress={() => { setArt(null); setTab('home'); }}>Back to home</Btn>
+        <NewsCard a={art} full />
+      </>)}
+      {shown === 'news' && (<>
         <Note>{`Written by the fantasy paddock, season ${n}. New stories appear as races are run.`}</Note>
         {news.map((a) => <NewsCard key={a.id} a={a} onPress={() => setArt(a)} />)}
-      </>))}
-      {tab === 'stats' && <AllStats f={f} v={v} n={n} closed={complete || (ended && isCur)} navigation={navigation} />}
-      {tab === 'settings' && <FunSettingsCard />}
-      {tab === 'settings' && (<Card><Eyebrow>Save</Eyebrow><View style={{ gap: 10, marginTop: 10 }}>
-        <Btn icon={f.archived ? 'archive' : 'archive-outline'} onPress={() => { fun.update(id, (g) => ({ ...g, archived: !g.archived })); if (!f.archived) navigation.goBack(); }}>{f.archived ? 'Restore from the archive' : 'Archive this save'}</Btn>
+      </>)}
+      {shown === 'stats' && <AllStats f={f} v={v} n={n} closed={complete || (ended && isCur)} navigation={navigation} />}
+      {shown === 'settings' && <FunSettingsCard />}
+      {shown === 'settings' && (<Card><Eyebrow>Save</Eyebrow><View style={{ gap: 10, marginTop: 10 }}>
+        <Btn icon={f.archived ? 'archive' : 'archive-outline'} onPress={() => { fun.update(id, (g) => ({ ...g, archived: !g.archived })); if (!f.archived) { nav.current.leave = true; navigation.goBack(); } }}>{f.archived ? 'Restore from the archive' : 'Archive this save'}</Btn>
         <Text style={{ color: colors.muted, fontSize: 13 }}>Archived saves move out of the main list into an Archived section. Nothing is deleted and you can restore them any time.</Text>
         {isCur && !ended ? <Btn icon="flag" onPress={() => Alert.alert('End this save?', 'The save is closed and the total stats of every season are shown. You can reopen it later.', [{ text: 'Cancel', style: 'cancel' }, { text: 'End save', onPress: () => { fun.update(id, (g) => ({ ...g, ended: true, endedAt: Date.now(), off: false })); setTab('stats'); } }])}>End this save and show total stats</Btn> : null}
       </View></Card>)}
-      {tab === 'settings' && (isCur ? <Setup f={f} update={(fn) => fun.update(id, fn)} profile={fun.profile} navigation={navigation} onDelete={() => Alert.alert('Delete this fantasy?', 'All its seasons are deleted and cannot be brought back.', [{ text: 'Cancel', style: 'cancel' }, { text: 'Delete', style: 'destructive', onPress: () => { fun.remove(id); navigation.goBack(); } }])} /> : <Note>Past seasons cannot be edited. Switch back to the current season to change the setup.</Note>)}
+      {shown === 'settings' && (isCur ? <Setup f={f} update={(fn) => fun.update(id, fn)} profile={fun.profile} navigation={navigation} onDelete={() => Alert.alert('Delete this fantasy?', 'All its seasons are deleted and cannot be brought back.', [{ text: 'Cancel', style: 'cancel' }, { text: 'Delete', style: 'destructive', onPress: () => { nav.current.leave = true; fun.remove(id); navigation.goBack(); } }])} /> : <Note>Past seasons cannot be edited. Switch back to the current season to change the setup.</Note>)}
     </Screen>
   );
 }
@@ -474,7 +483,7 @@ export function FantasyDriver({ route, navigation }) {
   return (
     <Screen header={false}>
       <Grad color={color} from={0.68} to={0.06} border={0.5} style={{ height: 210 }}>
-        {photoSrc ? <View style={{ position: 'absolute', right: -10, bottom: -10 }}><Avatar source={photoSrc} size={220} radius={24} color={color} /></View> : <Text style={{ position: 'absolute', right: 8, bottom: -22, fontFamily: 'display', fontWeight: '800', fontSize: 150, color: 'rgba(255,255,255,0.12)' }}>{d.number}</Text>}
+        {photoSrc ? <Cutout source={photoSrc} size={250} style={{ position: 'absolute', right: -20, bottom: -26 }} /> : <Text style={{ position: 'absolute', right: 8, bottom: -22, fontFamily: 'display', fontWeight: '800', fontSize: 150, color: 'rgba(255,255,255,0.12)' }}>{d.number}</Text>}
         <View style={{ flex: 1, padding: 16, justifyContent: 'space-between' }}>
           <Text style={{ color: colors.fg, fontFamily: 'display', fontWeight: '800', fontSize: 30 }}>{`#${d.number}`}</Text>
           <View style={{ maxWidth: '62%' }}>
@@ -559,13 +568,34 @@ export function FantasyDriver({ route, navigation }) {
 /* ------------------------------------------------------------------ one race: the same session menu and rows as the real results, plus exports */
 
 function NewsCard({ a, compact, full, onPress }) {
-  const col = a.color || colors.accent; const body = Array.isArray(a.body) ? a.body : [a.body];
-  const inner = (
-    <Grad color={col} from={0.32} to={0.04} dir="h" radius={14} border={0.4} style={{ padding: 14, gap: 8 }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}><Text style={{ color: col, fontFamily: 'label', fontSize: 10, letterSpacing: 1.6, flex: 1 }} numberOfLines={1}>{a.kicker}</Text><Text style={{ color: colors.muted, fontSize: 11 }}>{a.kind}</Text></View>
-      <Text style={{ color: colors.fg, fontSize: full ? 24 : compact ? 16 : 19, fontWeight: '800', lineHeight: full ? 30 : undefined }} numberOfLines={full ? undefined : 3}>{a.title}</Text>
-      {full ? body.map((p, i) => <Text key={i} style={{ color: colors.fg, fontSize: 16, lineHeight: 24, opacity: 0.9 }}>{p}</Text>) : compact ? null : <Text style={{ color: colors.muted, fontSize: 14 }} numberOfLines={2}>{body[0]}</Text>}
-      {full && a.who ? <Text style={{ color: colors.accent, fontSize: 14, fontWeight: '700' }}>Open driver profile</Text> : null}
+  const col = a.color || colors.accent; const body = Array.isArray(a.body) ? a.body : [a.body]; const sub = a.subject;
+  const mark = sub ? (sub.type === 'driver' ? (sub.number != null ? String(sub.number) : '') : String(sub.name || '').split(/\s+/).map((w) => w[0]).join('').slice(0, 3).toUpperCase()) : '';
+  const emblem = (size) => (<Grad color={col} from={0.9} to={0.35} radius={size / 2} border={0} style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}><Text style={{ color: '#fff', fontSize: size * 0.4, fontWeight: '800', fontStyle: 'italic' }}>{mark}</Text></Grad>);
+  const inner = full ? (
+    <View style={{ gap: 14 }}>
+      <Grad color={col} from={0.55} to={0.06} dir="h" radius={16} border={0.4} style={{ padding: 16, gap: 12 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+          {mark ? emblem(64) : null}
+          <View style={{ flex: 1 }}>
+            <Text style={{ color: 'rgba(255,255,255,0.8)', fontFamily: 'label', fontSize: 11, letterSpacing: 1.8 }} numberOfLines={1}>{a.kicker}</Text>
+            {sub ? <Text style={{ color: colors.fg, fontSize: 19, fontWeight: '800', marginTop: 2 }} numberOfLines={1}>{sub.name}</Text> : null}
+            {sub ? <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13 }} numberOfLines={1}>{sub.type === 'driver' ? [sub.team, sub.nat].filter(Boolean).join(' · ') : 'Constructor'}</Text> : null}
+          </View>
+        </View>
+        {a.stats?.length ? (<View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>{a.stats.map(([k, val]) => (<View key={k} style={{ flexGrow: 1, minWidth: '29%', paddingVertical: 8, paddingHorizontal: 10, borderRadius: 10, backgroundColor: 'rgba(0,0,0,0.28)' }}><Text style={{ color: 'rgba(255,255,255,0.65)', fontSize: 10, letterSpacing: 1.2, fontWeight: '700' }}>{k}</Text><Text style={{ color: colors.fg, fontSize: 20, fontWeight: '800' }}>{val}</Text></View>))}</View>) : null}
+      </Grad>
+      <Text style={{ color: colors.muted, fontSize: 12, letterSpacing: 1.4 }}>{`${a.kind.toUpperCase()} · SEASON ${a.season}`}</Text>
+      <Text style={{ color: colors.fg, fontSize: 26, fontWeight: '800', lineHeight: 32 }}>{a.title}</Text>
+      {body.map((p, i) => <Text key={i} style={{ color: colors.fg, fontSize: 16.5, lineHeight: 26, opacity: 0.92 }}>{p}</Text>)}
+    </View>
+  ) : (
+    <Grad color={col} from={0.32} to={0.04} dir="h" radius={14} border={0.4} style={{ padding: 14, flexDirection: 'row', gap: 12, alignItems: 'center' }}>
+      {mark ? emblem(compact ? 44 : 52) : null}
+      <View style={{ flex: 1, gap: 4 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}><Text style={{ color: col, fontFamily: 'label', fontSize: 10, letterSpacing: 1.6, flex: 1 }} numberOfLines={1}>{a.kicker}</Text><Text style={{ color: colors.muted, fontSize: 11 }}>{a.kind}</Text></View>
+        <Text style={{ color: colors.fg, fontSize: compact ? 16 : 18, fontWeight: '800' }} numberOfLines={3}>{a.title}</Text>
+        {compact ? null : <Text style={{ color: colors.muted, fontSize: 14 }} numberOfLines={2}>{body[0]}</Text>}
+      </View>
     </Grad>);
   return onPress ? <Press onPress={onPress}>{inner}</Press> : inner;
 }
@@ -663,9 +693,9 @@ function AllStats({ f, v, n, closed, navigation }) {
       <Section title={`Season ${n} summary`}>
         {c ? (
           <Grad color={sm.team?.color || colors.gold} from={0.65} to={0.06} radius={20} border={0.9} style={{ height: 170, borderColor: colors.gold }}>
-            {driverPic(c) ? <View style={{ position: 'absolute', right: -6, bottom: -8 }}><Avatar source={driverPic(c)} size={170} radius={22} color={sm.team?.color} /></View> : null}
+            {driverPic(c) ? <Cutout source={driverPic(c)} size={200} style={{ position: 'absolute', right: -14, bottom: -22 }} /> : null}
             <View style={{ flex: 1, padding: 16, justifyContent: 'space-between' }}>
-              <View><Text style={{ color: colors.gold, fontFamily: 'label', fontSize: 11, letterSpacing: 2.5 }}>{sm.closed ? '🏆 CHAMPION' : '⏱ LEADER'}</Text><Text style={{ color: colors.fg, fontSize: 32, fontWeight: '800', fontStyle: 'italic', marginTop: 2 }} numberOfLines={1}>{surname(c)}</Text><Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 15 }}>{c.first}</Text></View>
+              <View><Text style={{ color: colors.gold, fontFamily: 'label', fontSize: 11, letterSpacing: 2.5 }}>{sm.closed ? '🏆 CHAMPION' : '⏱ LEADER'}</Text><Text style={{ color: colors.fg, fontSize: 32, fontWeight: '800', fontStyle: 'italic', marginTop: 2, maxWidth: '62%' }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>{surname(c)}</Text><Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 15 }}>{c.first}</Text></View>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>{teamPic(sm.team) ? <Image source={teamPic(sm.team)} resizeMode="contain" style={{ width: 28, height: 28 }} /> : null}<Text style={{ color: colors.fg, fontSize: 15, fontWeight: '700' }}>{`${c.points} pts · ${c.wins} wins`}</Text></View>
             </View>
           </Grad>) : null}

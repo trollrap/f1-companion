@@ -10,5 +10,6 @@ module.exports = ({ config }) => {
   const deps = require('./package.json').dependencies || {};
   const fp = JSON.stringify([Object.keys(deps).sort().map((k) => [k, deps[k]]), [...permissions].sort(), (config.plugins || []).map((p) => (Array.isArray(p) ? p[0] : p)).sort()]);
   const runtimeVersion = crypto.createHash('sha1').update(fp).digest('hex').slice(0, 10);
-  return { ...config, runtimeVersion, android: { ...(config.android || {}), permissions } };
+  // Updates are never downloaded or applied behind your back: the app only looks when you open Settings or the banner, and installs when you tap it.
+  return { ...config, runtimeVersion, updates: { ...(config.updates || {}), checkAutomatically: 'NEVER' }, android: { ...(config.android || {}), permissions } };
 };

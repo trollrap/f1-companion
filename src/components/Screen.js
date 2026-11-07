@@ -33,7 +33,7 @@ function OfflineBanner() {
 }
 // Children inside <>...</> are lifted out so every block gets the same gap.
 const flat = (ch) => React.Children.toArray(ch).flatMap((c) => (c && c.type === React.Fragment ? flat(c.props.children) : [c]));
-export default function Screen({ children, header = true, refreshable = true, scrollRef, swipe, footer }) {
+export default function Screen({ children, header = true, refreshable = true, scrollRef, swipe, footer, revealKey }) {
   const [refreshing, setRefreshing] = useState(false); const { prefs: pp } = usePrefs(); const canPull = refreshable && pp.opts.pullRefresh === true;
   const pull = async () => { setRefreshing(true); try { await refreshAll(); } finally { setRefreshing(false); } };
   return (
@@ -43,12 +43,12 @@ export default function Screen({ children, header = true, refreshable = true, sc
       {swipe ? <Swipe {...swipe}>
       <ScrollView ref={scrollRef} contentContainerStyle={s.body} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled"
         refreshControl={canPull ? <RefreshControl refreshing={refreshing} onRefresh={pull} tintColor={colors.accent} colors={[colors.accent]} progressBackgroundColor={colors.surface2} /> : undefined}>
-        {flat(children).map((c, i) => <Reveal key={c.key ?? i} index={i}>{c}</Reveal>)}
+        {flat(children).map((c, i) => <Reveal key={`${revealKey ?? ''}:${c.key ?? i}`} index={i}>{c}</Reveal>)}
       </ScrollView>
       </Swipe> : (
       <ScrollView ref={scrollRef} contentContainerStyle={s.body} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled"
         refreshControl={canPull ? <RefreshControl refreshing={refreshing} onRefresh={pull} tintColor={colors.accent} colors={[colors.accent]} progressBackgroundColor={colors.surface2} /> : undefined}>
-        {flat(children).map((c, i) => <Reveal key={c.key ?? i} index={i}>{c}</Reveal>)}
+        {flat(children).map((c, i) => <Reveal key={`${revealKey ?? ''}:${c.key ?? i}`} index={i}>{c}</Reveal>)}
       </ScrollView>
       )}
       {footer || null}

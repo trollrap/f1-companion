@@ -13,6 +13,10 @@ export function Avatar({ uri, source, size = 48, color = colors.muted, label, ra
     </View>
   );
 }
+// A driver photo laid straight on the card (no tinted square behind it), the same way the driver profile shows it.
+export function Cutout({ source, size = 170, style }) {
+  return <Image source={source} resizeMode="cover" resizeMethod="resize" fadeDuration={0} style={[{ width: size, height: size }, style]} />;
+}
 export function Field({ label, value, onChange, placeholder, keyboardType, maxLength, style }) {
   return (
     <View style={[{ gap: 4 }, style]}>
