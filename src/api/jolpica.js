@@ -59,10 +59,10 @@ export async function constructorStandings(year) {
 export async function winnersByRound(year) {
   let races = null;
   try {
-    const d = await get(`/${year}/results/1.json?limit=100`, ttlFor(year, HOUR));
+    const d = await get(`/${year}/results/1.json?limit=100`, ttlFor(year, 3 * MIN));
     if (d.RaceTable.Races.every((r) => r.Results.length === 1 && r.Results[0].position === '1')) races = d.RaceTable.Races.map((r) => ({ round: r.round, r: r.Results[0] }));
   } catch {}
-  if (!races) races = (await pageAll(`/${year}/results.json`, resultRows, ttlFor(year, HOUR))).filter((x) => x.r.position === '1').map((x) => ({ round: x.race.round, r: x.r }));
+  if (!races) races = (await pageAll(`/${year}/results.json`, resultRows, ttlFor(year, 3 * MIN))).filter((x) => x.r.position === '1').map((x) => ({ round: x.race.round, r: x.r }));
   const out = {}; races.forEach((x) => { out[Number(x.round)] = { last: x.r.Driver.familyName, code: x.r.Driver.code || String(x.r.Driver.familyName).slice(0, 3).toUpperCase(), teamId: x.r.Constructor?.constructorId, team: x.r.Constructor?.name }; });
   return out;
 }

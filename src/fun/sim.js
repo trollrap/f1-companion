@@ -110,17 +110,29 @@ function raceSession(f, race, session, prior, w) {
     const s = pace(f, d, w.wet) + (n - g) * gw + (a.race - 78) * 0.06 + (a.aggr - 55) * 0.012 + gauss() * (2.4 + (100 - a.cons) * 0.045 + (w.wet ? 2.4 : 0));
     return { d, g, s, out, stops, stopLoss, pen, lap: out ? 2 + Math.floor(Math.random() * (laps - 3)) : laps };
   });
+  // Contact: a driver who crashes out sometimes takes a neighbour with him (another crasher, or a driver who survives with damage and loses time).
+  // Both rows remember who was involved, so reports can say who hit whom. fault marks the driver the stewards blame.
+  const crashers = rows.filter((x) => x.out === 'crash').sort(() => Math.random() - 0.5);
+  crashers.forEach((x) => {
+    if (x.with || Math.random() > 0.6) return;
+    const near = rows.filter((y) => y !== x && !y.with && !y.hitBy && Math.abs(y.g - x.g) <= 4 && (y.out === 'crash' || !y.out)).sort((a, b) => (b.out === 'crash') - (a.out === 'crash') || Math.abs(a.g - x.g) - Math.abs(b.g - x.g));
+    const y = near[0]; if (!y) return;
+    const atFault = Math.random() < 0.55 + (A(x.d).aggr - A(y.d).aggr) * 0.004;
+    if (y.out === 'crash') { x.with = y.d.id; y.with = x.d.id; x.fault = atFault; y.fault = !atFault; x.lap = y.lap = Math.min(x.lap, y.lap); }
+    else { x.with = y.d.id; x.fault = true; y.hitBy = x.d.id; y.stopLoss += 6 + Math.random() * 16; if (Math.random() < 0.35) y.pen = Math.max(y.pen, 0); }
+    if (x.fault && Math.random() < 0.5 && !isSprint) x.penNote = Math.random() < 0.5 ? 'grid' : 'licence';
+  });
   const fin = rows.filter((x) => !x.out), top = Math.max(...fin.map((x) => x.s));
   fin.forEach((x) => { x.t = (top - x.s) * 2.1 * scale + x.stopLoss + x.pen + Math.random() * 0.4; }); fin.sort((a, b) => a.t - b.t);
   const base = fin[0]?.t || 0; const pts = isSprint ? SPRINT_POINTS : POINTS; const winT = laps * lapT + base;
   const flPool = fin.slice(0, Math.min(10, fin.length)); const flDriver = flPool.length ? flPool[Math.floor(Math.pow(Math.random(), 1.6) * flPool.length)] : null;
   const res = fin.map((x, i) => {
     const gap = x.t - base, lapped = Math.floor(gap / lapT);
-    return { driverId: x.d.id, pos: i + 1, grid: x.g, time: i === 0 ? raceFmt(winT) : lapped >= 1 ? `+${lapped} lap${lapped > 1 ? 's' : ''}` : `+${gap.toFixed(3)}`, gap: i ? `+${gap.toFixed(3)}` : '', points: pts[i] || 0, status: 'OK', stops: x.stops, pen: x.pen, fl: flDriver === x, flTime: flDriver === x ? lapFmt(lapBase - 0.4 - Math.random() * 0.8) : null, laps };
+    return { driverId: x.d.id, pos: i + 1, grid: x.g, time: i === 0 ? raceFmt(winT) : lapped >= 1 ? `+${lapped} lap${lapped > 1 ? 's' : ''}` : `+${gap.toFixed(3)}`, gap: i ? `+${gap.toFixed(3)}` : '', points: pts[i] || 0, status: 'OK', stops: x.stops, pen: x.pen, ...(x.hitBy ? { hitBy: x.hitBy } : {}), ...(i === 0 ? { wet: !!w.wet, sc: !!w.sc } : {}), fl: flDriver === x, flTime: flDriver === x ? lapFmt(lapBase - 0.4 - Math.random() * 0.8) : null, laps };
   });
   rows.filter((x) => x.out).sort((a, b) => b.lap - a.lap).forEach((x, i) => {
     const reason = x.out === 'mech' ? MECH[Math.floor(Math.random() * MECH.length)] : CRASH[Math.floor(Math.random() * CRASH.length)];
-    res.push({ driverId: x.d.id, pos: fin.length + i + 1, grid: x.g, time: reason, gap: '', points: 0, status: 'DNF', reason, lap: x.lap, stops: 0, pen: 0, laps: x.lap });
+    res.push({ driverId: x.d.id, pos: fin.length + i + 1, grid: x.g, time: reason, gap: '', points: 0, status: 'DNF', reason, lap: x.lap, stops: 0, pen: 0, laps: x.lap, ...(x.out === 'crash' ? { crash: true } : {}), ...(x.with ? { with: x.with, fault: !!x.fault } : {}), ...(x.penNote ? { penNote: x.penNote } : {}) });
   });
   return res;
 }

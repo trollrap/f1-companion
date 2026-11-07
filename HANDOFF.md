@@ -160,3 +160,10 @@ Expo Go (SDK 53+) does not include the `expo-notifications` native module; impor
 - Big fantasy driver photos (driver page hero, season summary champion card) now sit directly on the card (new `Cutout` in FunBits) instead of a tinted rounded square; champion name shrinks to fit.
 - Screen `revealKey`: content re-animates (staggered) on every fantasy tab change and scrolls to top.
 - Version stays 1.x on purpose: Android versionCode = maj*10000+min*100+pat must keep growing, 1.0.0 would be rejected as a downgrade.
+
+## V1.18.0
+- Fantasy news rewritten (src/fun/articles.js v3): race reports, maiden wins, collisions/feuds with blame and stewards, penalties, safety-car/wet analysis, title fight, midfield, form, team features, regulation/testing/transfer/season-start pieces. Quotes only for made-up drivers/staff; real people are narrated without invented quotes.
+- sim.js race model records who hit whom (`with`, `fault`, `hitBy`, `penNote`).
+- NEW `src/components/LiveRace.js`: "Watch race live" lap-by-lap replay (positions, interval, pit stops, retirements, lead changes, 1x/3x/8x, pause, skip). Simulation is decided first; the lap chart is synthesised and ends exactly on the real result; closing commits the race.
+- Fantasy profile shadow behind text, flags for all drivers, undo chip only after a change, Interval label, team-colour profile buttons, calendar winner letters, MotoGP alert bell, notification delivery fix, main tab bar restyle (see earlier sections).
+- Not done / unverified: "standings seems to be cutout" (unclear what was meant), notification arrival on device.

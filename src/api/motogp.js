@@ -63,6 +63,7 @@ export const mgDate = (e) => { const a = new Date(e.start), b = new Date(e.end |
 
 // Alerts: MotoGP-class sessions of one event in the shape the alert planner expects.
 const ALERT = { FP1: 'Practice 1', FP2: 'Practice 2', PR: 'Practice 1', Q2: 'Qualifying', NQ: 'Qualifying', SPR: 'Sprint', RAC: 'Race' };
+export const alertName = (type) => ALERT[type] || null; // the alert type a MotoGP session belongs to (null: no alerts for it)
 export async function alertSessions(event, seasonId) {
   const top = (await categories(seasonId))[0]; if (!top) return [];
   const l = await sessions(event.id, top.id);

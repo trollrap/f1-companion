@@ -130,7 +130,7 @@ export default function RoundScreen({ route, navigation }) {
           <View style={{ marginTop: 12 }}><Dropdown value={cur} options={names.map((n) => [n, labelOf(n)])} onChange={(v) => { setShowStrat(false); setSel(v); }} /></View>
           {canGap ? (
             <Pressable onPress={() => { const k = gapMode === 'leader' ? 'ahead' : 'leader'; setGapMode(k); setOpt('gap', k); }} hitSlop={8} accessibilityRole="button" style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 12, alignSelf: 'flex-start', opacity: pressed ? 0.6 : 1 })}>
-              <Ionicons name="swap-vertical" size={16} color={colors.accent} /><Text style={{ color: colors.accent, fontWeight: '700', fontSize: 16 }}>{gapMode === 'leader' ? 'Gap to leader' : 'Gap to car ahead'}</Text>
+              <Ionicons name="swap-vertical" size={16} color={colors.accent} /><Text style={{ color: colors.accent, fontWeight: '700', fontSize: 16 }}>{gapMode === 'leader' ? 'Gap to leader' : 'Interval'}</Text>
             </Pressable>) : null}
           {res.loading && <Skeleton />}
           {res.error && <Note>Results unavailable: {res.error}</Note>}{res.note && <Note>{res.note}</Note>}

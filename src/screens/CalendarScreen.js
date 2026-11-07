@@ -25,9 +25,11 @@ const CARD = 72, LABEL = 18, INNER = 10, OUTER = 12, PAD = 16;
 export default function CalendarScreen({ navigation }) {
   const season = useSeason(); const now = useNow(60000); const tc = useTeamColor(); const scroller = useRef(null);
   const [year, setYear] = useState(YEAR); const cur = year === YEAR; useOutlinesVersion();
-  const win = useAsync(() => winnersByRound(year), [year]);
   const past = useAsync(async () => (cur ? null : (await jolpicaSchedule(year)).map(scheduleToMeeting)), [year]);
   const races = cur ? season.races : past.v;
+  // Winners are fetched again whenever another weekend has finished, so the newest race gets its winner as soon as the results exist.
+  const finished = cur ? (races || []).filter((r) => Date.parse(r.date_end) < now).length : 0;
+  const win = useAsync(() => winnersByRound(year), [year, finished]);
   const months = useMemo(() => {
     const out = []; (races || []).forEach((r) => { const k = monthLabel(r); let g = out.find((x) => x.k === k); if (!g) out.push((g = { k, items: [] })); g.items.push(r); }); return out;
   }, [races]);

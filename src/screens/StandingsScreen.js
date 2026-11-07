@@ -18,7 +18,7 @@ import { clinched } from '../lib/champion';
 import { colors } from '../theme';
 
 // One tappable label that cycles through the ways of showing the gap.
-const modes = (teams) => [['leader', 'Gap to leader'], ['ahead', teams ? 'Gap to team ahead' : 'Gap to car ahead']];
+const modes = (teams) => [['leader', 'Gap to leader'], ['ahead', teams ? 'Interval to team ahead' : 'Interval to car ahead']];
 export default function StandingsScreen({ navigation }) {
   const { prefs, setOpt } = usePrefs(); const season = useSeason();
   const [seg, setSeg] = useState('drivers'); const [year, setYear] = useState(YEAR);

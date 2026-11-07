@@ -49,6 +49,7 @@ import ErrorBoundary from './components/ErrorBoundary';
 import { shortName } from './lib/time';
 import { tr } from './lib/i18n';
 import { ui } from './lib/motion';
+import { NavBar } from './components/TabBar';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -59,9 +60,9 @@ const MTab = createBottomTabNavigator();
 const MICONS = { Home: 'home', Calendar: 'calendar', Standings: 'trophy', Paddock: 'people' };
 function MotoTabs() {
   return (
-    <MTab.Navigator screenOptions={({ route }) => ({
+    <MTab.Navigator tabBar={(p) => <NavBar {...p} icons={MICONS} />} screenOptions={({ route }) => ({
       headerShown: false, animation: 'fade', tabBarActiveTintColor: colors.accent, tabBarInactiveTintColor: colors.muted,
-      tabBarStyle: { backgroundColor: colors.bg, borderTopColor: colors.line, height: 64, paddingTop: 6, paddingBottom: 8 },
+      
       tabBarLabelStyle: { fontFamily: ui.lang === 'el' ? 'RobotoCondensed_600SemiBold' : 'Rajdhani_600SemiBold', fontSize: 13 },
       tabBarLabel: tr(route.name), tabBarIcon: ({ color, size }) => <Ionicons name={MICONS[route.name]} size={size} color={color} />,
     })}>
@@ -75,9 +76,9 @@ function MotoTabs() {
 const FTab = createBottomTabNavigator();
 function FootTabs() {
   return (
-    <FTab.Navigator screenOptions={({ route }) => ({
+    <FTab.Navigator tabBar={(p) => <NavBar {...p} icons={{ Scores: 'football', Tables: 'list' }} />} screenOptions={({ route }) => ({
       headerShown: false, animation: 'fade', tabBarActiveTintColor: colors.accent, tabBarInactiveTintColor: colors.muted,
-      tabBarStyle: { backgroundColor: colors.bg, borderTopColor: colors.line, height: 64, paddingTop: 6, paddingBottom: 8 },
+      
       tabBarLabelStyle: { fontFamily: ui.lang === 'el' ? 'RobotoCondensed_600SemiBold' : 'Rajdhani_600SemiBold', fontSize: 13 },
       tabBarLabel: tr(route.name), tabBarIcon: ({ color, size }) => <Ionicons name={route.name === 'Scores' ? 'football' : 'list'} size={size} color={color} />,
     })}>
@@ -88,9 +89,9 @@ function FootTabs() {
 }
 function Tabs() {
   return (
-    <Tab.Navigator screenOptions={({ route }) => ({
+    <Tab.Navigator tabBar={(p) => <NavBar {...p} icons={ICONS} />} screenOptions={({ route }) => ({
       headerShown: false, animation: 'fade', tabBarActiveTintColor: colors.accent, tabBarInactiveTintColor: colors.muted,
-      tabBarStyle: { backgroundColor: colors.bg, borderTopColor: colors.line, height: 64, paddingTop: 6, paddingBottom: 8 },
+      
       tabBarLabelStyle: { fontFamily: ui.lang === 'el' ? 'RobotoCondensed_600SemiBold' : 'Rajdhani_600SemiBold', fontSize: 13 },
       tabBarLabel: tr(route.name),
       tabBarIcon: ({ color, size }) => <Ionicons name={ICONS[route.name]} size={size} color={color} />,

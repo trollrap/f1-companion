@@ -26,7 +26,7 @@ export function useFun() {
   return {
     loaded, profile: state.profile, fantasies: state.fantasies.filter((x) => !x.preset), presets: state.fantasies.filter((x) => x.preset), library: state.library || EMPTY_LIB, settings: state.settings || DEFAULT_SETTINGS,
     setSettings: (p) => { state = { ...state, settings: { ...(state.settings || DEFAULT_SETTINGS), ...p } }; persist(true); emit(); },
-    canUndo: (id) => (undoStack[id] || []).length > 0,
+    canUndo: (id) => (undoStack[id] || []).length > 0, undoDepth: (id) => (undoStack[id] || []).length,
     undo: (id) => { const st = undoStack[id]; if (!st || !st.length) return false; const prev = st.pop(); state = { ...state, fantasies: state.fantasies.map((x) => (x.id === id ? prev : x)) }; persist(true); emit(); return true; },
     // The library: custom drivers and races kept on their own (no team, no season), ready to be added to any save or grid.
     libAdd: (kind, item) => { const l = state.library || EMPTY_LIB; state = { ...state, library: { ...l, [kind]: [item, ...l[kind]] } }; persist(true); emit(); },

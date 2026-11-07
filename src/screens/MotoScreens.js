@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { View, Pressable, StyleSheet } from 'react-native';
+import { usePrefs } from '../hooks/usePrefs';
 import { Ionicons } from '@expo/vector-icons';
 import Skeleton from '../components/Skeleton';
 import { Text } from '../components/Text';
@@ -13,7 +14,7 @@ import { Segmented, Countdown } from '../components/Shared';
 import { hm, dayName } from '../lib/time';
 import { useAsync } from '../hooks/useAsync';
 import { useNow } from '../hooks/useSeason';
-import { seasons, events, categories, sessions, classification, standings, lastRace, flagOf, mgDate, groupStandings, winnersByEvent, riderSeason, teamSeason, bikeColor, mainRiders } from '../api/motogp';
+import { seasons, events, categories, sessions, classification, standings, lastRace, flagOf, mgDate, groupStandings, winnersByEvent, alertName, riderSeason, teamSeason, bikeColor, mainRiders } from '../api/motogp';
 import { up } from '../lib/i18n';
 import { useMotoFavs } from '../hooks/useMotoFavs';
 import { StarButton } from '../components/Shared';
@@ -275,6 +276,7 @@ const KIND = { RAC: 'race', SPR: 'sprint', Q1: 'quali', Q2: 'quali', NQ: 'quali'
 const KCOL = { race: colors.accent, sprint: colors.gold, quali: '#2D8CFF', practice: colors.muted, warm: colors.line };
 // Weekend schedule grouped by day, so it reads as a timeline instead of one long list. The warm-up is a small line, the session in progress glows.
 function Schedule({ list, now }) {
+  const { prefs, toggle } = usePrefs();
   const rows = list.filter((x) => x.date && !Number.isNaN(Date.parse(x.date))).map((x) => ({ ...x, a: Date.parse(x.date), kind: KIND[x.type] || 'practice' })).sort((p, q) => p.a - q.a);
   const days = []; rows.forEach((x) => { const k = new Date(x.a).toDateString(); let d = days.find((y) => y.k === k); if (!d) days.push(d = { k, a: x.a, items: [] }); d.items.push(x); });
   const nextId = rows.find((x) => x.a + 45 * 60000 > now)?.id;
@@ -291,6 +293,7 @@ function Schedule({ list, now }) {
                 <Text style={{ width: 54, color: colors.fg, fontSize: 17, fontWeight: '800' }}>{hm(x.a, null)}</Text>
                 <Text style={{ flex: 1, color: colors.fg, fontSize: x.kind === 'warm' ? 14 : 17, fontWeight: x.kind === 'race' || x.kind === 'sprint' ? '800' : '600' }} numberOfLines={1}>{x.name}</Text>
                 {live ? <Pill color={colors.accent} solid>Live</Pill> : over ? <Ionicons name="checkmark-circle" size={18} color={colors.good} /> : nxt ? <Pill color={c}>Next</Pill> : null}
+                {alertName(x.type) ? (() => { const an = alertName(x.type), on = !!prefs.types[an]; return (<Pressable onPress={() => toggle(an)} hitSlop={8} accessibilityLabel={`Notify for ${an}`} style={{ width: 34, height: 34, borderRadius: 9, alignItems: 'center', justifyContent: 'center', backgroundColor: on ? colors.accentSoft : 'transparent' }}><Ionicons name={on ? 'notifications' : 'notifications-outline'} size={19} color={on ? colors.accent : colors.muted} /></Pressable>); })() : null}
               </View>); })}
         </View>))}
       </View>

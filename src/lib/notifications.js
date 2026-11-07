@@ -52,21 +52,29 @@ export async function scheduleSessionAlerts(meeting, sessions, prefs) {
   // clear only session alerts: football kickoff alerts (identifier foot-...) stay
   try { const all = await n.getAllScheduledNotificationsAsync(); await Promise.all(all.filter((x) => !String(x.identifier).startsWith('foot-')).map((x) => n.cancelScheduledNotificationAsync(x.identifier))); } catch { await n.cancelAllScheduledNotificationsAsync(); }
   const wanted = plannedAlerts(sessions, prefs);
-  if (!wanted.length || !(await ensurePermission())) return 0;
+  // "Results" alerts: a local alert shortly after a qualifying, sprint or race ends. It is set up in advance, so it arrives even when the app is closed
+  // and Android never gets to run the background check. It says the classification should be up, because it is timed rather than read from a server.
+  const results = prefs.results ? sessions.filter((x) => ['Qualifying', 'Sprint', 'Race'].includes(x.session_name) && prefs.types[x.session_name] !== false).map((x) => ({ x, at: Date.parse(x.date_end) + 30 * 60000 })).filter((r) => r.at > Date.now()) : [];
+  if ((!wanted.length && !results.length) || !(await ensurePermission())) return 0;
+  for (const r of results) {
+    try { await n.scheduleNotificationAsync({ content: { title: `${tr(r.x.session_name)} · ${tr(shortName(meeting.meeting_name))}`, body: ui.lang === 'el' ? 'Τα αποτελέσματα πρέπει να είναι διαθέσιμα τώρα.' : 'The results should be available now.' }, trigger: { type: n.SchedulableTriggerInputTypes.DATE, date: new Date(r.at), channelId: 'sessions' } }); } catch {}
+  }
   for (const a of wanted) {
     await n.scheduleNotificationAsync({
       content: { title: `${tr(a.session.session_name)} · ${tr(shortName(meeting.meeting_name))}`, body: ui.lang === 'el' ? (a.lead ? `Ξεκινά ${leadText(a.lead)} (${hm(a.start)})` : `Ξεκινά τώρα (${hm(a.start)})`) : (a.lead ? `Starts ${leadText(a.lead)} (${hm(a.start)})` : `Starting now (${hm(a.start)})`) },
       trigger: { type: n.SchedulableTriggerInputTypes.DATE, date: new Date(a.at), channelId: 'sessions' },
     });
   }
-  return wanted.length;
+  return wanted.length + results.length;
 }
 // Shows a notification straight away (used for session results).
 export async function notifyNow(title, body) {
   const n = mod(); if (!n) return false;
   if (!(await ensurePermission())) return false;
-  await n.scheduleNotificationAsync({ content: { title, body }, trigger: { channelId: 'sessions' } });
-  return true;
+  // A plain {channelId} trigger has no type, which newer expo-notifications versions can refuse without any visible error. A one-second interval
+  // trigger is the same kind the working test button uses.
+  try { await n.scheduleNotificationAsync({ content: { title, body }, trigger: { type: n.SchedulableTriggerInputTypes.TIME_INTERVAL, seconds: 1, channelId: 'sessions' } }); return true; } catch {}
+  try { await n.scheduleNotificationAsync({ content: { title, body }, trigger: null }); return true; } catch { return false; }
 }
 export async function sendTestNotification() {
   const n = mod(); if (!n) return 'unavailable';

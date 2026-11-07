@@ -24,6 +24,7 @@ import { openPastRace } from '../lib/openRace';
 import { driverPhoto, engineerPhoto, numberImage, teamLogo } from '../lib/media';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors, alpha } from '../theme';
+import { TintCtx } from '../lib/tint';
 
 const ageOn = (born) => { const b = new Date(born), n = new Date(); let a = n.getUTCFullYear() - b.getUTCFullYear(); if (n < new Date(Date.UTC(n.getUTCFullYear(), b.getUTCMonth(), b.getUTCDate()))) a--; return a; };
 const longDate = (iso) => isGreek() ? longDateEl(iso) : new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
@@ -63,7 +64,7 @@ export default function DriverScreen({ route, navigation }) {
   const noHistory = !info.loading && (info.v === null || !!info.error) && !season.loading && !rows.length && !seasons.loading && !(seasons.v || []).length;
   const openRace = (r) => openPastRace(navigation, season0, year, r, driverId);
   return (
-    <Screen header={false} swipe={{ index: ['season', 'career', 'profile'].indexOf(tab), count: 3, onIndex: (n) => setTab(['season', 'career', 'profile'][n]) }}>
+    <TintCtx.Provider value={color}><Screen header={false} swipe={{ index: ['season', 'career', 'profile'].indexOf(tab), count: 3, onIndex: (n) => setTab(['season', 'career', 'profile'][n]) }}>
       <Grad color={color} from={0.68} to={0.06} border={0.5} style={[{ height: 232 }, champion && { borderColor: colors.gold, borderWidth: 2 }]}>
         {champion ? <View pointerEvents="none" style={{ position: 'absolute', left: 0, right: 0, top: 0, height: 4, backgroundColor: colors.gold }} /> : null}
         {photo ? <Image source={photo} resizeMode="cover" resizeMethod="resize" fadeDuration={0} style={{ position: 'absolute', right: -30, bottom: -30, width: 268, height: 268 }} />
@@ -167,7 +168,7 @@ export default function DriverScreen({ route, navigation }) {
           </Card>
         )}
       </>)}
-    </Screen>
+    </Screen></TintCtx.Provider>
   );
 }
 const s = {

@@ -20,6 +20,7 @@ import { clinched } from '../lib/champion';
 import { successor, NOW_NAMES } from '../data/lineage';
 import Press from '../components/Press';
 import { colors, alpha } from '../theme';
+import { TintCtx } from '../lib/tint';
 
 const dash = (v) => (v == null ? '—' : String(v));
 export default function TeamScreen({ route, navigation }) {
@@ -44,7 +45,7 @@ export default function TeamScreen({ route, navigation }) {
   const tName = st?.name || name; // the name the team raced under that year
   const champion = !!table.v && table.v.length > 1 && table.v[0].teamId === teamId && (isCur ? clinched(table.v, 'constructor', season0.races?.length, season0.races) : true);
   return (
-    <Screen header={false}>
+    <TintCtx.Provider value={color}><Screen header={false}>
       <Grad color={color} from={0.68} to={0.06} border={0.5} style={[{ height: 200 }, champion && { borderColor: colors.gold, borderWidth: 2 }]}>
         {champion ? <View pointerEvents="none" style={{ position: 'absolute', left: 0, right: 0, top: 0, height: 4, backgroundColor: colors.gold }} /> : null}
         {photo ? <Image source={photo} resizeMode="cover" resizeMethod="resize" fadeDuration={0} style={{ position: 'absolute', right: -24, bottom: -24, width: 236, height: 236 }} /> : null}
@@ -112,7 +113,7 @@ export default function TeamScreen({ route, navigation }) {
         {career.error && <ErrorNote error={career.error} onRetry={career.reload} />}
         {C && <StatGrid cols={3} items={[['Wins', dash(C.wins)], ['Poles', dash(C.poles)], ['Titles', titles.loading ? '…' : dash(titles.v)], ['Seasons', dash(C.seasons)], ['First year', dash(C.first)]]} />}
       </Card>
-    </Screen>
+    </Screen></TintCtx.Provider>
   );
 }
 const s = StyleSheet.create({ name: { fontFamily: 'display', fontStyle: 'italic', fontWeight: '800', color: colors.fg, fontSize: 32 } });

@@ -50,7 +50,7 @@ export function SearchBox({ value, onChange, placeholder }) {
 
 export default function CompareScreen({ route }) {
   const { a } = route.params; const year0 = route.params.year || YEAR;
-  const [b, setB] = useState(null); const [tab, setTab] = useState('career'); const [gridYear, setGridYear] = useState(year0); const [q, setQ] = useState(''); const [pickYear, setPickYear] = useState(null);
+  const [b, setB] = useState(null); const [tab, setTab] = useState('season'); const [gridYear, setGridYear] = useState(year0); const [q, setQ] = useState(''); const [pickYear, setPickYear] = useState(null);
   const tc = useTeamColor(); const shotRef = useRef(null);
   const sa0 = useAsync(() => driverSeasons(a.driverId), [a.driverId]); const myYears = sa0.v && sa0.v.length ? sa0.v : [year0]; const gy = myYears.includes(gridYear) ? gridYear : myYears[0];
   const grid = useAsync(() => driverStandings(gy), [gy]);
@@ -94,9 +94,11 @@ export default function CompareScreen({ route }) {
     </Grad>); };
   if (!b) return (
     <Screen header={false}>
-      <Grad color={tc(a.teamId)} from={0.55} to={0.05} style={{ padding: 14 }}>
+      <Grad color={tc(a.teamId)} from={0.55} to={0.05} style={{ padding: 14, minHeight: 96, justifyContent: 'center' }}>
+        {driverPhoto(a.driverId) ? <Image source={driverPhoto(a.driverId)} resizeMode="cover" resizeMethod="resize" fadeDuration={0} style={{ position: 'absolute', right: -6, bottom: -14, width: 118, height: 118 }} />
+          : a.number != null && a.number !== '' ? <Text style={{ position: 'absolute', right: 12, bottom: -10, fontFamily: 'display', fontWeight: '800', fontSize: 78, color: 'rgba(255,255,255,0.28)' }}>{a.number}</Text> : null}
         <Text style={{ color: colors.muted, fontFamily: 'label', fontSize: 11, letterSpacing: 2 }}>COMPARING</Text>
-        <Text style={{ color: colors.fg, fontSize: 26, fontWeight: '800', fontStyle: 'italic' }}>{a.first} {a.last}</Text>
+        <Text style={{ color: colors.fg, fontSize: 26, fontWeight: '800', fontStyle: 'italic', maxWidth: '68%' }} numberOfLines={1}>{a.first} {a.last}</Text>
         <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 15 }}>{year0 !== YEAR ? `Season ${year0} · pick a rival` : 'Pick a rival below'}</Text>
       </Grad>
       <SearchBox value={q} onChange={setQ} placeholder="Search any driver who ever raced" />
@@ -143,7 +145,7 @@ export default function CompareScreen({ route }) {
               {R('Championship', standA ? `P${standA.position}` : '—', standB ? `P${standB.position}` : '—', true)}
               {R('Points', standA?.points ?? '—', standB?.points ?? '—')}
               {R('Wins', S1.wins, S2.wins)}{R('Podiums', S1.podiums, S2.podiums)}{R('Poles', dash(S1.poles), dash(S2.poles))}{R('Fastest laps', S1.fastest, S2.fastest)}
-              {R('Points finishes', S1.pointsFinishes, S2.pointsFinishes)}{R('Avg grid', fix(S1.avgGrid), fix(S2.avgGrid), true)}{R('Avg finish', fix(S1.avgFinish), fix(S2.avgFinish), true)}
+              {R('Points finishes', S1.pointsFinishes, S2.pointsFinishes)}
               {R('Q3 appearances', dash(S1.q3), dash(S2.q3))}{R('Not classified', S1.notClassified, S2.notClassified, true)}{R('Finished ahead', ahead, behind)}
             </>)}
           </View>)}

@@ -4,6 +4,7 @@ import { View, Pressable, StyleSheet, Animated, Image, Easing, LayoutAnimation, 
 import { LinearGradient } from 'expo-linear-gradient';
 import { Text } from './Text';
 import { Ionicons } from '@expo/vector-icons';
+import { useTint } from '../lib/tint';
 import { colors, alpha } from '../theme';
 import { LEADS, usePrefs } from '../hooks/usePrefs';
 import { useTeamColor } from '../hooks/useTeams';
@@ -53,6 +54,7 @@ export function NotifPrefs({ title = 'Notifications' }) {
 }
 // Segmented control with a sliding indicator.
 export function Segmented({ items, value, onChange }) {
+  const tint = useTint();
   const [w, setW] = useState(0); const x = useRef(new Animated.Value(0)).current; const idx = Math.max(0, items.findIndex(([v]) => v === value));
   const seg = w ? (w - 8) / items.length : 0; const live = useRef({}); live.current = { seg, idx, n: items.length, items, onChange };
   const drag = useRef(false);
@@ -72,7 +74,7 @@ export function Segmented({ items, value, onChange }) {
   })).current;
   return (
     <View style={s.seg} onLayout={(e) => setW(e.nativeEvent.layout.width)} {...pan.panHandlers}>
-      {seg > 0 && <Animated.View style={[s.segInd, { width: seg, transform: [{ translateX: x }] }]} />}
+      {seg > 0 && <Animated.View style={[s.segInd, { width: seg, borderColor: tint, transform: [{ translateX: x }] }]} />}
       {items.map(([v, l]) => (
         <Pressable key={v} onPress={() => onChange(v)} style={s.segBtn}><Text style={{ color: value === v ? colors.fg : colors.muted, fontWeight: '600', fontSize: 15 }}>{l}</Text></Pressable>
       ))}
@@ -188,6 +190,7 @@ export function StatGrid({ items, cols = 2, accent }) {
 }
 // Shows the first two rows of boxes; a button over a deep fade below reveals the rest, and hides them again.
 export function ExpandStats({ items, cols = 3, rows = 2, accent }) {
+  const tint = useTint();
   const [open, setOpen] = useState(false); const n = cols * rows;
   if (items.length <= n) return <StatGrid items={items} cols={cols} accent={accent} />;
   const flip = () => { LayoutAnimation.configureNext(LayoutAnimation.create(240, 'easeInEaseOut', 'opacity')); setOpen(!open); };
@@ -197,8 +200,8 @@ export function ExpandStats({ items, cols = 3, rows = 2, accent }) {
     <View>
       <StatGrid items={open ? items : first} cols={cols} accent={accent} />
       {!open ? <View pointerEvents="none" style={{ opacity: 0.28, marginTop: -4 }}><StatGrid items={rest} cols={cols} accent={accent} /></View> : null}
-      <Pressable onPress={flip} hitSlop={6} style={({ pressed }) => [{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, alignSelf: 'center', marginTop: open ? 12 : -34, paddingHorizontal: 16, height: 34, borderRadius: 17, backgroundColor: colors.accentSoft, borderWidth: 1, borderColor: colors.accent }, pressed && { opacity: 0.8 }]}>
-        <Text style={{ color: colors.fg, fontWeight: '700', fontSize: 14 }}>{open ? 'Show less' : 'Show all stats'}</Text><Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={16} color={colors.accent} />
+      <Pressable onPress={flip} hitSlop={6} style={({ pressed }) => [{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, alignSelf: 'center', marginTop: open ? 12 : -34, paddingHorizontal: 16, height: 34, borderRadius: 17, backgroundColor: alpha(tint, 0.18), borderWidth: 1, borderColor: tint }, pressed && { opacity: 0.8 }]}>
+        <Text style={{ color: colors.fg, fontWeight: '700', fontSize: 14 }}>{open ? 'Show less' : 'Show all stats'}</Text><Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={16} color={tint} />
       </Pressable>
     </View>
   );

@@ -45,7 +45,7 @@ function Section({ icon, title, summary, children, start = false }) {
   );
 }
 const SWATCHES = ['#F0141E', '#FF6A00', '#F5C400', '#22C55E', '#14B8A6', '#2D8CFF', '#7C5CFF', '#FF2D87', '#E5E7EB'];
-const GAPS = [['leader', 'To the leader'], ['ahead', 'To the car ahead']];
+const GAPS = [['leader', 'To the leader'], ['ahead', 'Interval (to the car ahead)']];
 export default function SettingsScreen() {
   const { prefs, toggle, toggleResults, setOpt, setOpts } = usePrefs(); const o = prefs.opts;
   const [results, setResults] = useState([]); const [running, setRunning] = useState(false); const [msg, setMsg] = useState(''); const [upd, setUpd] = useState('');

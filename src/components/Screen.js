@@ -8,6 +8,7 @@ import Press from './Press';
 import Header from './Header';
 import Reveal from './Reveal';
 import Swipe from './Swipe';
+import { useTint } from '../lib/tint';
 import { colors } from '../theme';
 import { refreshAll, useOffline } from '../lib/net';
 import { usePrefs } from '../hooks/usePrefs';
@@ -62,13 +63,13 @@ export function Card({ style, children, onPress }) {
   if (!onPress) return <View style={[s.card, style]}>{inner}</View>;
   return <Press onPress={onPress} scale={0.98} style={[s.card, style]}>{inner}</Press>;
 }
-export const Eyebrow = ({ children, right, color }) => (
+export const Eyebrow = ({ children, right, color }) => { const tint = useTint(); return (
   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-    <View style={{ width: 3, height: 13, borderRadius: 2, backgroundColor: colors.accent }} />
+    <View style={{ width: 3, height: 13, borderRadius: 2, backgroundColor: tint }} />
     <Text style={[s.eyebrow, color && { color }]}>{up(String(children))}</Text>
     {right ? <View style={{ marginLeft: 'auto', flexDirection: 'row', alignItems: 'center' }}>{typeof right === 'string' ? <Text style={s.more}>{right}</Text> : right}<Ionicons name="chevron-forward" size={16} color={colors.muted} /></View> : null}
   </View>
-);
+); };
 const friendly = (e) => (/fetch|network|abort|timed? ?out/i.test(String(e)) ? 'the data server could not be reached. Check your connection.' : String(e));
 export function ErrorNote({ error, onRetry }) {
   return (
