@@ -12,7 +12,7 @@ const OLD = { williams: '#64C4FF', lotus_f1: '#B8A100', renault: '#FFF500', toro
 const hsl = (h, s, l) => { s /= 100; l /= 100; const k = (n) => (n + h / 30) % 12, a = s * Math.min(l, 1 - l), f = (n) => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1))); return '#' + [f(0), f(8), f(4)].map((x) => Math.round(x * 255).toString(16).padStart(2, '0')).join(''); };
 const stable = (id) => { let h = 0; for (const ch of String(id)) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return hsl(h % 360, 45, 50); };
 // Teams whose real colours are too close to another team (Audi/Ferrari red, Cadillac/Haas grey) get a fixed distinct colour that beats the live feed.
-const PINNED = { audi: '#B9FF3C', cadillac: '#C9A227', haas: '#B6BABD', ferrari: '#E8002D' };
+const PINNED = { audi: '#A6123F', cadillac: '#C9A227', haas: '#B6BABD', ferrari: '#E8002D' };
 export const teamColor = (id) => PINNED[id] || live[id] || teamColors[id] || OLD[id] || stable(id);
 // '#RRGGBB' + alpha 0..1 -> '#RRGGBBAA'
 export const alpha = (hex, a) => hex + Math.round(Math.max(0, Math.min(1, a)) * 255).toString(16).padStart(2, '0');

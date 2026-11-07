@@ -8,16 +8,16 @@ import { readDurable, writeDurable } from '../lib/durable';
 const KEY = 'fun:v1';
 export const DEFAULT_SETTINGS = { evolve: true, transfers: 'manual', animSessions: true, animSeason: true };
 const EMPTY_LIB = { drivers: [], races: [] };
-let state = { profile: null, fantasies: [], settings: DEFAULT_SETTINGS, library: EMPTY_LIB }; const undoStack = {}; let lastPush = {}; let loaded = false, loading = null, timer = null; const subs = new Set();
+let state = { profile: null, fantasies: [], settings: DEFAULT_SETTINGS, library: EMPTY_LIB }; const undoStack = {}; let lastPush = {}; let loaded = false, loading = null, timer = null, blocked = false; const subs = new Set();
 const emit = () => subs.forEach((f) => f());
-const flush = () => { if (timer) { clearTimeout(timer); timer = null; } if (!loaded) return; return writeDurable(KEY, JSON.stringify(state)); };
+const flush = () => { if (timer) { clearTimeout(timer); timer = null; } if (!loaded || blocked) return; return writeDurable(KEY, JSON.stringify(state)); };
 // Saved shortly after every change, and at once when the app goes to the background (so closing it right away loses nothing).
 const persist = (now) => { if (!loaded) return; if (timer) clearTimeout(timer); if (now) { flush(); return; } timer = setTimeout(flush, 400); };
 try { AppState.addEventListener('change', (st) => { if (st !== 'active') flush(); }); } catch {}
 export const uid = () => Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-4);
 async function load() {
   if (loaded) return; if (loading) return loading;
-  loading = (async () => { let r = null; try { r = await readDurable(KEY); } catch {} if (!r) { try { r = await AsyncStorage.getItem(KEY); } catch {} } return r; })().then((r) => { if (r) { const v = JSON.parse(r); const saved = Array.isArray(v.fantasies) ? v.fantasies : []; state = { profile: state.profile || v.profile || null, settings: { ...DEFAULT_SETTINGS, ...(v.settings || {}), ...(state.settings !== DEFAULT_SETTINGS ? state.settings : {}) }, fantasies: [...state.fantasies, ...saved.filter((x) => !state.fantasies.some((y) => y.id === x.id))], library: { drivers: [...(state.library?.drivers || []), ...((v.library?.drivers || []).filter((x) => !(state.library?.drivers || []).some((y) => y.id === x.id)))], races: [...(state.library?.races || []), ...((v.library?.races || []).filter((x) => !(state.library?.races || []).some((y) => y.id === x.id)))] } }; } }).catch(() => {}).finally(() => { loaded = true; emit(); });
+  loading = (async () => { let r = null; try { r = await readDurable(KEY, (t) => { try { return !!JSON.parse(t); } catch { return false; } }); } catch {} if (!r) { try { r = await AsyncStorage.getItem(KEY); } catch {} } return r; })().then((r) => { if (r) { const v = JSON.parse(r); const saved = Array.isArray(v.fantasies) ? v.fantasies : []; state = { profile: state.profile || v.profile || null, settings: { ...DEFAULT_SETTINGS, ...(v.settings || {}), ...(state.settings !== DEFAULT_SETTINGS ? state.settings : {}) }, fantasies: [...state.fantasies, ...saved.filter((x) => !state.fantasies.some((y) => y.id === x.id))], library: { drivers: [...(state.library?.drivers || []), ...((v.library?.drivers || []).filter((x) => !(state.library?.drivers || []).some((y) => y.id === x.id)))], races: [...(state.library?.races || []), ...((v.library?.races || []).filter((x) => !(state.library?.races || []).some((y) => y.id === x.id)))] } }; } }).catch(() => { blocked = true; }).finally(() => { loaded = true; emit(); });
   return loading;
 }
 export function useFun() {

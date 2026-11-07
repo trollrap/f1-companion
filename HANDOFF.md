@@ -167,3 +167,8 @@ Expo Go (SDK 53+) does not include the `expo-notifications` native module; impor
 - NEW `src/components/LiveRace.js`: "Watch race live" lap-by-lap replay (positions, interval, pit stops, retirements, lead changes, 1x/3x/8x, pause, skip). Simulation is decided first; the lap chart is synthesised and ends exactly on the real result; closing commits the race.
 - Fantasy profile shadow behind text, flags for all drivers, undo chip only after a change, Interval label, team-colour profile buttons, calendar winner letters, MotoGP alert bell, notification delivery fix, main tab bar restyle (see earlier sections).
 - Not done / unverified: "standings seems to be cutout" (unclear what was meant), notification arrival on device.
+
+## V1.19.0
+- Save safety (src/lib/durable.js, src/fun/store.js): saves are written to .tmp then swapped in, previous good file kept as .bak; read picks the newest copy that parses; saves over 1.5 MB no longer go to AsyncStorage (Android row limit); new "T:<time>\n<text>" format halves memory. Root cause of "lost everything": a corrupt/truncated save made load() fail silently, state stayed empty and the next write overwrote the file. Now a failed load blocks writes (`blocked`) instead of overwriting.
+- Audi colour now #A6123F (theme.js PINNED), was lime.
+- Fantasy bar: Paddock tab (teams with both drivers, tap a driver for the profile) replaces Settings; Settings is a small gear top-right (toggles). Main app already had the gear in Header.

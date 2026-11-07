@@ -263,15 +263,18 @@ export function Fantasy({ route, navigation }) {
   };
   const endLive = () => { const l = live; setLive(null); if (l) apply(() => l.g, l.st); };
   const sessRows = (g, raceId, ses) => { const gv = g; const rs = gv.results?.[raceId]?.[ses] || []; return rs.map((r) => { const d = gv.drivers.find((x) => x.id === r.driverId); const t = d && teamOf(gv, d.teamId); return { key: r.driverId, pos: r.pos, name: surname(d), code: codeOf(d), photo: d ? driverPic(d) : null, logo: teamPic(t), color: t?.color || colors.muted, right: r.points ? `${r.time}  +${r.points}` : r.time }; }); };
-  const champ = complete ? st.drivers[0] : null, tchamp = complete ? st.teams[0] : null; const tabs = ['home', 'calendar', 'standings', 'news', 'stats', 'settings']; const news = tab === 'news' || tab === 'home' || art ? buildNews(f, v, st, n) : [];
+  const champ = complete ? st.drivers[0] : null, tchamp = complete ? st.teams[0] : null; const tabs = ['home', 'calendar', 'standings', 'news', 'stats', 'paddock', 'settings']; const news = tab === 'news' || tab === 'home' || art ? buildNews(f, v, st, n) : [];
   const shown = art ? 'article' : tab;
-  const bar = <BarView active={tab} onPress={(k) => { setArt(null); setTab(k); }} items={[['home', 'home', 'Home'], ['calendar', 'calendar', 'Calendar'], ['standings', 'trophy', 'Standings'], ['news', 'newspaper', 'News'], ['stats', 'stats-chart', 'Stats'], ['settings', 'settings', 'Settings']]} />;
+  const bar = <BarView active={tab} onPress={(k) => { setArt(null); setTab(k); }} items={[['home', 'home', 'Home'], ['calendar', 'calendar', 'Calendar'], ['standings', 'trophy', 'Standings'], ['news', 'newspaper', 'News'], ['stats', 'stats-chart', 'Stats'], ['paddock', 'people', 'Paddock']]} />;
   const openDriver = (d) => navigation.navigate('FantasyDriver', { id, driverId: d.id, season: n });
   const driverRows = st.drivers.map((d) => ({ key: d.id, name: surname(d), team: teamOf(v, d.teamId)?.name || '', color: tcol(v, d.teamId), points: d.points, photo: driverPic(v.drivers.find((x) => x.id === d.id)), code: codeOf(d), logo: teamPic(teamOf(v, d.teamId)) }));
   const teamRows = st.teams.map((t) => ({ key: t.id, name: t.name, team: `${t.wins} wins`, color: t.color, points: t.points, logo: teamPic(t), teamRow: true }));
   return (
-    <Screen header={false} scrollRef={sref} revealKey={`${shown}:${sub}`} footer={bar} swipe={{ index: tabs.indexOf(tab), count: 6, onIndex: (i) => { setArt(null); setTab(tabs[i]); } }}>
-      {seasonList(f).length > 1 ? <Dropdown value={n} options={seasonList(f).map((k) => [k, k === cur ? `Season ${k} · ${off ? 'transfers' : 'current'}` : `Season ${k}`])} onChange={(k) => { setSel(k); setExp(false); }} prefix="Season" /> : null}
+    <Screen header={false} scrollRef={sref} revealKey={`${shown}:${sub}`} footer={bar} swipe={{ index: Math.min(5, tabs.indexOf(tab)), count: 6, onIndex: (i) => { setArt(null); setTab(tabs[i]); } }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+        <View style={{ flex: 1 }}>{seasonList(f).length > 1 ? <Dropdown value={n} options={seasonList(f).map((k) => [k, k === cur ? `Season ${k} · ${off ? 'transfers' : 'current'}` : `Season ${k}`])} onChange={(k) => { setSel(k); setExp(false); }} prefix="Season" /> : null}</View>
+        <Pressable onPress={() => { setArt(null); setTab(tab === 'settings' ? 'home' : 'settings'); }} hitSlop={10} accessibilityLabel="Fantasy settings" style={({ pressed }) => [{ width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: tab === 'settings' ? alpha(colors.accent, 0.3) : 'rgba(255,255,255,0.08)' }, pressed && { opacity: 0.6 }]}><Ionicons name="settings-outline" size={20} color={colors.fg} /></Pressable>
+      </View>
       <UndoChip depth={fun.undoDepth(id)} onPress={() => fun.undo(id)} />
       <LiveRace visible={!!live} race={live?.st.race.name || ''} laps={live?.laps} drivers={live?.drivers} sc={live?.sc} wet={live?.wet} onClose={endLive} />
       <SessionShow visible={shw?.type === 'session'} title={(shw?.type === 'session' && f.races.find((r) => r.id === shw.raceId)?.name) || ''} sub={shw?.session} rows={shw?.type === 'session' ? sessRows(f, shw.raceId, shw.session) : []} onClose={() => setShw(null)} />
@@ -377,6 +380,22 @@ export function Fantasy({ route, navigation }) {
       {shown === 'news' && (<>
         <Note>{`Written by the fantasy paddock, season ${n}. New stories appear as races are run.`}</Note>
         {news.map((a) => <NewsCard key={a.id} a={a} onPress={() => setArt(a)} />)}
+      </>)}
+      {shown === 'paddock' && (<>
+        {st.teams.map((t) => { const ds = st.drivers.filter((d) => d.teamId === t.id); return (
+          <Grad key={t.id} color={t.color} from={0.5} to={0.06} dir="h" radius={18} border={0.4} style={{ padding: 12, gap: 10 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+              <Avatar source={teamPic(t)} color={t.color} label={t.name} size={44} radius={12} />
+              <View style={{ flex: 1 }}><Text style={{ color: colors.fg, fontSize: 19, fontWeight: '700' }} numberOfLines={1}>{t.name}</Text><Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13 }}>{`${t.points} pts · ${t.wins} ${t.wins === 1 ? 'win' : 'wins'} · car ${TA(t).car}`}</Text></View>
+            </View>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              {ds.map((d) => (
+                <Pressable key={d.id} onPress={() => openDriver(d)} style={({ pressed }) => [{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, padding: 8, borderRadius: 12, backgroundColor: 'rgba(0,0,0,0.25)' }, pressed && { opacity: 0.7 }]}>
+                  <Avatar source={driverPic(v.drivers.find((x) => x.id === d.id))} color={t.color} label={codeOf(d)} size={38} radius={19} />
+                  <View style={{ flex: 1 }}><Text style={{ color: colors.fg, fontSize: 15, fontWeight: '700' }} numberOfLines={1}>{surname(d)}</Text><Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12 }} numberOfLines={1}>{`${d.nat ? flagOfCountry(d.nat) + ' ' : ''}#${d.number} · ${d.points} pts`}</Text></View>
+                </Pressable>))}
+            </View>
+          </Grad>); })}
       </>)}
       {shown === 'stats' && <AllStats f={f} v={v} n={n} closed={complete || (ended && isCur)} navigation={navigation} />}
       {shown === 'settings' && <FunSettingsCard />}
