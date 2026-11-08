@@ -41,7 +41,7 @@ export function TeamPrincipal({ f, id, fun, reveal = 0 }) {
   const raceName = pid ? f.races.find((r) => r.id === pid)?.name : '';
   const doBuy = (k) => { const r = buy(f, k); if (!r.ok) { if (r.text) Alert.alert('Upgrade', r.text); return; } fun.update(id, (g) => buy(g, k).f); };
   return (
-    <>
+    <View style={{ gap: 12 }}>
       <Reveal index={reveal}>
         <Grad color={team.color} from={0.5} to={0.06} border={0.5} style={{ padding: 16 }}>
           <Text style={{ color: 'rgba(255,255,255,0.75)', fontSize: 12, letterSpacing: 3 }}>YOUR TEAM</Text>
@@ -93,7 +93,7 @@ export function TeamPrincipal({ f, id, fun, reveal = 0 }) {
       </Reveal>
       {tp.log?.length ? (<Reveal index={reveal + 4}><Card><Eyebrow>Team log</Eyebrow>{tp.log.slice(0, 6).map((l, i) => <Text key={i} style={{ color: i ? colors.muted : colors.fg, fontSize: 14, marginTop: 6 }}>{l.text}</Text>)}</Card></Reveal>) : null}
       <Btn icon="exit-outline" onPress={() => Alert.alert('Leave the team?', 'Your budget and upgrades history will be forgotten (the car keeps its upgrades).', [{ text: 'Cancel' }, { text: 'Leave', style: 'destructive', onPress: () => fun.update(id, endTP) }])}>Leave team</Btn>
-    </>);
+    </View>);
 }
 
 export function Rivalries({ f, reveal = 0 }) {
@@ -101,7 +101,7 @@ export function Rivalries({ f, reveal = 0 }) {
   if (!list.length) return <Card><Eyebrow>Rivalries</Eyebrow><Note>Rivalries grow out of clashes and close fights. Run a few races and they will show up here.</Note></Card>;
   const colOf = (d) => f.teams.find((t) => t.id === d.teamId)?.color || colors.muted;
   return (
-    <>
+    <View style={{ gap: 12 }}>
       {list.map((r, i) => (
         <Reveal key={r.a + r.b} index={reveal + i}>
           <Card>
@@ -117,5 +117,5 @@ export function Rivalries({ f, reveal = 0 }) {
             {r.aw + r.bw ? (<View style={{ marginTop: 10 }}><View style={{ flexDirection: 'row', justifyContent: 'space-between' }}><Text style={{ color: colors.fg, fontWeight: '800' }}>{r.aw}</Text><Text style={{ color: colors.muted, fontSize: 12 }}>FINISHED AHEAD (NEARBY)</Text><Text style={{ color: colors.fg, fontWeight: '800' }}>{r.bw}</Text></View><View style={{ marginTop: 4 }}><Bar pct={(r.aw / (r.aw + r.bw)) * 100} color={colOf(r.da)} bg={alpha(colOf(r.db), 0.6)} height={6} delay={i * 60} /></View></View>) : null}
           </Card>
         </Reveal>))}
-    </>);
+    </View>);
 }

@@ -83,7 +83,7 @@ function RacePicker({ races, onChange }) {
   const toggle = (c) => put(has(c.key) ? races.filter((r) => r.id !== c.key) : [...races, circuitRace(c)]);
   const setSprint = (id) => onChange(races.map((r) => (r.id === id ? { ...r, sprint: !r.sprint } : r)));
   const laps = Math.max(1, Math.min(200, parseInt(cl, 10) || 0));
-  return (<>
+  return (<View style={{ gap: 12 }}>
     <Card>
       <Eyebrow>{`Races · ${races.length}`}</Eyebrow>
       <View style={{ flexDirection: 'row', gap: 10, marginTop: 10 }}><Btn onPress={() => put([...races.filter((r) => r.custom), ...defaultRaces()])} style={{ flex: 1 }}>{`Default · ${PICK.length}`}</Btn><Btn onPress={() => onChange(races.filter((r) => r.custom))} style={{ flex: 1 }}>None</Btn></View>
@@ -111,7 +111,7 @@ function RacePicker({ races, onChange }) {
         {races.filter((r) => r.custom).map((r) => (<View key={r.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}><Text style={{ flex: 1, color: colors.fg, fontSize: 16 }} numberOfLines={1}>{`${raceFlag(r)} ${r.name} · ${r.laps} laps`}</Text><Pressable onPress={() => setSprint(r.id)}><Text style={{ color: r.sprint ? colors.sprint : colors.muted, fontWeight: '700' }}>SPRINT</Text></Pressable><Pressable onPress={() => onChange(races.filter((x) => x.id !== r.id))} hitSlop={8}><Ionicons name="close-circle" size={22} color={colors.muted} /></Pressable></View>))}
       </View>
     </Card>
-  </>);
+  </View>);
 }
 
 // A team in Setup or Transfers: logo and name only; the editor (logo, name, colour, attributes) opens on request.
@@ -420,7 +420,7 @@ function Setup({ f, update, profile, navigation, onDelete }) {
   const logo = async (tid) => { const r = await pickImage(); if (r.uri) setTeam(tid, { logo: r.uri }); else if (r.error) setMsg(r.error); };
   const started = Object.keys(f.results || {}).length > 0;
   const add = (tid, real) => update((g) => ({ ...g, drivers: [...g.drivers, newDriver(g, tid, real)] }));
-  return (<>
+  return (<View style={{ gap: 12 }}>
     <Card><Eyebrow>Season name</Eyebrow><View style={{ marginTop: 10 }}><Field value={f.name} onChange={(v) => update((g) => ({ ...g, name: v }))} maxLength={30} /></View></Card>
     {f.teams.map((t) => (
       <TeamEditor key={t.id} t={t} setTeam={(patch) => setTeam(t.id, patch)}>
@@ -445,7 +445,7 @@ function Setup({ f, update, profile, navigation, onDelete }) {
     {!f.preset ? <Btn icon="bookmarks-outline" onPress={() => { const { id, created, history, results, off, ended, endedAt, news, season, ...rest } = f; fun.addFantasy({ ...rest, id: uid(), name: `${f.name} grid`, preset: true, created: Date.now(), season: 1, history: [], results: {}, mode: f.mode, drivers: f.drivers.map((d) => ({ ...d, me: false })), teams: f.teams }); setMsg('Saved as a grid preset. Find it in Fun → Presets.'); }}>Save this grid as a preset</Btn> : null}
     {started ? <Btn icon="refresh" onPress={() => Alert.alert('Reset results?', 'All simulated results of this season are deleted. The teams and drivers stay.', [{ text: 'Cancel', style: 'cancel' }, { text: 'Reset', style: 'destructive', onPress: () => update((g) => ({ ...g, results: {} })) }])}>Reset this season's results</Btn> : null}
     <Btn icon="trash-outline" onPress={onDelete}>Delete this fantasy</Btn>
-  </>);
+  </View>);
 }
 
 /* ------------------------------------------------------------------ transfer window between seasons */

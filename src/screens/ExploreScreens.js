@@ -5,7 +5,8 @@ import { Text } from '../components/Text';
 import Screen, { Card, Eyebrow, Note, ErrorNote } from '../components/Screen';
 import Grad from '../components/Grad';
 import Skeleton from '../components/Skeleton';
-import Reveal from '../components/Reveal';
+import RowReveal from '../components/Reveal';
+const Reveal = ({ children }) => children; // Screen already reveals each block, so blocks are not animated twice
 import { Countdown, Segmented } from '../components/Shared';
 import { Btn } from '../components/FunBits';
 import { CountUp, Bar, Pop } from '../components/Anim';
@@ -56,8 +57,8 @@ export function WeekendScreen({ navigation }) {
   const hist = useMemo(() => { try { return circuitHistory(next); } catch { return null; } }, [next?.meeting_key]);
   const wx = useAsync(() => (next && sessions.length ? forecastFor(next.location || next.circuit_short_name, next.country_name, sessions).catch(() => ({})) : Promise.resolve({})), [next?.meeting_key, sessions.length]);
   const std = useAsync(async () => { const [d, c] = await Promise.all([driverStandings(YEAR).catch(() => []), constructorStandings(YEAR).catch(() => [])]); return { d, c }; }, []);
-  if (season.status === 'loading') return <Screen><Skeleton /></Screen>;
-  if (!next) return <Screen><Card><Text style={{ color: colors.fg, fontSize: 22, fontWeight: '700' }}>Season complete</Text><Note>No race weekend is coming up.</Note></Card></Screen>;
+  if (season.status === 'loading') return <Screen header={false}><Skeleton /></Screen>;
+  if (!next) return <Screen header={false}><Card><Text style={{ color: colors.fg, fontSize: 22, fontWeight: '700' }}>Season complete</Text><Note>No race weekend is coming up.</Note></Card></Screen>;
   const live = sessions.find((s) => now >= Date.parse(s.date_start) && now < Date.parse(s.date_end)), upcoming = sessions.find((s) => Date.parse(s.date_start) > now);
   const target = live ? Date.parse(live.date_end) : upcoming ? Date.parse(upcoming.date_start) : Date.parse(next.date_start);
   const label = live ? `${live.session_name} · live, ends in` : upcoming ? `Until ${upcoming.session_name}` : 'Until lights out';
@@ -69,7 +70,7 @@ export function WeekendScreen({ navigation }) {
   if (D.length > 1) {
     const [a, b] = D; const gap = a.points - b.points;
     if (gap + here > maxAfter && left > 0 && gap <= maxAfter + here) watch.push({ icon: 'trophy', color: colors.gold, t: `${a.name} can win the title this weekend: he needs to outscore ${b.name} by ${Math.max(1, maxAfter - gap + 1)} point${maxAfter - gap + 1 === 1 ? '' : 's'}.` });
-    else if (gap > maxAfter + here) watch.push({ icon: 'trophy', color: colors.gold, t: `${a.name} is already champion on points.` });
+    else if (gap > maxAfter + here) watch.push({ icon: 'trophy', color: colors.gold, t: `${a.name} is already champion: the title cannot be taken away mathematically.` });
     else watch.push({ icon: 'trophy', color: colors.gold, t: `${a.name} leads ${b.name} by ${gap} points with ${left} round${left === 1 ? '' : 's'} left (${left * 25 + afterRaces.filter((r) => r.has_sprint).length * 8 + (next.has_sprint ? 8 : 0)} available).` });
     if (D[2] && b.points - D[2].points <= 25) watch.push({ icon: 'flag', color: colors.accent, t: `Only ${b.points - D[2].points} points split ${b.name} and ${D[2].name} in the fight for second.` });
   }
@@ -80,7 +81,7 @@ export function WeekendScreen({ navigation }) {
   }
   if (next.has_sprint) watch.push({ icon: 'flash', color: colors.sprint || colors.accent, t: 'Sprint weekend: one practice session, then a sprint, so there is little time to find the set-up.' });
   return (
-    <Screen>
+    <Screen header={false}>
       <Reveal index={0}>
         <Grad color={colors.accent} from={0.4} to={0.04} border={0.45} style={{ padding: 16 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
@@ -138,9 +139,9 @@ export function WeekendScreen({ navigation }) {
 
 // ---------------------------------------------------------------- predictions against friends
 export function LeaderboardScreen() {
-  const season = useSeason(); const P = usePredictions(); const F = useFriends(); const prefs = usePrefs();
+  const season = useSeason(); const P = usePredictions(); const F = useFriends(); const { prefs, setOpt } = usePrefs();
   const [name, setName] = useState(''); const [code, setCode] = useState(''); const [busy, setBusy] = useState(false);
-  const myName = prefs.opts.name || 'Me';
+  const myName = (prefs?.opts?.name || '').trim() || 'Me';
   const done = useMemo(() => (season.races || []).filter((r) => Date.parse(r.date_end) < Date.now()).map((r) => Number(r.round)), [season.races]);
   const rounds = useMemo(() => done.filter((r) => P.all[r] || F.list.some((f) => f.picks[r])), [done, P.all, F.list]);
   const res = useAsync(async () => { const out = {}; for (const r of rounds) { const [q, rc] = await Promise.all([sessionResults(YEAR, r, 'qualifying').catch(() => null), sessionResults(YEAR, r, 'results').catch(() => null)]); out[r] = { q, rc }; } return out; }, [rounds.join(',')]);
@@ -156,7 +157,7 @@ export function LeaderboardScreen() {
   const mine = encode(myName, P.all);
   const add = () => { const d = decode(code); if (!d) { Alert.alert('That code does not look right', 'Paste the whole code your friend shared from their Predictions screen.'); return; } F.add({ name: name.trim() || d.name, picks: d.picks }); setCode(''); setName(''); };
   return (
-    <Screen>
+    <Screen header={false}>
       <Reveal index={0}>
         <Card>
           <Eyebrow>Season leaderboard</Eyebrow>
@@ -180,6 +181,7 @@ export function LeaderboardScreen() {
       <Reveal index={1}>
         <Card>
           <Eyebrow>Your code</Eyebrow>
+          <TextInput value={prefs?.opts?.name || ''} onChangeText={(v) => setOpt('name', v)} placeholder="Your name on the leaderboard" placeholderTextColor={colors.muted} maxLength={24} style={{ color: colors.fg, borderWidth: 1, borderColor: colors.line, borderRadius: 12, paddingHorizontal: 12, height: 46, fontSize: 16, marginVertical: 10 }} />
           <Text style={{ color: colors.muted, fontSize: 14, marginBottom: 10 }}>Send this to a friend. They paste it below and you appear on their leaderboard. Send a new code any time to update your picks.</Text>
           <Btn icon="share-outline" onPress={() => Share.share({ message: mine }).catch(() => {})}>Share my picks</Btn>
         </Card>
@@ -215,13 +217,13 @@ export function QuizScreen() {
   useEffect(() => { if (finished && pts > hi) { setHi(pts); try { require('@react-native-async-storage/async-storage').default.setItem('quizBest', String(pts)); } catch {} } }, [finished]);
   const faces = cur().filter((id) => driverPhoto(id)).length >= 6;
   if (mode === 'menu') return (
-    <Screen>
+    <Screen header={false}>
       <Reveal index={0}><Grad color={colors.accent} from={0.4} to={0.05} border={0.4} style={{ padding: 18 }}><Text style={{ color: colors.fg, fontSize: 28, fontWeight: '800' }}>F1 Quiz</Text><Text style={{ color: colors.muted, fontSize: 16, marginTop: 4 }}>{`Ten questions from every season up to ${upTo()}. Quick answers and streaks earn bonus points.`}</Text><Text style={{ color: colors.gold, fontSize: 15, marginTop: 10, fontWeight: '700' }}>{`Best score: ${hi}`}</Text></Grad></Reveal>
       <Reveal index={1}><Card onPress={() => start('trivia')}><Eyebrow>Classic</Eyebrow><Text style={{ color: colors.fg, fontSize: 20, fontWeight: '700', marginTop: 4 }}>History trivia</Text><Note>Race winners, champions, poles, teams and duels.</Note></Card></Reveal>
       {faces ? <Reveal index={2}><Card onPress={() => start('faces')}><Eyebrow>Photos</Eyebrow><Text style={{ color: colors.fg, fontSize: 20, fontWeight: '700', marginTop: 4 }}>Guess the driver</Text><Note>Name the driver from their photo.</Note></Card></Reveal> : null}
     </Screen>);
   if (finished) return (
-    <Screen>
+    <Screen header={false}>
       <Pop><Grad color={colors.gold} from={0.35} to={0.04} border={0.5} style={{ padding: 22, alignItems: 'center' }}>
         <Text style={{ color: colors.muted, letterSpacing: 3, fontSize: 12 }}>FINAL SCORE</Text>
         <CountUp value={pts} style={{ color: colors.fg, fontSize: 64, fontWeight: '800' }} />
@@ -231,7 +233,7 @@ export function QuizScreen() {
       <Btn tone="solid" icon="refresh" onPress={() => start(mode)}>Play again</Btn><Btn onPress={() => setMode('menu')}>Menu</Btn>
     </Screen>);
   return (
-    <Screen>
+    <Screen header={false}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
         <Text style={{ color: colors.muted, fontSize: 14, letterSpacing: 2 }}>{`QUESTION ${i + 1} / ${qs.length}`}</Text>
         <Text style={{ color: colors.gold, fontSize: 16, fontWeight: '800' }}>{`${pts} pts${streak > 1 ? `  ·  🔥 ${streak}` : ''}`}</Text>
@@ -257,7 +259,7 @@ export function QuizScreen() {
 export function RecordsScreen() {
   const [tab, setTab] = useState('day');
   return (
-    <Screen>
+    <Screen header={false}>
       <Segmented value={tab} onChange={setTab} items={[['day', 'On this day'], ['rec', 'Records'], ['duel', 'Duel']]} />
       {tab === 'day' ? <OnThisDay /> : tab === 'rec' ? <RecordLists /> : <AllTimeDuel />}
     </Screen>);
@@ -266,21 +268,21 @@ function OnThisDay() {
   const d = new Date(); const today = onThisDay(d.getMonth() + 1, d.getDate()); const near = today.length ? [] : nearbyDays(d, 6).filter((x) => x.offset !== 0);
   const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const List = ({ rows }) => rows.map((r, i) => (
-    <Reveal key={r.year + r.race} index={i}>
+    <RowReveal key={r.year + r.race} index={i}>
       <View style={{ flexDirection: 'row', gap: 12, paddingVertical: 9, borderTopWidth: i ? 1 : 0, borderTopColor: colors.line }}>
         <Text style={{ width: 54, color: colors.accent, fontSize: 20, fontWeight: '800' }}>{r.year}</Text>
         <View style={{ flex: 1 }}><Text style={{ color: colors.fg, fontSize: 17, fontWeight: '700' }}>{r.race}</Text><Text style={{ color: colors.muted, fontSize: 14 }}>{`Won by ${r.winner}${r.team ? ` (${r.team})` : ''}${r.pole && r.pole !== r.winner ? ` · pole ${r.pole}` : r.pole ? ' · from pole' : ''}`}</Text></View>
-      </View></Reveal>));
+      </View></RowReveal>));
   return (
-    <>
+    <View style={{ gap: 12 }}>
       <Card><Eyebrow>{`Today · ${d.getDate()} ${MON[d.getMonth()]}`}</Eyebrow>{today.length ? <List rows={today} /> : <Note>No Grand Prix was ever held on this date. Here are the nearest days that had one:</Note>}</Card>
       {near.map((n) => (<Card key={n.offset}><Eyebrow>{`${n.day} ${MON[n.month - 1]} · ${n.offset > 0 ? `in ${n.offset} day${n.offset > 1 ? 's' : ''}` : `${-n.offset} day${n.offset < -1 ? 's' : ''} ago`}`}</Eyebrow><List rows={n.races.slice(0, 4)} /></Card>))}
-    </>);
+    </View>);
 }
 function RecordLists() {
   const R = useMemo(() => records(), []); const [open, setOpen] = useState('wins');
   return (
-    <>
+    <View style={{ gap: 12 }}>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>{R.totals.map(([l, v]) => <Tile key={l} label={l} value={v} />)}</View>
       {R.facts.map((f) => (<Card key={f.label}><Eyebrow>{f.label}</Eyebrow><Text style={{ color: colors.fg, fontSize: 22, fontWeight: '800', marginTop: 4 }}>{f.value}</Text><Text style={{ color: colors.muted, fontSize: 14 }}>{f.sub}</Text></Card>))}
       {R.lists.map((l) => { const isOpen = open === l.key; const max = l.rows[0]?.v || 1;
@@ -294,7 +296,7 @@ function RecordLists() {
                 <View style={{ marginTop: 4, marginLeft: 30 }}><Bar pct={(r.v / max) * 100} height={5} delay={i * 40} color={i === 0 ? colors.gold : colors.accent} /></View>
               </View>)) : null}
           </Card>); })}
-    </>);
+    </View>);
 }
 function Picker({ value, onPick, label }) {
   const [q, setQ] = useState(''); const hits = useMemo(() => searchDrivers(q), [q]); const sug = useMemo(() => topDrivers(5), []);
@@ -309,7 +311,7 @@ function AllTimeDuel() {
   const [a, setA] = useState(null); const [b, setB] = useState(null);
   const A = useMemo(() => (a ? driverCard(a.i) : null), [a]); const B = useMemo(() => (b ? driverCard(b.i) : null), [b]); const D = useMemo(() => (a && b ? duel(a.i, b.i) : null), [a, b]);
   return (
-    <>
+    <View style={{ gap: 12 }}>
       <Card><Eyebrow>All-time duel</Eyebrow><Text style={{ color: colors.muted, fontSize: 14, marginBottom: 10 }}>Any two drivers in Formula 1 history, side by side.</Text>
         <View style={{ gap: 10 }}><Picker value={a} onPick={setA} label="DRIVER 1" /><Picker value={b} onPick={setB} label="DRIVER 2" /></View></Card>
       {A && B ? (
@@ -333,5 +335,5 @@ function AllTimeDuel() {
               : <Text style={{ color: colors.muted, fontSize: 15 }}>They never raced in the same Grand Prix.</Text>}
           </View>) : null}
         </Card></Reveal>) : null}
-    </>);
+    </View>);
 }

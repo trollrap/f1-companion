@@ -38,7 +38,7 @@ export function Stepper({ label, value, min, max, onChange, step = 1 }) {
 export function Btn({ icon, children, onPress, tone = 'soft', disabled, style }) {
   const solid = tone === 'solid';
   return (
-    <Pressable onPress={onPress} disabled={disabled} style={({ pressed }) => [{ height: 48, borderRadius: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 14, backgroundColor: solid ? colors.accent : colors.accentSoft, borderWidth: 1, borderColor: colors.accent, opacity: disabled ? 0.45 : pressed ? 0.8 : 1 }, style]}>
+    <Pressable onPress={onPress} disabled={disabled} style={({ pressed }) => [{ height: 48, marginVertical: 4, borderRadius: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 14, backgroundColor: solid ? colors.accent : colors.accentSoft, borderWidth: 1, borderColor: colors.accent, opacity: disabled ? 0.45 : pressed ? 0.8 : 1 }, style]}>
       {icon ? <Ionicons name={icon} size={18} color={solid ? '#fff' : colors.accent} /> : null}
       <Text style={{ color: solid ? '#fff' : colors.fg, fontWeight: '700', fontSize: 16 }}>{children}</Text>
     </Pressable>

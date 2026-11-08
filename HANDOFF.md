@@ -188,3 +188,10 @@ Expo Go (SDK 53+) does not include the `expo-notifications` native module; impor
 - `components/Anim.js`: CountUp, Bar, Pop.
 - Fantasy: Paddock tab now has Grid / Principal / Rivalries. `fun/tp.js` + `screens/FantasyTP.js`: Team Principal mode (budget from prize money, upgrades for car/reliability/pit, 2-year contracts that stop poaching in `simulateTransfers`, press conference, board target, log); rivalries from clashes and close fights.
 - Unverified on device: Open-Meteo calls, weekend hub layout, all new screens (Android bundle builds; trivia and tp logic tested in node). New screens are English only (not translated to Greek).
+
+## V1.20.1 (JS-only, fixes)
+- Leaderboard crash: `usePrefs()` returns `{prefs,...}` (was read as prefs). Name field added (opts.name).
+- RoundScreen crash "map of null": stale grid result while switching session; lists now null-safe, `sessions` guarded.
+- New screens use `<Screen header={false}>` (pushed screens already have the native header): removes the big gap at the top.
+- Screen.flat: unique, stable keys (prefix by fragment) so blocks never remount/duplicate keys; ExploreScreens no longer double-reveals.
+- Components that returned fragments (RacePicker, Setup, Explore/TP sub-views) now return `<View gap:12>` so boxes and buttons have gaps; Btn has marginVertical 4.
