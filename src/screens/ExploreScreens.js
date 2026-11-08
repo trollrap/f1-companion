@@ -17,6 +17,7 @@ import { YEAR } from '../api/openf1';
 import { cachedJSON } from '../lib/cache';
 import { usePredictions, score } from '../lib/predictions';
 import { useFriends, encode, decode } from '../lib/predFriends';
+import { useRoom } from '../lib/room';
 import { usePrefs } from '../hooks/usePrefs';
 import { circuitHistory, records, onThisDay, nearbyDays, searchDrivers, topDrivers, driverCard, duel, makeQuiz, upTo } from '../lib/trivia';
 import { driverPhoto, driverPhotoIds } from '../lib/media';
@@ -142,12 +143,14 @@ export function LeaderboardScreen() {
   const season = useSeason(); const P = usePredictions(); const F = useFriends(); const { prefs, setOpt } = usePrefs();
   const [name, setName] = useState(''); const [code, setCode] = useState(''); const [busy, setBusy] = useState(false);
   const myName = (prefs?.opts?.name || '').trim() || 'Me';
+  const [roomIn, setRoomIn] = useState('');
   const done = useMemo(() => (season.races || []).filter((r) => Date.parse(r.date_end) < Date.now()).map((r) => Number(r.round)), [season.races]);
   const rounds = useMemo(() => done.filter((r) => P.all[r] || F.list.some((f) => f.picks[r])), [done, P.all, F.list]);
   const res = useAsync(async () => { const out = {}; for (const r of rounds) { const [q, rc] = await Promise.all([sessionResults(YEAR, r, 'qualifying').catch(() => null), sessionResults(YEAR, r, 'results').catch(() => null)]); out[r] = { q, rc }; } return out; }, [rounds.join(',')]);
   const ids = useAsync(() => driverStandings(YEAR).catch(() => []), []);
   const nameOf = (id) => ids.v?.find((d) => d.driverId === id)?.last || String(id).split('_').pop();
-  const players = [{ name: myName, me: true, picks: P.all }, ...F.list];
+  const R = useRoom(myName, encode(myName, P.all));
+  const players = [{ name: myName, me: true, picks: P.all }, ...F.list.filter((x) => !R.members.some((m) => m.name.toLowerCase() === x.name.toLowerCase())), ...R.members.filter((m) => m.name.toLowerCase() !== myName.toLowerCase())];
   const table = players.map((p) => {
     let total = 0, exact = 0, rd = 0, best = 0; const per = [];
     rounds.forEach((r) => { const pk = p.picks[r]; if (!pk || !res.v?.[r]) return; const s = score(pk, res.v[r].q, res.v[r].rc); if (!s.done) return; total += s.total; rd++; best = Math.max(best, s.total); exact += s.podium.filter((x) => x === 3).length + (s.pole === 2 ? 1 : 0); per.push(s.total); });
@@ -180,13 +183,32 @@ export function LeaderboardScreen() {
       </Reveal>
       <Reveal index={1}>
         <Card>
+          <Eyebrow>Live room</Eyebrow>
+          {R.id ? (<View style={{ gap: 10 }}>
+            <Text style={{ color: colors.muted, fontSize: 14 }}>{`You are in a room with ${R.members.length} ${R.members.length === 1 ? 'player' : 'players'}. Your picks sync by themselves every minute. ${R.status}`}</Text>
+            <Text selectable style={{ color: colors.fg, fontSize: 15, fontWeight: '700' }}>{`Code: ${R.id}`}</Text>
+            <View style={{ gap: 8 }}>
+              <Btn icon="share-outline" onPress={() => Share.share({ message: `Join my F1 predictions room in the app: ${R.id}` }).catch(() => {})}>Share room code</Btn>
+              <Btn icon="refresh" disabled={R.busy} onPress={R.refresh}>Refresh now</Btn>
+              <Btn icon="exit-outline" onPress={() => Alert.alert('Leave room?', 'You stay on friends lists you added by code.', [{ text: 'Cancel' }, { text: 'Leave', style: 'destructive', onPress: R.leave }])}>Leave room</Btn>
+            </View>
+          </View>) : (<View style={{ gap: 10 }}>
+            <Text style={{ color: colors.muted, fontSize: 14 }}>No account needed. Make a room, send the code to friends, and everyone appears on the leaderboard and updates live. Anyone with the code can see the picks in the room, so only share it with friends.</Text>
+            <Btn tone="solid" icon="people" disabled={R.busy} onPress={() => R.create().catch((e) => Alert.alert('Could not make a room', String(e?.message || 'No connection.')))}>Create a room</Btn>
+            <TextInput value={roomIn} onChangeText={setRoomIn} placeholder="Or paste a room code" placeholderTextColor={colors.muted} autoCapitalize="none" autoCorrect={false} style={{ color: colors.fg, borderWidth: 1, borderColor: colors.line, borderRadius: 10, padding: 10 }} />
+            <Btn icon="enter-outline" disabled={!roomIn.trim()} onPress={() => R.join(roomIn).then(() => setRoomIn('')).catch((e) => Alert.alert('Could not join', String(e?.message || 'No connection.')))}>Join room</Btn>
+          </View>)}
+        </Card>
+      </Reveal>
+      <Reveal index={2}>
+        <Card>
           <Eyebrow>Your code</Eyebrow>
           <TextInput value={prefs?.opts?.name || ''} onChangeText={(v) => setOpt('name', v)} placeholder="Your name on the leaderboard" placeholderTextColor={colors.muted} maxLength={24} style={{ color: colors.fg, borderWidth: 1, borderColor: colors.line, borderRadius: 12, paddingHorizontal: 12, height: 46, fontSize: 16, marginVertical: 10 }} />
           <Text style={{ color: colors.muted, fontSize: 14, marginBottom: 10 }}>Send this to a friend. They paste it below and you appear on their leaderboard. Send a new code any time to update your picks.</Text>
           <Btn icon="share-outline" onPress={() => Share.share({ message: mine }).catch(() => {})}>Share my picks</Btn>
         </Card>
       </Reveal>
-      <Reveal index={2}>
+      <Reveal index={3}>
         <Card>
           <Eyebrow>Add a friend</Eyebrow>
           <TextInput value={name} onChangeText={setName} placeholder="Name (optional)" placeholderTextColor={colors.muted} style={{ color: colors.fg, borderWidth: 1, borderColor: colors.line, borderRadius: 12, paddingHorizontal: 12, height: 46, fontSize: 16, marginTop: 8 }} />

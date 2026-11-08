@@ -37,22 +37,27 @@ function OfflineBanner() {
 const flat = (ch, pre = '') => React.Children.toArray(ch).flatMap((c) => (c && c.type === React.Fragment ? flat(c.props.children, `${pre}${c.key}/`) : [{ el: c, k: `${pre}${c && c.key != null ? c.key : ''}` }]));
 export default function Screen({ children, header = true, refreshable = true, scrollRef, swipe, footer, revealKey }) {
   const [refreshing, setRefreshing] = useState(false); const { prefs: pp } = usePrefs(); const canPull = refreshable && pp.opts.pullRefresh === true;
+  // Switching tabs inside a screen (revealKey) is one short fade of the whole page, not a new staggered entrance for every block.
+  const fade = useRef(new Animated.Value(1)).current; const firstKey = useRef(true);
+  useEffect(() => { if (firstKey.current) { firstKey.current = false; return; } fade.setValue(0.3); Animated.timing(fade, { toValue: 1, duration: 240, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start(); }, [revealKey]);
   const pull = async () => { setRefreshing(true); try { await refreshAll(); } finally { setRefreshing(false); } };
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={header ? ['top'] : []}>
       {header && <Header />}
       <OfflineBanner />
+      <Animated.View style={{ flex: 1, opacity: fade }}>
       {swipe ? <Swipe {...swipe}>
       <ScrollView ref={scrollRef} contentContainerStyle={s.body} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled"
         refreshControl={canPull ? <RefreshControl refreshing={refreshing} onRefresh={pull} tintColor={colors.accent} colors={[colors.accent]} progressBackgroundColor={colors.surface2} /> : undefined}>
-        {flat(children).map((c, i) => <Reveal key={`${revealKey ?? ''}:${c.k || i}`} index={i}>{c.el}</Reveal>)}
+        {flat(children).map((c, i) => <Reveal key={c.k || i} index={i}>{c.el}</Reveal>)}
       </ScrollView>
       </Swipe> : (
       <ScrollView ref={scrollRef} contentContainerStyle={s.body} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled"
         refreshControl={canPull ? <RefreshControl refreshing={refreshing} onRefresh={pull} tintColor={colors.accent} colors={[colors.accent]} progressBackgroundColor={colors.surface2} /> : undefined}>
-        {flat(children).map((c, i) => <Reveal key={`${revealKey ?? ''}:${c.k || i}`} index={i}>{c.el}</Reveal>)}
+        {flat(children).map((c, i) => <Reveal key={c.k || i} index={i}>{c.el}</Reveal>)}
       </ScrollView>
       )}
+      </Animated.View>
       {footer || null}
     </SafeAreaView>
   );

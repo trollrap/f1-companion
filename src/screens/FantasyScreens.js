@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { View, Pressable, Switch, Alert, TextInput, Image } from 'react-native';
+import { View, Pressable, Switch, Alert, TextInput, Image, Text as RNText } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Text } from '../components/Text';
@@ -237,6 +237,9 @@ export function FantasyNew({ navigation }) {
 }
 
 /* ------------------------------------------------------------------ one fantasy season */
+// Results of the heavy calculations are kept per save object, so tapping around does not redo them (and the news never rewrites itself).
+const MEMO = new WeakMap();
+const memo = (f, key, fn) => { let m = MEMO.get(f); if (!m) { m = {}; MEMO.set(f, m); } if (!(key in m)) m[key] = fn(); return m[key]; };
 export function Fantasy({ route, navigation }) {
   const { id } = route.params; const fun = useFun(); const insets = useSafeAreaInsets(); const f = fun.get(id); const [tab, setTab] = useState(f?.ended ? 'stats' : 'home'); const [sub, setSub] = useState('drivers'); const [art, setArt] = useState(null); const [busy, setBusy] = useState(false); const [sel, setSel] = useState(null); const [exp, setExp] = useState(false); const [shw, setShw] = useState(null); const [live, setLive] = useState(null); const [pad, setPad] = useState('grid'); const shotD = useRef(null), shotT = useRef(null);
   useEffect(() => { if (f) navigation.setOptions({ title: f.name, headerRight: () => (
@@ -249,12 +252,12 @@ export function Fantasy({ route, navigation }) {
     e.preventDefault(); setArt(null); setTab('home');
   }), [navigation]);
   if (!f) return <Screen header={false}><Note>{fun.loaded ? 'This season no longer exists.' : 'Loading…'}</Note></Screen>;
-  const cur = seasonNo(f), n = sel && seasonList(f).includes(sel) ? sel : cur, isCur = n === cur, v = viewOf(f, n), st = standings(v), off = !!f.off && isCur;
+  const cur = seasonNo(f), n = sel && seasonList(f).includes(sel) ? sel : cur, isCur = n === cur, v = memo(f, `v${n}`, () => viewOf(f, n)), st = memo(f, `s${n}`, () => standings(v)), off = !!f.off && isCur;
   const ended = !!f.ended && isCur, step = isCur && !off && !ended ? nextStep(f) : null, done = v.races.filter((r) => sessionsOf(r).every((s) => v.results?.[r.id]?.[s])).length, complete = isDone(v) && !off;
   const { settings } = fun;
   // Runs a simulation, then (if the animations are on) shows the result full screen: the session, or the champion when the season just ended.
   const apply = (fn, last) => { setBusy(true); setTimeout(() => { fun.update(id, fn); setBusy(false); const g = fun.get(id); if (!g) return; if (isDone(g) && !g.off && settings.animSeason) setShw({ type: 'champ' }); else if (last && settings.animSessions) setShw({ type: 'session', raceId: last.race.id, session: last.session }); }, 30); };
-  const ts = isCur && !ended && !off && !complete ? titleStatus(v, 'drivers') : null, tsT = isCur && !ended && !off && !complete ? titleStatus(v, 'teams') : null;
+  const ts = isCur && !ended && !off && !complete ? memo(f, `td${n}`, () => titleStatus(v, 'drivers')) : null, tsT = isCur && !ended && !off && !complete ? memo(f, `tt${n}`, () => titleStatus(v, 'teams')) : null;
   const banner = (x) => (x ? <Grad color={x.decided ? colors.gold : colors.accent} from={0.3} to={0.04} radius={14} border={0.6} style={{ padding: 12, flexDirection: 'row', alignItems: 'center', gap: 10 }}><Text style={{ fontSize: 22 }}>{x.decided ? '🏆' : '🚩'}</Text><Text style={{ flex: 1, color: colors.fg, fontSize: 15, fontWeight: '600' }}>{x.text}</Text></Grad> : null);
   const startLive = () => {
     const st0 = nextStep(f); if (!st0) return; const g = runStep(f, st0); const res = g.results?.[st0.race.id]?.[st0.session] || []; if (!res.length) return;
@@ -265,7 +268,7 @@ export function Fantasy({ route, navigation }) {
   };
   const endLive = () => { const l = live; setLive(null); if (l) apply(() => l.g, l.st); };
   const sessRows = (g, raceId, ses) => { const gv = g; const rs = gv.results?.[raceId]?.[ses] || []; return rs.map((r) => { const d = gv.drivers.find((x) => x.id === r.driverId); const t = d && teamOf(gv, d.teamId); return { key: r.driverId, pos: r.pos, name: surname(d), code: codeOf(d), photo: d ? driverPic(d) : null, logo: teamPic(t), color: t?.color || colors.muted, right: r.points ? `${r.time}  +${r.points}` : r.time }; }); };
-  const champ = complete ? st.drivers[0] : null, tchamp = complete ? st.teams[0] : null; const tabs = ['home', 'calendar', 'standings', 'news', 'stats', 'paddock', 'settings']; const news = tab === 'news' || tab === 'home' || art ? buildNews(f, v, st, n) : [];
+  const champ = complete ? st.drivers[0] : null, tchamp = complete ? st.teams[0] : null; const tabs = ['home', 'calendar', 'standings', 'news', 'stats', 'paddock', 'settings']; const news = tab === 'news' || tab === 'home' || art ? memo(f, `n${n}`, () => buildNews(f, v, st, n)) : [];
   const shown = art ? 'article' : tab;
   const bar = <BarView active={tab} onPress={(k) => { setArt(null); setTab(k); }} items={[['home', 'home', 'Home'], ['calendar', 'calendar', 'Calendar'], ['standings', 'trophy', 'Standings'], ['news', 'newspaper', 'News'], ['stats', 'stats-chart', 'Stats'], ['paddock', 'people', 'Paddock']]} />;
   const openDriver = (d) => navigation.navigate('FantasyDriver', { id, driverId: d.id, season: n });
@@ -606,35 +609,27 @@ export function FantasyDriver({ route, navigation }) {
 /* ------------------------------------------------------------------ one race: the same session menu and rows as the real results, plus exports */
 
 function NewsCard({ a, compact, full, onPress }) {
-  const col = a.color || colors.accent; const body = Array.isArray(a.body) ? a.body : [a.body]; const sub = a.subject;
-  const mark = sub ? (sub.type === 'driver' ? (sub.number != null ? String(sub.number) : '') : String(sub.name || '').split(/\s+/).map((w) => w[0]).join('').slice(0, 3).toUpperCase()) : '';
-  const emblem = (size) => (<Grad color={col} from={0.9} to={0.35} radius={size / 2} border={0} style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}><Text style={{ color: '#fff', fontSize: size * 0.4, fontWeight: '800', fontStyle: 'italic' }}>{mark}</Text></Grad>);
+  const col = a.color || colors.accent; const body = Array.isArray(a.body) ? a.body : [a.body];
+  const SERIF = { fontFamily: 'serif' };
   const inner = full ? (
     <View style={{ gap: 14 }}>
-      <Grad color={col} from={0.55} to={0.06} dir="h" radius={16} border={0.4} style={{ padding: 16, gap: 12 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
-          {mark ? emblem(64) : null}
-          <View style={{ flex: 1 }}>
-            <Text style={{ color: 'rgba(255,255,255,0.8)', fontFamily: 'label', fontSize: 11, letterSpacing: 1.8 }} numberOfLines={1}>{a.kicker}</Text>
-            {sub ? <Text style={{ color: colors.fg, fontSize: 19, fontWeight: '800', marginTop: 2 }} numberOfLines={1}>{sub.name}</Text> : null}
-            {sub ? <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13 }} numberOfLines={1}>{sub.type === 'driver' ? [sub.team, sub.nat].filter(Boolean).join(' · ') : 'Constructor'}</Text> : null}
-          </View>
-        </View>
-        {a.stats?.length ? (<View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>{a.stats.map(([k, val]) => (<View key={k} style={{ flexGrow: 1, minWidth: '29%', paddingVertical: 8, paddingHorizontal: 10, borderRadius: 10, backgroundColor: 'rgba(0,0,0,0.28)' }}><Text style={{ color: 'rgba(255,255,255,0.65)', fontSize: 10, letterSpacing: 1.2, fontWeight: '700' }}>{k}</Text><Text style={{ color: colors.fg, fontSize: 20, fontWeight: '800' }}>{val}</Text></View>))}</View>) : null}
-      </Grad>
-      <Text style={{ color: colors.muted, fontSize: 12, letterSpacing: 1.4 }}>{`${a.kind.toUpperCase()} · SEASON ${a.season}`}</Text>
-      <Text style={{ color: colors.fg, fontSize: 26, fontWeight: '800', lineHeight: 32 }}>{a.title}</Text>
-      {body.map((p, i) => <Text key={i} style={{ color: colors.fg, fontSize: 16.5, lineHeight: 26, opacity: 0.92 }}>{p}</Text>)}
+      <Text style={{ color: col, fontFamily: 'label', fontSize: 11, letterSpacing: 1.8 }}>{`${a.kicker} · ${a.kind.toUpperCase()} · SEASON ${a.season}`}</Text>
+      <RNText style={{ ...SERIF, color: colors.fg, fontSize: 28, fontWeight: '700', lineHeight: 35 }}>{a.title}</RNText>
+      <View style={{ height: 3, width: 48, borderRadius: 2, backgroundColor: col }} />
+      {a.stats?.length ? (<View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>{a.stats.map(([k, val]) => (<View key={k} style={{ flexGrow: 1, minWidth: '29%', paddingVertical: 8, paddingHorizontal: 10, borderRadius: 10, backgroundColor: 'rgba(0,0,0,0.28)' }}><Text style={{ color: 'rgba(255,255,255,0.65)', fontSize: 10, letterSpacing: 1.2, fontWeight: '700' }}>{k}</Text><Text style={{ color: colors.fg, fontSize: 20, fontWeight: '800' }}>{val}</Text></View>))}</View>) : null}
+      {body.map((p, i) => {
+        const t = String(p);
+        if (t.startsWith('## ')) return <RNText key={i} style={{ ...SERIF, color: colors.fg, fontSize: 21, fontWeight: '700', lineHeight: 28, marginTop: 10 }}>{t.slice(3)}</RNText>;
+        if (t.startsWith('> ')) return (<View key={i} style={{ borderLeftWidth: 3, borderLeftColor: col, paddingLeft: 14, marginVertical: 4 }}><RNText style={{ ...SERIF, color: colors.fg, fontSize: 18, lineHeight: 29, fontStyle: 'italic' }}>{t.slice(2)}</RNText></View>);
+        return <RNText key={i} style={{ ...SERIF, color: colors.fg, fontSize: 17.5, lineHeight: 29, opacity: 0.94 }}>{t}</RNText>;
+      })}
     </View>
   ) : (
-    <Grad color={col} from={0.32} to={0.04} dir="h" radius={14} border={0.4} style={{ padding: 14, flexDirection: 'row', gap: 12, alignItems: 'center' }}>
-      {mark ? emblem(compact ? 44 : 52) : null}
-      <View style={{ flex: 1, gap: 4 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}><Text style={{ color: col, fontFamily: 'label', fontSize: 10, letterSpacing: 1.6, flex: 1 }} numberOfLines={1}>{a.kicker}</Text><Text style={{ color: colors.muted, fontSize: 11 }}>{a.kind}</Text></View>
-        <Text style={{ color: colors.fg, fontSize: compact ? 16 : 18, fontWeight: '800' }} numberOfLines={3}>{a.title}</Text>
-        {compact ? null : <Text style={{ color: colors.muted, fontSize: 14 }} numberOfLines={2}>{body[0]}</Text>}
-      </View>
-    </Grad>);
+    <View style={{ borderRadius: 14, borderLeftWidth: 4, borderLeftColor: col, backgroundColor: 'rgba(255,255,255,0.04)', padding: 14, gap: 5 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}><Text style={{ color: col, fontFamily: 'label', fontSize: 10, letterSpacing: 1.6, flex: 1 }} numberOfLines={1}>{a.kicker}</Text><Text style={{ color: colors.muted, fontSize: 11 }}>{a.kind}</Text></View>
+      <RNText style={{ ...SERIF, color: colors.fg, fontSize: compact ? 17 : 19, fontWeight: '700', lineHeight: compact ? 23 : 25 }} numberOfLines={3}>{a.title}</RNText>
+      {compact ? null : <RNText style={{ ...SERIF, color: colors.muted, fontSize: 14.5, lineHeight: 21 }} numberOfLines={2}>{String(body.find((x) => !/^(## |> )/.test(String(x))) || '')}</RNText>}
+    </View>);
   return onPress ? <Press onPress={onPress}>{inner}</Press> : inner;
 }
 

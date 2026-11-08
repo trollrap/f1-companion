@@ -8,7 +8,7 @@ import Reveal from '../components/Reveal';
 import { Btn } from '../components/FunBits';
 import { CountUp, Bar, Pop } from '../components/Anim';
 import { TA } from '../fun/sim';
-import { UPGRADES, EXTEND_COST, costOf, startTP, endTP, settle, buy, extend, pressFor, answerPress, latestRaceId, position, teamPoints, rivalries } from '../fun/tp';
+import { UPGRADES, EXTEND_COST, costOf, startTP, endTP, settle, buy, extend, pressFor, answerPress, eventFor, resolveEvent, latestRaceId, position, teamPoints, rivalries } from '../fun/tp';
 import { colors, alpha } from '../theme';
 
 const ord = (n) => `${n}${[, 'st', 'nd', 'rd'][n % 10 > 3 || Math.floor(n / 10) === 1 ? 0 : n % 10] || 'th'}`;
@@ -39,7 +39,12 @@ export function TeamPrincipal({ f, id, fun, reveal = 0 }) {
   const team = f.teams.find((t) => t.id === tp.teamId); if (!team) return <Note>This team no longer exists.</Note>;
   const pos = position(f), mine = f.drivers.filter((d) => d.teamId === team.id); const pid = latestRaceId(f); const press = pid ? pressFor(f, pid) : null; const done = pid ? tp.press[pid] : null;
   const raceName = pid ? f.races.find((r) => r.id === pid)?.name : '';
-  const doBuy = (k) => { const r = buy(f, k); if (!r.ok) { if (r.text) Alert.alert('Upgrade', r.text); return; } fun.update(id, (g) => buy(g, k).f); };
+  const doBuy = (k) => { const cost = costOf(f, k); if (tp.budget < cost) { Alert.alert('Upgrade', 'Not enough budget.'); return; }
+    Alert.alert(UPGRADES[k].label, 'Safe gives a steady gain. Bold can be a breakthrough, but about 4 in 10 gambles fail and the part makes the car slower.', [
+      { text: 'Safe', onPress: () => fun.update(id, (g) => buy(g, k, 'safe').f) },
+      { text: 'Bold gamble', style: 'destructive', onPress: () => { let msg = ''; fun.update(id, (g) => { const r = buy(g, k, 'bold'); msg = r.text; return r.f; }); setTimeout(() => { if (msg) Alert.alert('Result', msg); }, 150); } },
+      { text: 'Cancel', style: 'cancel' }]); };
+  const evt = pid ? eventFor(f, pid) : null; const evDone = evt ? tp.events?.[pid] : null;
   return (
     <View style={{ gap: 12 }}>
       <Reveal index={reveal}>
@@ -67,6 +72,17 @@ export function TeamPrincipal({ f, id, fun, reveal = 0 }) {
               </Pressable>))}
           </Card>
         </Reveal>) : null}
+      {evt ? (
+        <Reveal index={reveal + 1}>
+          <Card>
+            <Eyebrow>{`Paddock drama · ${evt.title}`}</Eyebrow>
+            <Text style={{ color: colors.fg, fontSize: 18, lineHeight: 24, marginTop: 6 }}>{evt.q}</Text>
+            {evDone ? <Pop trigger={evDone}><Text style={{ color: colors.gold, fontSize: 16, marginTop: 10, fontWeight: '600' }}>{evDone}</Text></Pop> : evt.opts.map((o) => (
+              <Pressable key={o.id} onPress={() => fun.update(id, (g) => resolveEvent(g, pid, o.id).f)} style={({ pressed }) => [{ marginTop: 8, padding: 12, borderRadius: 12, backgroundColor: colors.surface2, borderWidth: 1, borderColor: colors.line }, pressed && { opacity: 0.7 }]}>
+                <Text style={{ color: colors.fg, fontSize: 17, fontWeight: '700' }}>{o.label}</Text><Text style={{ color: colors.muted, fontSize: 13 }}>{o.hint}</Text>
+              </Pressable>))}
+          </Card>
+        </Reveal>) : null}
       <Reveal index={reveal + 2}>
         <Card>
           <Eyebrow>Upgrades</Eyebrow>
@@ -77,10 +93,23 @@ export function TeamPrincipal({ f, id, fun, reveal = 0 }) {
                 <View style={{ flex: 1 }}><Text style={{ color: colors.fg, fontSize: 17, fontWeight: '700' }}>{u.label}</Text><Text style={{ color: colors.muted, fontSize: 13 }}>{`${u.blurb} Now ${Math.round(val * 10) / 10}${tp.levels[k] ? ` · ${tp.levels[k]} upgrade${tp.levels[k] > 1 ? 's' : ''}` : ''}`}</Text></View>
                 <Pressable onPress={() => doBuy(k)} style={({ pressed }) => [{ paddingHorizontal: 14, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center', backgroundColor: can ? colors.accent : 'rgba(255,255,255,0.08)' }, pressed && { opacity: 0.7 }]}><Text style={{ color: can ? '#fff' : colors.muted, fontWeight: '800' }}>{cost}</Text></Pressable>
               </View>); })}
-          <Note>Each upgrade has a random size and costs more every time you buy it. Budget comes from prize money after every race.</Note>
+          <Note>Each upgrade costs more every time you buy it. Pick safe or a bold gamble. Budget comes from prize money after every race.</Note>
         </Card>
       </Reveal>
       <Reveal index={reveal + 3}>
+        <Card>
+          <Eyebrow>Car development · all teams</Eyebrow>
+          {[...f.teams].sort((a, b) => (b.car ?? 65) - (a.car ?? 65)).map((t, i) => { const h = f.carHist?.[t.id] || []; const d = h.length > 1 ? Math.round((h[h.length - 1] - h[0]) * 10) / 10 : 0;
+            return (<View key={t.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 6 }}>
+              <Text style={{ width: 22, color: colors.muted, fontSize: 13 }}>{i + 1}</Text>
+              <Text style={{ width: 110, color: t.id === team.id ? colors.gold : colors.fg, fontSize: 14, fontWeight: '700' }} numberOfLines={1}>{t.name}</Text>
+              <View style={{ flex: 1 }}><Bar pct={Math.max(4, ((t.car ?? 65) - 40) * 1.8)} color={t.color} height={7} /></View>
+              <Text style={{ width: 54, textAlign: 'right', color: d > 0 ? colors.good : d < 0 ? colors.red : colors.muted, fontSize: 13, fontWeight: '700' }}>{`${Math.round((t.car ?? 65) * 10) / 10}${d ? ` ${d > 0 ? '+' : ''}${d}` : ''}`}</Text>
+            </View>); })}
+          <Note>Rivals bring updates after every race. The teams at the back develop a little faster. The small number is the change since the first race.</Note>
+        </Card>
+      </Reveal>
+      <Reveal index={reveal + 4}>
         <Card>
           <Eyebrow>Driver contracts</Eyebrow>
           {mine.map((d, i) => (

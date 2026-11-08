@@ -157,7 +157,10 @@ export function runStep(f, step) {
   if (step.session === 'Race') g = develop(g);
   return g;
 }
-export function runWeekend(f) { const st = nextStep(f); if (!st) return f; let g = f; for (const s of sessionsOf(st.race)) { if (!g.results?.[st.race.id]?.[s]) g = runStep(g, { ...st, session: s }); } return g; }
+export function runWeekend(f) { const g0 = runWeekendRaw(f); const st = nextStepDone(f, g0); return st ? developRace(g0, st) : g0; }
+function nextStepDone(f, g) { const r = g.races.find((x) => g.results?.[x.id]?.Race && !f.results?.[x.id]?.Race); return r ? r.id : null; }
+function developRace(g, id) { return devCars(g, id); }
+function runWeekendRaw(f) { const st = nextStep(f); if (!st) return f; let g = f; for (const s of sessionsOf(st.race)) { if (!g.results?.[st.race.id]?.[s]) g = runStep(g, { ...st, session: s }); } return g; }
 export function runSeason(f) { let g = f, guard = 0; while (nextStep(g) && guard++ < 500) g = runWeekend(g); return g; }
 
 // Championship tables from the stored results.
@@ -219,3 +222,20 @@ export function simulateTransfers(f) {
   drivers = drivers.map((d) => (d.contract > 0 ? { ...d, contract: d.contract - 1 } : d)); // contracts signed in Team Principal mode run down by a year
   return { f: { ...f, drivers, news: log }, log };
 }
+
+const clampD = (v, a, b) => Math.max(a, Math.min(b, v)); const r1D = (v) => Math.round(v * 10) / 10;
+// ---- car development of the other teams: after each race a team brings small updates, and the chasing pack develops faster ----
+export function devCars(f, raceId) {
+  if (f.carDone?.[raceId]) return f;
+  let h = 0; for (const ch of `${f.id}:${raceId}`) h = (h * 31 + ch.charCodeAt(0)) >>> 0; const rnd = () => { h = (h * 1664525 + 1013904223) >>> 0; return h / 4294967296; };
+  const order = [...f.teams].sort((a, b) => (b.car ?? 65) - (a.car ?? 65)); const hist = { ...(f.carHist || {}) }; const log = [];
+  const teams = f.teams.map((t) => {
+    if (f.tp && t.id === f.tp.teamId) { hist[t.id] = [...(hist[t.id] || []), r1D(t.car ?? 65)]; return t; }
+    const pos = order.findIndex((x) => x.id === t.id); const catchUp = pos / Math.max(1, order.length - 1);
+    const d = r1D((rnd() - 0.38) * 0.9 + catchUp * 0.25); const car = clampD(r1D((t.car ?? 65) + d), 40, 96);
+    if (Math.abs(d) >= 0.6) log.push({ teamId: t.id, d }); hist[t.id] = [...(hist[t.id] || []), car]; return { ...t, car };
+  });
+  return { ...f, teams, carHist: hist, carDone: { ...(f.carDone || {}), [raceId]: log } };
+}
+export const developLog = (f, raceId) => f.carDone?.[raceId] || [];
+

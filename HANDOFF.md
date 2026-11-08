@@ -195,3 +195,11 @@ Expo Go (SDK 53+) does not include the `expo-notifications` native module; impor
 - New screens use `<Screen header={false}>` (pushed screens already have the native header): removes the big gap at the top.
 - Screen.flat: unique, stable keys (prefix by fragment) so blocks never remount/duplicate keys; ExploreScreens no longer double-reveals.
 - Components that returned fragments (RacePicker, Setup, Explore/TP sub-views) now return `<View gap:12>` so boxes and buttons have gaps; Btn has marginVertical 4.
+
+## V1.21.0 (JS-only)
+- News: driver/team emblem and subject banner removed. Articles use RN `Text` with `fontFamily: 'serif'` (17.5px, lineHeight 29); body lines starting `## ` are subheadings, `> ` are quotes. Race reports have new chapters (How the race unfolded, By the numbers, The bigger picture, Championship picture); new "Technical" articles for team car updates.
+- Car development: `devCars` in `fun/sim.js` runs after each race weekend (seeded per race, chasing teams develop a bit faster), stores `f.carHist[teamId]` and `f.carDone[raceId]`. TP screen shows a car development table for all teams.
+- Team Principal: upgrades are Safe or Bold gamble (about 38% flop, negative gain); paddock drama events with choices (`eventFor`/`resolveEvent` in `fun/tp.js`).
+- Leaderboard: free online room via jsonblob.com (`lib/room.js`, no account, anyone with the code can read/write, 60s sync). UNTESTED against the real service (sandbox has no access).
+- Stability: Fantasy memoization (`memo`), single fade on `revealKey`, seeded randomness in news so nothing flickers.
+- Unverified on device: room sync, TP events/bold upgrade alert, new news layout, car dev table.
