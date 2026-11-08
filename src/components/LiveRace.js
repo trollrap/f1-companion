@@ -126,3 +126,4 @@ export default function LiveRace({ visible, race, laps, drivers, sc, wet, onClos
     </Modal>
   );
 }
+LiveRace.ghost = true;

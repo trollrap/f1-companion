@@ -21,11 +21,11 @@ const Slot = ({ label, d, big, ok, tall, wide }) => {
       {photo ? <Scrim dir="v" from={0} to={0.8} style={{ top: '38%' }} /> : null}
       <View style={{ flex: 1, padding: 10, justifyContent: 'space-between' }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          <Text style={{ color: 'rgba(255,255,255,0.9)', fontFamily: 'label', fontSize: 12, letterSpacing: 1.6, fontWeight: '700' }}>{label}</Text>
+          <Text style={{ color: colors.onSoft, fontFamily: 'label', fontSize: 12, letterSpacing: 1.6, fontWeight: '700' }}>{label}</Text>
           {d ? <TeamBadge teamId={d.teamId} name={d.team} size={big ? 30 : 24} /> : null}
         </View>
         <View>
-          {d?.first ? <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: big ? 15 : 12 }} numberOfLines={1}>{d.first}</Text> : null}
+          {d?.first ? <Text style={{ color: colors.onSoft, fontSize: big ? 15 : 12 }} numberOfLines={1}>{d.first}</Text> : null}
           <Text style={{ color: colors.fg, fontFamily: 'display', fontStyle: 'italic', fontWeight: '800', fontSize: big ? 28 : tall ? 20 : wide ? 24 : 18 }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>{d ? d.last : '—'}</Text>
         </View>
       </View>

@@ -1,6 +1,8 @@
 import React from 'react';
 import { View, UIManager, Platform, AppState, Pressable } from 'react-native';
 import { HeaderBackButton } from '@react-navigation/elements';
+import HomeBtn from './components/HomeBtn';
+import DialogHost from './components/DialogHost';
 import { refreshAll } from './lib/net';
 import { useFonts } from 'expo-font';
 import { Rajdhani_400Regular, Rajdhani_500Medium, Rajdhani_600SemiBold, Rajdhani_700Bold } from '@expo-google-fonts/rajdhani';
@@ -35,6 +37,7 @@ import RulesScreen from './screens/RulesScreen';
 import DriverSeasonsScreen from './screens/DriverSeasonsScreen';
 import WhatIfScreen from './screens/WhatIfScreen';
 import PredictScreen from './screens/PredictScreen';
+import DevScreen from './screens/DevScreen';
 import { WeekendScreen, LeaderboardScreen, QuizScreen, RecordsScreen } from './screens/ExploreScreens';
 import ChartScreen from './screens/ChartScreen';
 import GridScreen from './screens/GridScreen';
@@ -54,7 +57,7 @@ import { NavBar } from './components/TabBar';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
-const navTheme = { ...DefaultTheme, dark: true, colors: { ...DefaultTheme.colors, background: colors.bg, card: colors.bg, text: colors.fg, border: colors.line, primary: colors.accent } };
+const navTheme = { ...DefaultTheme, dark: !colors.isLight, colors: { ...DefaultTheme.colors, background: colors.bg, card: colors.bg, text: colors.fg, border: colors.line, primary: colors.accent } };
 const ICONS = { Home: 'home', Calendar: 'calendar', Standings: 'trophy', Paddock: 'people', News: 'newspaper', Fun: 'game-controller' };
 
 const MTab = createBottomTabNavigator();
@@ -107,8 +110,8 @@ function Tabs() {
   );
 }
 const detailBase = { headerStyle: { backgroundColor: colors.bg }, headerTintColor: colors.fg, headerShadowVisible: false, animation: 'slide_from_right', animationDuration: 280, contentStyle: { backgroundColor: colors.bg }, get headerTitleStyle() { return { fontFamily: ui.lang === 'el' ? 'RobotoCondensed_600SemiBold' : 'ChakraPetch_600SemiBold', fontSize: 16 }; }, headerBackButtonDisplayMode: 'minimal' };
-// Every inner screen has a back arrow and a home button: one tap back to the first tab screen instead of going back page after page.
-const detail = ({ navigation }) => ({ ...detailBase, headerLeft: (p) => (p.canGoBack ? (<View style={{ flexDirection: 'row', alignItems: 'center' }}><HeaderBackButton {...p} tintColor={colors.fg} onPress={() => navigation.goBack()} /><Pressable onPress={() => navigation.popToTop()} hitSlop={8} accessibilityRole="button" accessibilityLabel="Home" style={({ pressed }) => ({ width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.6 : 1 })}><Ionicons name="home" size={20} color={colors.fg} /></Pressable></View>) : null) });
+// Every inner screen has a back arrow (left) and a home button (right): one tap back to the first tab screen instead of going back page after page.
+const detail = ({ navigation }) => ({ ...detailBase, headerLeft: (p) => (p.canGoBack ? <HeaderBackButton {...p} tintColor={colors.fg} onPress={() => navigation.goBack()} /> : null), headerRight: () => <HomeBtn /> });
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) UIManager.setLayoutAnimationEnabledExperimental(true);
 function Shell() {
@@ -123,7 +126,7 @@ function Shell() {
   if (!prefs.opts.welcomed) return <WelcomeScreen />;
   return (
           <NavigationContainer key={`${prefs.opts.lang === 'el' ? 'el' : 'en'}-${prefs.opts.sport === 'motogp' ? 'mg' : prefs.opts.sport === 'football' ? 'fb' : 'f1'}`} theme={navTheme}>
-            <StatusBar style="light" />
+            <StatusBar style={colors.isLight ? 'dark' : 'light'} />
             <AlertScheduler />
             {prefs.opts.sport === 'football' ? (
               <Stack.Navigator screenOptions={detail}>
@@ -154,6 +157,7 @@ function Shell() {
               <Stack.Screen name="Rules" component={RulesScreen} options={{ title: tr('F1 rules') }} />
               <Stack.Screen name="WhatIf" component={WhatIfScreen} options={{ title: tr('What if') }} />
               <Stack.Screen name="Predict" component={PredictScreen} options={{ title: tr('Predictions') }} />
+              <Stack.Screen name="Dev" component={DevScreen} options={{ title: 'Developer menu' }} />
               <Stack.Screen name="Weekend" component={WeekendScreen} options={{ title: 'Race weekend' }} />
               <Stack.Screen name="Leaderboard" component={LeaderboardScreen} options={{ title: 'Leaderboard' }} />
               <Stack.Screen name="Quiz" component={QuizScreen} options={{ title: 'Quiz' }} />
@@ -188,6 +192,7 @@ export default function App() {
           <FavsProvider>
           <TeamsProvider>
             <Shell />
+            <DialogHost />
           </TeamsProvider>
           </FavsProvider>
         </SeasonProvider>

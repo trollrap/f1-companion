@@ -81,7 +81,7 @@ export default function HomeScreen({ navigation }) {
             <Pressable key={route} onPress={() => navigation.navigate(route)} style={({ pressed }) => pressed && { opacity: 0.8, transform: [{ scale: 0.98 }] }}>
               <Grad color={c} from={0.5} to={0.06} radius={16} style={{ width: 168, height: 112, padding: 12, justifyContent: 'space-between' }}>
                 <Ionicons name={icon} size={26} color={c} />
-                <View><Text style={{ color: colors.fg, fontSize: 18, fontWeight: '800' }}>{title}</Text><Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12 }} numberOfLines={2}>{sub}</Text></View>
+                <View><Text style={{ color: colors.fg, fontSize: 18, fontWeight: '800' }}>{title}</Text><Text style={{ color: colors.onSoft, fontSize: 12 }} numberOfLines={2}>{sub}</Text></View>
               </Grad>
             </Pressable>))}
         </ScrollView>
@@ -100,7 +100,7 @@ export default function HomeScreen({ navigation }) {
                   <Grad color={tc(r.teamId)} from={0.6} to={0.08} radius={16} style={{ width: 170, height: 148 }}>
                     <View style={{ flex: 1, padding: 12, justifyContent: 'space-between' }}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}><Text style={{ fontFamily: 'display', fontWeight: '800', fontSize: 30, color: colors.fg }}>P{r.position}</Text><TeamBadge teamId={r.teamId} name={r.name} size={44} /></View>
-                      <View><Text style={{ color: colors.fg, fontSize: 19, fontWeight: '700' }} numberOfLines={1}>{r.name}</Text><Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 14 }}>{r.points} pts</Text></View>
+                      <View><Text style={{ color: colors.fg, fontSize: 19, fontWeight: '700' }} numberOfLines={1}>{r.name}</Text><Text style={{ color: colors.onSoft, fontSize: 14 }}>{r.points} pts</Text></View>
                     </View>
                   </Grad>
                 </Pressable>))}
@@ -114,7 +114,7 @@ export default function HomeScreen({ navigation }) {
                     {photo ? <Scrim dir="v" from={0} to={0.82} style={{ top: '35%' }} /> : null}
                     <View style={{ flex: 1, padding: 12, justifyContent: 'space-between' }}>
                       <Text style={{ fontFamily: 'display', fontWeight: '800', fontSize: 30, color: colors.fg }}>P{r.position}</Text>
-                      <View><DriverName first={r.first} last={r.last} size={19} /><Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 14 }}>{r.points} pts</Text></View>
+                      <View><DriverName first={r.first} last={r.last} size={19} /><Text style={{ color: colors.onSoft, fontSize: 14 }}>{r.points} pts</Text></View>
                     </View>
                   </Grad>
                 </Pressable>); })}

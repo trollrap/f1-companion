@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
-import { View, Pressable, Alert } from 'react-native';
+import { View, Pressable } from 'react-native';
+import { Alert } from '../lib/dialog';
 import { Ionicons } from '@expo/vector-icons';
 import { Text } from '../components/Text';
 import { Card, Eyebrow, Note } from '../components/Screen';
@@ -29,7 +30,7 @@ export function TeamPrincipal({ f, id, fun, reveal = 0 }) {
           <Reveal key={t.id} index={reveal + 1 + i}>
             <Pressable onPress={() => Alert.alert(`Run ${t.name}?`, 'You can leave the team again at any time.', [{ text: 'Cancel' }, { text: 'Start', onPress: () => fun.update(id, (g) => startTP(g, t.id)) }])} style={({ pressed }) => pressed && { opacity: 0.75 }}>
               <Grad color={t.color} from={0.4} to={0.05} radius={16} border={0.35} style={{ padding: 12, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                <View style={{ flex: 1 }}><Text style={{ color: colors.fg, fontSize: 18, fontWeight: '700' }}>{t.name}</Text><Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13 }}>{`Car ${t.car ?? 65} · Reliability ${TA(t).rel} · Pit crew ${TA(t).pit}`}</Text></View>
+                <View style={{ flex: 1 }}><Text style={{ color: colors.fg, fontSize: 18, fontWeight: '700' }}>{t.name}</Text><Text style={{ color: colors.onSoft, fontSize: 13 }}>{`Car ${t.car ?? 65} · Reliability ${TA(t).rel} · Pit crew ${TA(t).pit}`}</Text></View>
                 <Ionicons name="chevron-forward" size={18} color={colors.muted} />
               </Grad>
             </Pressable>
@@ -49,14 +50,14 @@ export function TeamPrincipal({ f, id, fun, reveal = 0 }) {
     <View style={{ gap: 12 }}>
       <Reveal index={reveal}>
         <Grad color={team.color} from={0.5} to={0.06} border={0.5} style={{ padding: 16 }}>
-          <Text style={{ color: 'rgba(255,255,255,0.75)', fontSize: 12, letterSpacing: 3 }}>YOUR TEAM</Text>
+          <Text style={{ color: colors.onSoft, fontSize: 12, letterSpacing: 3 }}>YOUR TEAM</Text>
           <Text style={{ color: colors.fg, fontSize: 28, fontWeight: '800' }}>{team.name}</Text>
           <View style={{ flexDirection: 'row', marginTop: 12, gap: 10 }}>
-            <View style={{ flex: 1 }}><Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 11, letterSpacing: 2 }}>BUDGET</Text><CountUp value={tp.budget} decimals={1} style={{ color: colors.gold, fontSize: 30, fontWeight: '800' }} /></View>
-            <View style={{ flex: 1 }}><Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 11, letterSpacing: 2 }}>CHAMPIONSHIP</Text><Text style={{ color: colors.fg, fontSize: 30, fontWeight: '800' }}>{ord(pos)}</Text></View>
-            <View style={{ flex: 1 }}><Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 11, letterSpacing: 2 }}>POINTS</Text><CountUp value={teamPoints(f, team.id)} style={{ color: colors.fg, fontSize: 30, fontWeight: '800' }} /></View>
+            <View style={{ flex: 1 }}><Text style={{ color: colors.onSoft, fontSize: 11, letterSpacing: 2 }}>BUDGET</Text><CountUp value={tp.budget} decimals={1} style={{ color: colors.gold, fontSize: 30, fontWeight: '800' }} /></View>
+            <View style={{ flex: 1 }}><Text style={{ color: colors.onSoft, fontSize: 11, letterSpacing: 2 }}>CHAMPIONSHIP</Text><Text style={{ color: colors.fg, fontSize: 30, fontWeight: '800' }}>{ord(pos)}</Text></View>
+            <View style={{ flex: 1 }}><Text style={{ color: colors.onSoft, fontSize: 11, letterSpacing: 2 }}>POINTS</Text><CountUp value={teamPoints(f, team.id)} style={{ color: colors.fg, fontSize: 30, fontWeight: '800' }} /></View>
           </View>
-          <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 11, letterSpacing: 2, marginTop: 12 }}>REPUTATION</Text>
+          <Text style={{ color: colors.onSoft, fontSize: 11, letterSpacing: 2, marginTop: 12 }}>REPUTATION</Text>
           <View style={{ marginTop: 5 }}><Bar pct={tp.hype} color={tp.hype >= 60 ? colors.good : tp.hype >= 35 ? colors.gold : colors.red} height={9} /></View>
           <Text style={{ color: colors.fg, fontSize: 14, marginTop: 10 }}>{`Board target: finish ${ord(tp.target)} or better. ${pos <= tp.target ? 'You are on track.' : `You are ${pos - tp.target} place${pos - tp.target === 1 ? '' : 's'} short.`}`}</Text>
         </Grad>

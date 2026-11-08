@@ -152,3 +152,4 @@ export function UndoChip({ depth = 0, show, onPress }) {
   if (!(show ?? depth > 0) || !on) return null;
   return (<Pressable onPress={onPress} accessibilityRole="button" style={({ pressed }) => [{ alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, height: 34, borderRadius: 17, backgroundColor: colors.surface2, borderWidth: 1, borderColor: colors.accent }, pressed && { opacity: 0.7 }]}><Ionicons name="arrow-undo" size={16} color={colors.accent} /><Text style={{ color: colors.fg, fontWeight: '700', fontSize: 14 }}>Undo last change</Text></Pressable>);
 }
+UndoChip.ghost = true;

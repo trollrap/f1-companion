@@ -215,7 +215,7 @@ export const DriverBox = React.memo(function DriverBox({ d, fav, onPress, onStar
       <Grad color={color} from={0.6} to={0.08} radius={18} border={fav ? 0.9 : 0.4} style={[{ height }, fav && { borderColor: colors.gold }]}>
         {photo && center ? <Image source={photo} resizeMode="cover" resizeMethod="resize" fadeDuration={0} style={{ position: 'absolute', alignSelf: 'center', width: height * 1.0, height: height * 1.0, bottom: -height * 0.02, opacity: 1 }} />
           : photo ? <Image source={photo} resizeMode="cover" resizeMethod="resize" fadeDuration={0} style={{ position: 'absolute', right: -big * 0.08, bottom: -big * 0.07, width: big, height: big }} />
-          : d.number != null ? <Text style={{ position: 'absolute', right: 6, bottom: -14, fontFamily: 'display', fontWeight: '800', fontSize: height * 0.6, color: 'rgba(255,255,255,0.13)' }}>{d.number}</Text> : null}
+          : d.number != null ? <Text style={{ position: 'absolute', right: 6, bottom: -14, fontFamily: 'display', fontWeight: '800', fontSize: height * 0.6, color: colors.onSoft }}>{d.number}</Text> : null}
         {photo ? <Scrim dir="v" from={0} to={0.82} style={{ top: '38%' }} /> : null}
         {photo && !center ? <Scrim dir="h" from={0.45} to={0} style={{ right: '35%' }} /> : null}
         <View style={{ flex: 1, padding: 12, justifyContent: 'space-between' }}>
@@ -244,7 +244,7 @@ export const TeamRow = React.memo(function TeamRow({ t, lineup = [], fav, onPres
         {boss ? (
           <View pointerEvents="none" style={{ position: 'absolute', right: 12, bottom: 12, width: 84, alignItems: 'center' }}>
             {bossPhoto ? <Image source={bossPhoto} resizeMode="cover" resizeMethod="resize" fadeDuration={0} style={{ width: 64, height: 64, borderRadius: 14, backgroundColor: alpha('#000000', 0.25) }} /> : null}
-            <Text style={{ color: 'rgba(255,255,255,0.65)', fontSize: 10, letterSpacing: 1, marginTop: 4 }}>TEAM PRINCIPAL</Text>
+            <Text style={{ color: colors.onSoft, fontSize: 10, letterSpacing: 1, marginTop: 4 }}>TEAM PRINCIPAL</Text>
             <Text style={{ color: colors.fg, fontSize: 12, fontWeight: '700', textAlign: 'center' }} numberOfLines={2}>{boss.name}</Text>
           </View>) : null}
         <View style={{ gap: 6, marginRight: boss ? 92 : 0 }}>
@@ -260,7 +260,7 @@ export const TeamRow = React.memo(function TeamRow({ t, lineup = [], fav, onPres
           <TeamBadge teamId={t.teamId} name={t.name} size={44} />
           <View style={{ flex: 1 }}>
             <Text style={{ color: colors.fg, fontSize: 24, fontWeight: '700' }} numberOfLines={1}>{t.name}</Text>
-            <Text style={{ color: 'rgba(255,255,255,0.75)', fontSize: 16 }}>{t.position != null ? `P${t.position} · ${t.points} pts` : t.note || ''}</Text>
+            <Text style={{ color: colors.onSoft, fontSize: 16 }}>{t.position != null ? `P${t.position} · ${t.points} pts` : t.note || ''}</Text>
           </View>
         </View>
         {onStar ? <View style={{ position: 'absolute', top: 10, right: 10 }}><StarButton small on={fav} onPress={onStar} label={`Favourite ${t.name}`} /></View> : null}

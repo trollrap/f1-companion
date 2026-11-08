@@ -203,3 +203,12 @@ Expo Go (SDK 53+) does not include the `expo-notifications` native module; impor
 - Leaderboard: free online room via jsonblob.com (`lib/room.js`, no account, anyone with the code can read/write, 60s sync). UNTESTED against the real service (sandbox has no access).
 - Stability: Fantasy memoization (`memo`), single fade on `revealKey`, seeded randomness in news so nothing flickers.
 - Unverified on device: room sync, TP events/bold upgrade alert, new news layout, car dev table.
+
+## V1.22.0 (JS-only)
+- Gaps: `Screen` hides its own Header and top inset on any screen pushed on a stack (native header already there); components marked `.ghost = true` (modals, UndoChip, CodePrompt) are rendered outside the page flow so they no longer leave empty gap slots (that was the big gap in Fantasy).
+- Home button moved to the top right (`components/HomeBtn.js`, wraps star/gear buttons set by screens).
+- Popups: `lib/dialog.js` exports an `Alert` with the React Native API; `components/DialogHost.js` (mounted in Main.js) draws a themed card. Screens import `{ Alert } from '../lib/dialog'`.
+- Friends room: now ntfy.sh (no account; the room code is a random topic `f1c-...`, created locally). The old jsonblob version returned 403. Untested against the real service.
+- Articles (real news and fantasy): system sans-serif (`fontFamily: 'sans-serif'`) 17/27 instead of the Rajdhani display font.
+- Themes: Settings > Theme (Dark / AMOLED black / White). `applyTheme` in theme.js runs at start-up in App.js after the accent; app restarts to apply. Hard-coded white text on cards became `colors.onSoft`. White theme is best effort (photo heroes tuned for dark).
+- Dev menu: tap About 5 times in Settings, code `op81`. `screens/DevScreen.js`, `lib/dev.js` (perm layer in AsyncStorage `dev:ov`, temp layer in memory): colours, photos (gallery or URL), team colours, fantasy editor (temp edits can be reverted), options editor, storage browser/editor, actions, info.

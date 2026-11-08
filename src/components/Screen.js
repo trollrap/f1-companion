@@ -3,6 +3,7 @@ import { ScrollView, View, Pressable, RefreshControl, Animated, Easing, StyleShe
 import { Text } from './Text';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigationState } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Press from './Press';
 import Header from './Header';
@@ -36,11 +37,15 @@ function OfflineBanner() {
 // Every block keeps a key that is unique and stable (prefixed by the fragment it came from), so a block appearing or disappearing never remounts or re-animates its neighbours.
 const flat = (ch, pre = '') => React.Children.toArray(ch).flatMap((c) => (c && c.type === React.Fragment ? flat(c.props.children, `${pre}${c.key}/`) : [{ el: c, k: `${pre}${c && c.key != null ? c.key : ''}` }]));
 export default function Screen({ children, header = true, refreshable = true, scrollRef, swipe, footer, revealKey }) {
+  // A screen pushed on the stack already has the native header, so it never draws a second header or a second top margin.
+  const navType = useNavigationState((st) => st?.type); if (navType === 'stack') header = false;
   const [refreshing, setRefreshing] = useState(false); const { prefs: pp } = usePrefs(); const canPull = refreshable && pp.opts.pullRefresh === true;
   // Switching tabs inside a screen (revealKey) is one short fade of the whole page, not a new staggered entrance for every block.
   const fade = useRef(new Animated.Value(1)).current; const firstKey = useRef(true);
   useEffect(() => { if (firstKey.current) { firstKey.current = false; return; } fade.setValue(0.3); Animated.timing(fade, { toValue: 1, duration: 240, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start(); }, [revealKey]);
   const pull = async () => { setRefreshing(true); try { await refreshAll(); } finally { setRefreshing(false); } };
+  // Modals and floating chips (marked `ghost`) take no space in the page, so they never leave a gap between blocks.
+  const all = flat(children); const blocks = all.filter((c) => !c.el?.type?.ghost); const ghosts = all.filter((c) => c.el?.type?.ghost);
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={header ? ['top'] : []}>
       {header && <Header />}
@@ -49,15 +54,16 @@ export default function Screen({ children, header = true, refreshable = true, sc
       {swipe ? <Swipe {...swipe}>
       <ScrollView ref={scrollRef} contentContainerStyle={s.body} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled"
         refreshControl={canPull ? <RefreshControl refreshing={refreshing} onRefresh={pull} tintColor={colors.accent} colors={[colors.accent]} progressBackgroundColor={colors.surface2} /> : undefined}>
-        {flat(children).map((c, i) => <Reveal key={c.k || i} index={i}>{c.el}</Reveal>)}
+        {blocks.map((c, i) => <Reveal key={c.k || i} index={i}>{c.el}</Reveal>)}
       </ScrollView>
       </Swipe> : (
       <ScrollView ref={scrollRef} contentContainerStyle={s.body} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled"
         refreshControl={canPull ? <RefreshControl refreshing={refreshing} onRefresh={pull} tintColor={colors.accent} colors={[colors.accent]} progressBackgroundColor={colors.surface2} /> : undefined}>
-        {flat(children).map((c, i) => <Reveal key={c.k || i} index={i}>{c.el}</Reveal>)}
+        {blocks.map((c, i) => <Reveal key={c.k || i} index={i}>{c.el}</Reveal>)}
       </ScrollView>
       )}
       </Animated.View>
+      {ghosts.length ? <View pointerEvents="box-none" style={{ position: 'absolute', left: 16, right: 16, bottom: 92 }}>{ghosts.map((c, i) => <React.Fragment key={c.k || i}>{c.el}</React.Fragment>)}</View> : null}
       {footer || null}
     </SafeAreaView>
   );

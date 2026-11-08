@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { View, Switch, Pressable, StyleSheet, Linking, LayoutAnimation, Animated, Easing } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -19,6 +19,8 @@ import { clearCache } from '../lib/cache';
 import Reveal from '../components/Reveal';
 import ColorPicker from '../components/ColorPicker';
 import { restartApp } from '../lib/reload';
+import CodePrompt from '../components/CodePrompt';
+import { useNavigation } from '@react-navigation/native';
 import { colors, alpha } from '../theme';
 
 const Btn = ({ children, onPress, disabled }) => (
@@ -49,6 +51,10 @@ const GAPS = [['leader', 'To the leader'], ['ahead', 'Interval (to the car ahead
 export default function SettingsScreen() {
   const { prefs, toggle, toggleResults, setOpt, setOpts } = usePrefs(); const o = prefs.opts;
   const [results, setResults] = useState([]); const [running, setRunning] = useState(false); const [msg, setMsg] = useState(''); const [upd, setUpd] = useState('');
+  const [msgT, setMsgT] = useState('');
+  // Secret: five quick taps on About, then the code, open the developer menu.
+  const nav = useNavigation(); const taps = useRef({ n: 0, t: 0 }); const [codeOpen, setCodeOpen] = useState(false);
+  const aboutTap = () => { const now = Date.now(); const k = taps.current; k.n = now - k.t < 1500 ? k.n + 1 : 1; k.t = now; if (k.n >= 5) { k.n = 0; setCodeOpen(true); } };
   const check = async () => { setResults([]); setRunning(true); try { await runDiagnostics((r) => setResults((x) => [...x, r])); } finally { setRunning(false); } };
   const on = SESSION_TYPES.filter((t) => prefs.types[t]).length;
   const [pickC, setPickC] = useState(o.accent || colors.accent); const [custom, setCustom] = useState(false);
@@ -69,6 +75,14 @@ export default function SettingsScreen() {
         })}
         <Note>Names of drivers, teams and team principals stay as they are.</Note>
         {o.lang === 'el' ? <Note>The Greek translation is in beta. Some texts may still appear in English.</Note> : null}
+      </Section>
+      <Section icon="contrast-outline" title="Theme" summary={o.theme === 'light' ? 'White' : o.theme === 'amoled' ? 'AMOLED black' : 'Dark'}>
+        {[['dark', 'Dark', 'The default look.'], ['amoled', 'AMOLED black', 'Pure black background. Saves battery on OLED screens.'], ['light', 'White', 'A light theme. Some screens with photos are still tuned for dark.']].map(([k, label, hint]) => { const on = (o.theme || 'dark') === k; return (
+          <Pressable key={k} onPress={async () => { if (on) return; setMsgT('Saving the theme…'); await setOpt('theme', k === 'dark' ? null : k).catch(() => {}); setMsgT('Theme saved. The app restarts to use it everywhere.'); setTimeout(async () => { await restartApp(); }, 900); }} style={({ pressed }) => [{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12 }, pressed && { opacity: 0.7 }]}>
+            <Ionicons name={on ? 'radio-button-on' : 'radio-button-off'} size={22} color={on ? colors.accent : colors.muted} />
+            <View style={{ flex: 1 }}><Text style={{ color: colors.fg, fontSize: 17, fontWeight: '700' }}>{label}</Text><Text style={{ color: colors.muted, fontSize: 14 }}>{hint}</Text></View>
+          </Pressable>); })}
+        {msgT ? <Note>{msgT}</Note> : null}
       </Section>
       <Section icon="color-palette-outline" title="Accent colour" summary={o.accent ? o.accent : 'Default red'}>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 6 }}>
@@ -138,13 +152,14 @@ export default function SettingsScreen() {
         {msg ? <Note>{msg}</Note> : null}
       </Section>
       <Card>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+        <Pressable onPress={aboutTap} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
           <View style={s.ico}><Ionicons name="information-circle-outline" size={22} color={colors.accent} /></View>
           <View style={{ flex: 1 }}><Text style={s.secTitle}>About</Text><Text style={s.hint}>{`F1 Companion v${currentVersion()}`}</Text></View>
-        </View>
+        </Pressable>
         <View style={s.bubble}><Text style={{ color: colors.fg, fontSize: 16, fontWeight: '600' }}>👋 Hi from trollrap!</Text><Text style={s.hint}>Every bug you find is a hidden feature. Probably.</Text></View>
         <Text style={[s.hint, { marginTop: 10 }]}>Times follow your device's timezone unless a screen is switched to track time.</Text>
       </Card>
+      <CodePrompt visible={codeOpen} title="Enter the code" onClose={() => setCodeOpen(false)} onSubmit={(c) => { if (c.toLowerCase() !== 'op81') return false; setCodeOpen(false); nav.navigate('Dev'); return true; }} />
     </Screen>
   );
 }

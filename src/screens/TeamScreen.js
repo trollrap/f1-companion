@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Image, StyleSheet } from 'react-native';
+import HomeBtn from '../components/HomeBtn';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Skeleton from '../components/Skeleton';
@@ -39,7 +40,7 @@ export default function TeamScreen({ route, navigation }) {
     const [lu, dt] = await Promise.all([isCur ? lineups(YEAR) : teamDrivers(year, teamId).then((l) => ({ [teamId]: l })), driverStandings(year)]);
     return (lu[teamId] || []).map((d) => ({ ...d, teamId, st: dt.find((x) => x.driverId === d.driverId), team: name })).sort((a, b) => (a.st?.position ?? 99) - (b.st?.position ?? 99));
   }, [teamId, year]);
-  React.useEffect(() => { navigation.setOptions({ headerRight: () => <StarButton on={favs.isTeam(teamId)} onPress={() => favs.toggleTeam(teamId)} label="Favourite" /> }); }, [favs.teams]);
+  React.useEffect(() => { navigation.setOptions({ headerRight: () => <HomeBtn><StarButton on={favs.isTeam(teamId)} onPress={() => favs.toggleTeam(teamId)} label="Favourite" /></HomeBtn> }); }, [favs.teams]);
   const C = career.v, S = season.v, st = stand.v, color = tc(teamId), photo = isCur ? principalPhoto(teamId) : null, pr = isCur ? principalsOf(teamId) : [];
   const nowTeam = successor[teamId] && successor[teamId] !== teamId ? successor[teamId] : null; // the team that carries this one today
   const tName = st?.name || name; // the name the team raced under that year
@@ -58,7 +59,7 @@ export default function TeamScreen({ route, navigation }) {
           </View>
           <View style={{ maxWidth: '64%' }}>
             <Text style={s.name} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>{tName}</Text>
-            <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 17 }}>{st ? `${isCur ? '' : `${year} · `}P${st.position} · ${st.points} pts · ${st.wins} ${st.wins === 1 ? 'win' : 'wins'}` : stand.loading ? ' ' : 'Not in the standings'}</Text>
+            <Text style={{ color: colors.onSoft, fontSize: 17 }}>{st ? `${isCur ? '' : `${year} · `}P${st.position} · ${st.points} pts · ${st.wins} ${st.wins === 1 ? 'win' : 'wins'}` : stand.loading ? ' ' : 'Not in the standings'}</Text>
           </View>
         </View>
       </Grad>
@@ -88,7 +89,7 @@ export default function TeamScreen({ route, navigation }) {
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 10 }}>
             {pr.map((p, k) => (
               <Grad key={p.name} color={color} from={k === 0 ? 0.4 : 0.22} to={0.04} dir="h" radius={16} border={0.4} style={{ padding: 14, width: pr.length === 1 ? '100%' : '48%', minHeight: 92, justifyContent: 'center' }}>
-                <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, letterSpacing: 0.4 }} numberOfLines={2}>{p.role}</Text>
+                <Text style={{ color: colors.onSoft, fontSize: 13, letterSpacing: 0.4 }} numberOfLines={2}>{p.role}</Text>
                 <Text style={{ color: colors.fg, fontSize: 19, fontWeight: '700', marginTop: 4 }} numberOfLines={2}>{p.name}</Text>
               </Grad>))}
           </View>

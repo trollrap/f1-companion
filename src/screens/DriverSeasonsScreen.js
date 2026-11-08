@@ -35,7 +35,7 @@ export default function DriverSeasonsScreen({ route, navigation }) {
         {photo ? <Image source={photo} resizeMode="cover" resizeMethod="resize" fadeDuration={0} style={{ position: 'absolute', right: -14, bottom: -22, width: 176, height: 176 }} /> : null}
         {photo ? <Scrim dir="h" from={0.55} to={0} style={{ right: '35%' }} /> : null}
         <View style={{ flex: 1, padding: 16, justifyContent: 'space-between' }}>
-          <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 16 }}>Previous seasons</Text>
+          <Text style={{ color: colors.onSoft, fontSize: 16 }}>Previous seasons</Text>
           <View style={{ maxWidth: '64%' }}>
             <Text style={{ fontFamily: 'display', fontStyle: 'italic', fontWeight: '800', fontSize: 28, color: colors.fg }} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.7}>{name}</Text>
             {yTeam ? <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6 }}><TeamBadge teamId={yTeamId} name={yTeam} size={24} /><Text style={{ color: colors.fg, fontSize: 16, fontWeight: '600' }} numberOfLines={1}>{`${yTeam} · ${cur}`}</Text></View> : null}

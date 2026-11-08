@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { View, Pressable, Switch, Alert, TextInput, Image, Text as RNText } from 'react-native';
+import { View, Pressable, Switch, TextInput, Image, Text as RNText } from 'react-native';
+import { Alert } from '../lib/dialog';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Text } from '../components/Text';
@@ -7,6 +8,7 @@ import Screen, { Card, Eyebrow, Note } from '../components/Screen';
 import Grad, { Scrim } from '../components/Grad';
 import Press from '../components/Press';
 import Dropdown from '../components/Dropdown';
+import HomeBtn from '../components/HomeBtn';
 import Skeleton from '../components/Skeleton';
 import { Segmented, StatGrid, ResultLine } from '../components/Shared';
 import ExportBar from '../components/ExportBar';
@@ -243,7 +245,7 @@ const memo = (f, key, fn) => { let m = MEMO.get(f); if (!m) { m = {}; MEMO.set(f
 export function Fantasy({ route, navigation }) {
   const { id } = route.params; const fun = useFun(); const insets = useSafeAreaInsets(); const f = fun.get(id); const [tab, setTab] = useState(f?.ended ? 'stats' : 'home'); const [sub, setSub] = useState('drivers'); const [art, setArt] = useState(null); const [busy, setBusy] = useState(false); const [sel, setSel] = useState(null); const [exp, setExp] = useState(false); const [shw, setShw] = useState(null); const [live, setLive] = useState(null); const [pad, setPad] = useState('grid'); const shotD = useRef(null), shotT = useRef(null);
   useEffect(() => { if (f) navigation.setOptions({ title: f.name, headerRight: () => (
-    <Pressable onPress={() => { setArt(null); setTab((t) => (t === 'settings' ? 'home' : 'settings')); }} hitSlop={12} accessibilityLabel="Fantasy settings" style={({ pressed }) => [{ width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center', marginRight: 4, backgroundColor: tab === 'settings' ? alpha(colors.accent, 0.3) : 'transparent' }, pressed && { opacity: 0.6 }]}><Ionicons name="settings-outline" size={22} color={colors.fg} /></Pressable>) }); }, [f?.name, tab]);
+    <HomeBtn><Pressable onPress={() => { setArt(null); setTab((t) => (t === 'settings' ? 'home' : 'settings')); }} hitSlop={12} accessibilityLabel="Fantasy settings" style={({ pressed }) => [{ width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center', marginRight: 4, backgroundColor: tab === 'settings' ? alpha(colors.accent, 0.3) : 'transparent' }, pressed && { opacity: 0.6 }]}><Ionicons name="settings-outline" size={22} color={colors.fg} /></Pressable></HomeBtn>) }); }, [f?.name, tab]);
   // Back (button or swipe) from an article or from another tab lands on this fantasy's Home, and only from Home leaves the fantasy.
   const sref = useRef(null); useEffect(() => { sref.current?.scrollTo?.({ y: 0, animated: false }); }, [tab, art]);
   const nav = useRef({ art, tab, leave: false }); nav.current.art = art; nav.current.tab = tab;
@@ -333,7 +335,7 @@ export function Fantasy({ route, navigation }) {
         {(() => { const lastR = [...v.races].reverse().find((r) => v.results?.[r.id]?.Race); return lastR && !off ? <Press onPress={() => navigation.navigate('FantasyRace', { id, raceId: lastR.id, season: n })}><ReportCard title={`Last race · ${lastR.name}`} items={raceReport(v, lastR)} /></Press> : null; })()}
         {!off ? (() => { const left = v.races.length - done; const pct = v.races.length ? done / v.races.length : 0; return (
           <Grad color={colors.accent} from={0.35} to={0.05} radius={16} border={0.5} style={{ padding: 14, gap: 10 }}>
-            <Text style={{ color: 'rgba(255,255,255,0.75)', fontFamily: 'label', fontSize: 11, letterSpacing: 2 }}>{complete ? 'SEASON COMPLETE' : 'COUNTDOWN'}</Text>
+            <Text style={{ color: colors.onSoft, fontFamily: 'label', fontSize: 11, letterSpacing: 2 }}>{complete ? 'SEASON COMPLETE' : 'COUNTDOWN'}</Text>
             <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 8 }}><Text style={{ color: colors.fg, fontSize: 44, fontWeight: '800', fontStyle: 'italic' }}>{complete ? done : left}</Text><Text style={{ color: colors.muted, fontSize: 17, marginBottom: 8 }}>{complete ? `races run in season ${n}` : `${left === 1 ? 'race' : 'races'} to go`}</Text></View>
             <View style={{ height: 6, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.12)', overflow: 'hidden' }}><View style={{ width: `${Math.round(pct * 100)}%`, height: 6, backgroundColor: colors.accent }} /></View>
           </Grad>); })() : null}
@@ -370,7 +372,7 @@ export function Fantasy({ route, navigation }) {
           <Grad key={t.id} color={t.color} from={0.5} to={0.06} dir="h" radius={16} border={complete && i === 0 ? 0.9 : 0.4} style={[{ padding: 12, flexDirection: 'row', alignItems: 'center', gap: 12 }, complete && i === 0 && { borderColor: colors.gold }]}>
             <Text style={{ width: 26, color: i === 0 ? colors.gold : colors.fg, fontWeight: '800', fontSize: 18, textAlign: 'center' }}>{i + 1}</Text>
             <Avatar source={teamPic(t)} color={t.color} label={t.name} size={44} radius={12} />
-            <View style={{ flex: 1 }}><Text style={{ color: colors.fg, fontSize: 19, fontWeight: '700' }} numberOfLines={1}>{t.name}</Text><Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13 }}>{`${t.wins} wins`}</Text></View>
+            <View style={{ flex: 1 }}><Text style={{ color: colors.fg, fontSize: 19, fontWeight: '700' }} numberOfLines={1}>{t.name}</Text><Text style={{ color: colors.onSoft, fontSize: 13 }}>{`${t.wins} wins`}</Text></View>
             <Text style={{ color: colors.fg, fontSize: 22, fontWeight: '800' }}>{t.points}</Text>
           </Grad>))}
       </>)}
@@ -392,13 +394,13 @@ export function Fantasy({ route, navigation }) {
           <Grad key={t.id} color={t.color} from={0.5} to={0.06} dir="h" radius={18} border={0.4} style={{ padding: 12, gap: 10 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
               <Avatar source={teamPic(t)} color={t.color} label={t.name} size={44} radius={12} />
-              <View style={{ flex: 1 }}><Text style={{ color: colors.fg, fontSize: 19, fontWeight: '700' }} numberOfLines={1}>{t.name}</Text><Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13 }}>{`${t.points} pts · ${t.wins} ${t.wins === 1 ? 'win' : 'wins'} · car ${TA(t).car}`}</Text></View>
+              <View style={{ flex: 1 }}><Text style={{ color: colors.fg, fontSize: 19, fontWeight: '700' }} numberOfLines={1}>{t.name}</Text><Text style={{ color: colors.onSoft, fontSize: 13 }}>{`${t.points} pts · ${t.wins} ${t.wins === 1 ? 'win' : 'wins'} · car ${TA(t).car}`}</Text></View>
             </View>
             <View style={{ flexDirection: 'row', gap: 8 }}>
               {ds.map((d) => (
                 <Pressable key={d.id} onPress={() => openDriver(d)} style={({ pressed }) => [{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, padding: 8, borderRadius: 12, backgroundColor: 'rgba(0,0,0,0.25)' }, pressed && { opacity: 0.7 }]}>
                   <Avatar source={driverPic(v.drivers.find((x) => x.id === d.id))} color={t.color} label={codeOf(d)} size={38} radius={19} />
-                  <View style={{ flex: 1 }}><Text style={{ color: colors.fg, fontSize: 15, fontWeight: '700' }} numberOfLines={1}>{surname(d)}</Text><Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12 }} numberOfLines={1}>{`${d.nat ? flagOfCountry(d.nat) + ' ' : ''}#${d.number} · ${d.points} pts`}</Text></View>
+                  <View style={{ flex: 1 }}><Text style={{ color: colors.fg, fontSize: 15, fontWeight: '700' }} numberOfLines={1}>{surname(d)}</Text><Text style={{ color: colors.onSoft, fontSize: 12 }} numberOfLines={1}>{`${d.nat ? flagOfCountry(d.nat) + ' ' : ''}#${d.number} · ${d.points} pts`}</Text></View>
                 </Pressable>))}
             </View>
           </Grad>); })}
@@ -523,12 +525,12 @@ export function FantasyDriver({ route, navigation }) {
   return (
     <Screen header={false}>
       <Grad color={color} from={0.68} to={0.06} border={0.5} style={{ height: 210 }}>
-        {photoSrc ? <Cutout source={photoSrc} size={250} style={{ position: 'absolute', right: -20, bottom: -26 }} /> : <Text style={{ position: 'absolute', right: 8, bottom: -22, fontFamily: 'display', fontWeight: '800', fontSize: 150, color: 'rgba(255,255,255,0.12)' }}>{d.number}</Text>}
+        {photoSrc ? <Cutout source={photoSrc} size={250} style={{ position: 'absolute', right: -20, bottom: -26 }} /> : <Text style={{ position: 'absolute', right: 8, bottom: -22, fontFamily: 'display', fontWeight: '800', fontSize: 150, color: colors.onSoft }}>{d.number}</Text>}
         {photoSrc ? <Scrim dir="h" from={0.7} to={0} style={{ right: '25%' }} /> : null}
         <View style={{ flex: 1, padding: 16, justifyContent: 'space-between' }}>
           <Text style={{ color: colors.fg, fontFamily: 'display', fontWeight: '800', fontSize: 30 }}>{`#${d.number}`}</Text>
           <View style={{ maxWidth: '62%' }}>
-            <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 18 }} numberOfLines={1}>{d.first}</Text>
+            <Text style={{ color: colors.onSoft, fontSize: 18 }} numberOfLines={1}>{d.first}</Text>
             <Text style={{ fontFamily: 'display', fontStyle: 'italic', fontWeight: '800', fontSize: 34, color: colors.fg, lineHeight: 40 }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>{d.last || d.first}</Text>
             <Text style={{ color: colors.fg, fontSize: 17, fontWeight: '600' }}>{d.nat ? `${flagOfCountry(d.nat)} ` : ''}{t?.name}{C.titles ? `  ·  ${C.titles}× champion` : ''}</Text>
           </View>
@@ -610,18 +612,18 @@ export function FantasyDriver({ route, navigation }) {
 
 function NewsCard({ a, compact, full, onPress }) {
   const col = a.color || colors.accent; const body = Array.isArray(a.body) ? a.body : [a.body];
-  const SERIF = { fontFamily: 'serif' };
+  const SERIF = { fontFamily: 'sans-serif' }; // the phone's normal reading font, not the app's display font
   const inner = full ? (
     <View style={{ gap: 14 }}>
       <Text style={{ color: col, fontFamily: 'label', fontSize: 11, letterSpacing: 1.8 }}>{`${a.kicker} · ${a.kind.toUpperCase()} · SEASON ${a.season}`}</Text>
-      <RNText style={{ ...SERIF, color: colors.fg, fontSize: 28, fontWeight: '700', lineHeight: 35 }}>{a.title}</RNText>
+      <RNText style={{ ...SERIF, color: colors.fg, fontSize: 27, fontWeight: '800', lineHeight: 33 }}>{a.title}</RNText>
       <View style={{ height: 3, width: 48, borderRadius: 2, backgroundColor: col }} />
-      {a.stats?.length ? (<View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>{a.stats.map(([k, val]) => (<View key={k} style={{ flexGrow: 1, minWidth: '29%', paddingVertical: 8, paddingHorizontal: 10, borderRadius: 10, backgroundColor: 'rgba(0,0,0,0.28)' }}><Text style={{ color: 'rgba(255,255,255,0.65)', fontSize: 10, letterSpacing: 1.2, fontWeight: '700' }}>{k}</Text><Text style={{ color: colors.fg, fontSize: 20, fontWeight: '800' }}>{val}</Text></View>))}</View>) : null}
+      {a.stats?.length ? (<View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>{a.stats.map(([k, val]) => (<View key={k} style={{ flexGrow: 1, minWidth: '29%', paddingVertical: 8, paddingHorizontal: 10, borderRadius: 10, backgroundColor: 'rgba(0,0,0,0.28)' }}><Text style={{ color: colors.onSoft, fontSize: 10, letterSpacing: 1.2, fontWeight: '700' }}>{k}</Text><Text style={{ color: colors.fg, fontSize: 20, fontWeight: '800' }}>{val}</Text></View>))}</View>) : null}
       {body.map((p, i) => {
         const t = String(p);
-        if (t.startsWith('## ')) return <RNText key={i} style={{ ...SERIF, color: colors.fg, fontSize: 21, fontWeight: '700', lineHeight: 28, marginTop: 10 }}>{t.slice(3)}</RNText>;
-        if (t.startsWith('> ')) return (<View key={i} style={{ borderLeftWidth: 3, borderLeftColor: col, paddingLeft: 14, marginVertical: 4 }}><RNText style={{ ...SERIF, color: colors.fg, fontSize: 18, lineHeight: 29, fontStyle: 'italic' }}>{t.slice(2)}</RNText></View>);
-        return <RNText key={i} style={{ ...SERIF, color: colors.fg, fontSize: 17.5, lineHeight: 29, opacity: 0.94 }}>{t}</RNText>;
+        if (t.startsWith('## ')) return <RNText key={i} style={{ ...SERIF, color: colors.fg, fontSize: 20, fontWeight: '800', lineHeight: 26, marginTop: 12 }}>{t.slice(3)}</RNText>;
+        if (t.startsWith('> ')) return (<View key={i} style={{ borderLeftWidth: 3, borderLeftColor: col, paddingLeft: 14, marginVertical: 4 }}><RNText style={{ ...SERIF, color: colors.fg, fontSize: 17, lineHeight: 27, fontStyle: 'italic' }}>{t.slice(2)}</RNText></View>);
+        return <RNText key={i} style={{ ...SERIF, color: colors.fg, fontSize: 17, lineHeight: 27, opacity: 0.94, letterSpacing: 0.1, marginBottom: 2 }}>{t}</RNText>;
       })}
     </View>
   ) : (
@@ -728,17 +730,17 @@ function AllStats({ f, v, n, closed, navigation }) {
           <Grad color={sm.team?.color || colors.gold} from={0.65} to={0.06} radius={20} border={0.9} style={{ height: 170, borderColor: colors.gold }}>
             {driverPic(c) ? <Cutout source={driverPic(c)} size={200} style={{ position: 'absolute', right: -14, bottom: -22 }} /> : null}
             <View style={{ flex: 1, padding: 16, justifyContent: 'space-between' }}>
-              <View><Text style={{ color: colors.gold, fontFamily: 'label', fontSize: 11, letterSpacing: 2.5 }}>{sm.closed ? '🏆 CHAMPION' : '⏱ LEADER'}</Text><Text style={{ color: colors.fg, fontSize: 32, fontWeight: '800', fontStyle: 'italic', marginTop: 2, maxWidth: '62%' }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>{surname(c)}</Text><Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 15 }}>{c.first}</Text></View>
+              <View><Text style={{ color: colors.gold, fontFamily: 'label', fontSize: 11, letterSpacing: 2.5 }}>{sm.closed ? '🏆 CHAMPION' : '⏱ LEADER'}</Text><Text style={{ color: colors.fg, fontSize: 32, fontWeight: '800', fontStyle: 'italic', marginTop: 2, maxWidth: '62%' }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>{surname(c)}</Text><Text style={{ color: colors.onSoft, fontSize: 15 }}>{c.first}</Text></View>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>{teamPic(sm.team) ? <Image source={teamPic(sm.team)} resizeMode="contain" style={{ width: 28, height: 28 }} /> : null}<Text style={{ color: colors.fg, fontSize: 15, fontWeight: '700' }}>{`${c.points} pts · ${c.wins} wins`}</Text></View>
             </View>
           </Grad>) : null}
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
           {awards.map(([k, t]) => { const d0 = t.who[0], col = teamOf(v, d0.teamId)?.color || colors.accent; return (
             <Grad key={k} color={col} from={0.4} to={0.05} radius={16} border={0.4} style={{ width: '48%', flexGrow: 1, padding: 12, gap: 8 }}>
-              <Text style={{ color: 'rgba(255,255,255,0.75)', fontFamily: 'label', fontSize: 10, letterSpacing: 1.6 }}>{k.toUpperCase()}</Text>
+              <Text style={{ color: colors.onSoft, fontFamily: 'label', fontSize: 10, letterSpacing: 1.6 }}>{k.toUpperCase()}</Text>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}><Avatar source={driverPic(d0)} color={col} label={d0.number} size={38} radius={19} /><View style={{ flex: 1 }}><Text style={{ color: colors.fg, fontSize: 16, fontWeight: '800' }} numberOfLines={1}>{who(t)}</Text><Text style={{ color: colors.fg, fontSize: 20, fontWeight: '800' }}>{t.val}</Text></View></View>
             </Grad>); })}
-          {sm.tpoints ? (<Grad color={sm.tpoints.who[0].color} from={0.4} to={0.05} radius={16} border={0.4} style={{ width: '48%', flexGrow: 1, padding: 12, gap: 8 }}><Text style={{ color: 'rgba(255,255,255,0.75)', fontFamily: 'label', fontSize: 10, letterSpacing: 1.6 }}>TEAM CHAMPION</Text><View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}><Avatar source={teamPic(sm.tpoints.who[0])} color={sm.tpoints.who[0].color} label={sm.tpoints.who[0].name} size={38} radius={10} /><View style={{ flex: 1 }}><Text style={{ color: colors.fg, fontSize: 16, fontWeight: '800' }} numberOfLines={1}>{sm.tpoints.who[0].name}</Text><Text style={{ color: colors.fg, fontSize: 20, fontWeight: '800' }}>{sm.tpoints.val}</Text></View></View></Grad>) : null}
+          {sm.tpoints ? (<Grad color={sm.tpoints.who[0].color} from={0.4} to={0.05} radius={16} border={0.4} style={{ width: '48%', flexGrow: 1, padding: 12, gap: 8 }}><Text style={{ color: colors.onSoft, fontFamily: 'label', fontSize: 10, letterSpacing: 1.6 }}>TEAM CHAMPION</Text><View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}><Avatar source={teamPic(sm.tpoints.who[0])} color={sm.tpoints.who[0].color} label={sm.tpoints.who[0].name} size={38} radius={10} /><View style={{ flex: 1 }}><Text style={{ color: colors.fg, fontSize: 16, fontWeight: '800' }} numberOfLines={1}>{sm.tpoints.who[0].name}</Text><Text style={{ color: colors.fg, fontSize: 20, fontWeight: '800' }}>{sm.tpoints.val}</Text></View></View></Grad>) : null}
         </View>
         <Btn icon="share-social-outline" onPress={() => setSx(!sx)}>{sx ? 'Hide the export picture' : `Export the season ${n} summary`}</Btn>
         {sx ? <><SummaryCard shotRef={shotS} title={`${f.name} · season ${n}`} sub={`${sm.races} races`} hero={hero} rows={rows} /><ExportBar target={shotS} /></> : null}

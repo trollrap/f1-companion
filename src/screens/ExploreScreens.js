@@ -1,5 +1,6 @@
 import React, { useMemo, useRef, useState, useEffect } from 'react';
-import { View, Pressable, TextInput, Share, Alert, Image, LayoutAnimation } from 'react-native';
+import { View, Pressable, TextInput, Share, Image, LayoutAnimation } from 'react-native';
+import { Alert } from '../lib/dialog';
 import { Ionicons } from '@expo/vector-icons';
 import { Text } from '../components/Text';
 import Screen, { Card, Eyebrow, Note, ErrorNote } from '../components/Screen';

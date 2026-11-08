@@ -1,5 +1,6 @@
 import { isGreek, longDateEl } from '../lib/time';
 import React, { useState } from 'react';
+import HomeBtn from '../components/HomeBtn';
 import { View, Pressable, ScrollView, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Skeleton from '../components/Skeleton';
@@ -52,7 +53,7 @@ export default function DriverScreen({ route, navigation }) {
   const teamsList = useAsync(() => (wantMore ? driverTeamsList(driverId) : Promise.resolve(null)), [driverId, wantMore]);
   const standAll = useAsync(() => driverStandings(year), [year]);
   const stand = { v: standAll.v ? standAll.v.find((x) => x.driverId === driverId) || null : standAll.v, loading: standAll.loading };
-  React.useEffect(() => { navigation.setOptions({ headerRight: () => <StarButton on={favs.isDriver(driverId)} onPress={() => favs.toggleDriver(driverId)} label="Favourite" /> }); }, [favs.drivers]);
+  React.useEffect(() => { navigation.setOptions({ headerRight: () => <HomeBtn><StarButton on={favs.isDriver(driverId)} onPress={() => favs.toggleDriver(driverId)} label="Favourite" /></HomeBtn> }); }, [favs.drivers]);
   const rows = season.v?.rows || [];
   // The team he drove for in the viewed season (the current team when it is this season).
   const sTeamId = (isCur ? teamId : null) || rows.at(-1)?.teamId || stand.v?.teamId || teamId, sTeam = (isCur ? team : null) || rows.at(-1)?.team || stand.v?.team || team;
@@ -68,7 +69,7 @@ export default function DriverScreen({ route, navigation }) {
       <Grad color={color} from={0.68} to={0.06} border={0.5} style={[{ height: 232 }, champion && { borderColor: colors.gold, borderWidth: 2 }]}>
         {champion ? <View pointerEvents="none" style={{ position: 'absolute', left: 0, right: 0, top: 0, height: 4, backgroundColor: colors.gold }} /> : null}
         {photo ? <Image source={photo} resizeMode="cover" resizeMethod="resize" fadeDuration={0} style={{ position: 'absolute', right: -30, bottom: -30, width: 268, height: 268 }} />
-          : number != null ? <Text style={{ position: 'absolute', right: 8, bottom: -22, fontFamily: 'display', fontWeight: '800', fontSize: 150, color: 'rgba(255,255,255,0.12)' }}>{number}</Text> : null}
+          : number != null ? <Text style={{ position: 'absolute', right: 8, bottom: -22, fontFamily: 'display', fontWeight: '800', fontSize: 150, color: colors.onSoft }}>{number}</Text> : null}
         {photo ? <Scrim dir="h" from={0.6} to={0} style={{ right: '30%' }} /> : null}
         {photo ? <Scrim dir="v" from={0} to={0.55} style={{ top: '60%' }} /> : null}
         <View style={{ flex: 1, padding: 16, justifyContent: 'space-between' }}>
@@ -78,7 +79,7 @@ export default function DriverScreen({ route, navigation }) {
             {champion ? <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: alpha(colors.gold, 0.2), borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3, borderWidth: 1, borderColor: alpha(colors.gold, 0.7) }}><Ionicons name="trophy" size={13} color={colors.gold} /><Text style={{ color: colors.gold, fontFamily: 'label', fontWeight: '700', fontSize: 11, letterSpacing: 1.2 }}>{`CHAMPION ${year}`}</Text></View> : null}
           </View>
           <View style={{ maxWidth: '62%' }}>
-            <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 18 }} numberOfLines={1}>{nm.first}</Text>
+            <Text style={{ color: colors.onSoft, fontSize: 18 }} numberOfLines={1}>{nm.first}</Text>
             <Text style={{ fontFamily: 'display', fontStyle: 'italic', fontWeight: '800', fontSize: 36, color: colors.fg, lineHeight: 42 }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>{nm.last}</Text>
             {sTeam ? (
               <Pressable onPress={() => sTeamId && navigation.navigate('Team', { teamId: sTeamId, name: sTeam, year: isCur ? undefined : year })} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8, height: 28 }}>
@@ -113,7 +114,7 @@ export default function DriverScreen({ route, navigation }) {
           <Grad color={color} from={0.5} to={0.05} dir="h" radius={14} border={0.35} style={{ height: eng ? 96 : 60 }}>
             {eng ? <Image source={eng} resizeMode="cover" resizeMethod="resize" fadeDuration={0} style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 96, height: 96 }} /> : null}
             <View style={{ flex: 1, paddingHorizontal: 14, justifyContent: 'center' }}>
-              <Text style={{ color: 'rgba(255,255,255,0.7)', fontFamily: 'label', fontSize: 10, letterSpacing: 1.6 }}>RACE ENGINEER</Text>
+              <Text style={{ color: colors.onSoft, fontFamily: 'label', fontSize: 10, letterSpacing: 1.6 }}>RACE ENGINEER</Text>
               {engName ? <Text style={{ color: colors.fg, fontSize: 18, fontWeight: '700', maxWidth: '70%' }} numberOfLines={1}>{engName}</Text> : null}
             </View>
           </Grad>) : null}

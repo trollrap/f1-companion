@@ -1,11 +1,12 @@
 export const colors = {
   bg: '#0A0506', surface: '#140B0D', surface2: '#1E1215', line: '#2E1B20', fg: '#F7F1F2', muted: '#9E8D92',
-  accent: '#F0141E', accentSoft: '#3B0C11', cardA: '#2A1318', cardB: '#160C0F', cardC: '#34121A', deep: '#0A0506', red: '#F0141E', good: '#22C55E', gold: '#F5C400', purple: '#B26BFF', sprint: '#FF2D87',
+  accent: '#F0141E', accentSoft: '#3B0C11', cardA: '#2A1318', cardB: '#160C0F', cardC: '#34121A', deep: '#0A0506', red: '#F0141E', good: '#22C55E', gold: '#F5C400', purple: '#B26BFF', sprint: '#FF2D87', onSoft: 'rgba(255,255,255,0.75)', isLight: false,
 };
 // Constructor colours by Jolpica constructorId. These are fallbacks: the app overrides them at runtime with the colours OpenF1
 // reports for the current season (see src/api/paddock.js), so new teams get their real colour without a code change.
 export const teamColors = { mercedes: '#27F4D2', ferrari: '#E8002D', red_bull: '#3671C6', mclaren: '#FF8000', aston_martin: '#229971', alpine: '#FF87BC', williams: '#64C4FF', haas: '#B6BABD', rb: '#6692FF', sauber: '#52E252', audi: '#F2262E', cadillac: '#B7BCC6' };
 const live = {};
+export const devTeamColors = {}; // set by the developer menu (lib/dev.js)
 export const setLiveTeamColors = (m) => { Object.keys(live).forEach((k) => delete live[k]); Object.assign(live, m); };
 // Teams that no longer race (or never reported a colour) still get a stable colour of their own, so old seasons are not all grey.
 const OLD = { williams: '#64C4FF', lotus_f1: '#B8A100', renault: '#FFF500', toro_rosso: '#469BFF', alphatauri: '#5E8FAA', racing_point: '#F596C8', force_india: '#F596C8', alfa: '#B12039', sauber: '#52E252', bmw_sauber: '#2F6BBB', jordan: '#F5D90A', benetton: '#00A651', tyrrell: '#1E3F8C', brabham: '#2D6B3F', lotus: '#1F6B3A', minardi: '#222222', jaguar: '#0E6B3B', toyota: '#E10020', honda: '#E5E5E5', brawn: '#C7F000', bar: '#A8A8A8', stewart: '#EEEEEE', ligier: '#2B5FAE', arrows: '#F57C00', march: '#7A5C2E', cooper: '#2A6B3A', maserati: '#B30000', matra: '#2B5FAE', bmw: '#2F6BBB', manor: '#E10600', marussia: '#D22630', caterham: '#0B6B3A', hrt: '#A0A0A0', virgin: '#C8102E', spyker: '#FF6A00', mf1: '#C8102E', super_aguri: '#E10600', midland: '#C8102E', prost: '#2B5FAE', leyton: '#7AB8E0', ferrari_old: '#E8002D', audi: '#B8B8B8', cadillac: '#C8C8C8', rb: '#6692FF' };
@@ -13,7 +14,7 @@ const hsl = (h, s, l) => { s /= 100; l /= 100; const k = (n) => (n + h / 30) % 1
 const stable = (id) => { let h = 0; for (const ch of String(id)) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return hsl(h % 360, 45, 50); };
 // Teams whose real colours are too close to another team (Audi/Ferrari red, Cadillac/Haas grey) get a fixed distinct colour that beats the live feed.
 const PINNED = { audi: '#A6123F', cadillac: '#C9A227', haas: '#B6BABD', ferrari: '#E8002D' };
-export const teamColor = (id) => PINNED[id] || live[id] || teamColors[id] || OLD[id] || stable(id);
+export const teamColor = (id) => devTeamColors[id] || PINNED[id] || live[id] || teamColors[id] || OLD[id] || stable(id);
 // '#RRGGBB' + alpha 0..1 -> '#RRGGBBAA'
 export const alpha = (hex, a) => hex + Math.round(Math.max(0, Math.min(1, a)) * 255).toString(16).padStart(2, '0');
 
@@ -28,5 +29,17 @@ export function applyAccent(hex) {
   colors.accent = '#' + c.map((x) => x.toString(16).padStart(2, '0')).join('').toUpperCase(); colors.red = colors.accent;
   colors.accentSoft = hsl(h, neutral ? 6 : 62, 14);
   Object.assign(colors, { bg: t(30, 3.6), deep: t(30, 3.6), surface: t(24, 6.2), surface2: t(22, 9), line: t(20, 14), cardA: t(30, 12), cardB: t(26, 7), cardC: t(34, 14.5) });
+  return true;
+}
+
+// Theme: 'dark' (default), 'amoled' (pure black) or 'light' (white). Called at start-up after the accent colour, so every style is built with it.
+export function applyTheme(mode) {
+  if (mode !== 'amoled' && mode !== 'light') return false;
+  const base = rgb(colors.accent) || [240, 20, 30]; const h = hueOf(base); const neutral = Math.max(...base) - Math.min(...base) < 30;
+  if (mode === 'amoled') {
+    Object.assign(colors, { bg: '#000000', deep: '#000000', surface: '#0B0B0C', surface2: '#151517', line: '#232326', cardA: '#121214', cardB: '#08080A', cardC: '#1A1A1D', muted: '#9A9AA2', isLight: false });
+  } else {
+    Object.assign(colors, { bg: '#F3F4F7', deep: '#0B0C10', surface: '#FFFFFF', surface2: '#E9EBF0', line: '#D5D9E1', fg: '#13151A', muted: '#5B6372', cardA: '#FFFFFF', cardB: '#F6F7FA', cardC: '#EEF0F5', accentSoft: hsl(h, neutral ? 6 : 80, 90), onSoft: 'rgba(19,21,26,0.72)', good: '#15803D', gold: '#B7791F', isLight: true });
+  }
   return true;
 }

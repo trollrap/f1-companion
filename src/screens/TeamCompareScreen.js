@@ -48,7 +48,7 @@ export default function TeamCompareScreen({ route }) {
       <Grad color={colA} from={0.55} to={0.05} style={{ padding: 14 }}>
         <Text style={{ color: colors.muted, fontFamily: 'label', fontSize: 11, letterSpacing: 2 }}>COMPARING</Text>
         <Text style={{ color: colors.fg, fontSize: 26, fontWeight: '800', fontStyle: 'italic' }}>{a.name}</Text>
-        <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 15 }}>{year0 !== YEAR ? `Season ${year0} · pick a rival` : 'Pick a rival below'}</Text>
+        <Text style={{ color: colors.onSoft, fontSize: 15 }}>{year0 !== YEAR ? `Season ${year0} · pick a rival` : 'Pick a rival below'}</Text>
       </Grad>
       <SearchBox value={q} onChange={setQ} placeholder="Search any team that ever raced" />
       {q.trim().length >= 2 ? (

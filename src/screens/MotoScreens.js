@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { View, Pressable, StyleSheet } from 'react-native';
+import HomeBtn from '../components/HomeBtn';
 import { usePrefs } from '../hooks/usePrefs';
 import { Ionicons } from '@expo/vector-icons';
 import Skeleton from '../components/Skeleton';
@@ -147,7 +148,7 @@ export function MotoStandings({ navigation }) {
 
 export function MotoRider({ route, navigation }) {
   const { rider, season } = route.params; const mf = useMotoFavs();
-  React.useEffect(() => { navigation.setOptions({ headerRight: () => <StarButton on={mf.has(rider.riderId)} onPress={() => mf.toggle(rider.riderId)} label="Favourite" /> }); }, [mf.ids]);
+  React.useEffect(() => { navigation.setOptions({ headerRight: () => <HomeBtn><StarButton on={mf.has(rider.riderId)} onPress={() => mf.toggle(rider.riderId)} label="Favourite" /></HomeBtn> }); }, [mf.ids]);
   const res = useAsync(() => riderSeason(season.id, season.year, rider.riderId), [rider.riderId]);
   const list = res.v || []; const races = list.filter((x) => x.race);
   const fin = races.map((x) => x.race.position).filter((p) => Number.isFinite(Number(p)) && p != null).map(Number);
@@ -162,7 +163,7 @@ export function MotoRider({ route, navigation }) {
             <Text style={s.title} numberOfLines={2}>{rider.name}</Text>
             <Text style={s.sub}>{[rider.team, rider.bike].filter(Boolean).join(' · ')}</Text>
           </View>
-          {rider.number != null ? <Text style={{ fontFamily: 'display', fontWeight: '800', fontSize: 56, color: 'rgba(255,255,255,0.85)' }}>{rider.number}</Text> : null}
+          {rider.number != null ? <Text style={{ fontFamily: 'display', fontWeight: '800', fontSize: 56, color: colors.onSoft }}>{rider.number}</Text> : null}
         </View>
       </Grad>
       <Card>
@@ -198,7 +199,7 @@ export function MotoPaddock({ navigation }) {
   const box = (r) => (
     <View key={r.riderId || r.name} style={{ width: '48.5%' }}><Press onPress={() => open(r)}>
       <Grad color={bikeColor(r.bike, r.team, teamColor(r.team))} from={0.6} to={0.08} radius={18} border={mf.has(r.riderId) ? 0.9 : 0.4} style={[{ height: 130 }, mf.has(r.riderId) && { borderColor: colors.gold }]}>
-        {r.number != null ? <Text style={{ position: 'absolute', right: 6, bottom: -10, fontFamily: 'display', fontWeight: '800', fontSize: 78, color: 'rgba(255,255,255,0.13)' }}>{r.number}</Text> : null}
+        {r.number != null ? <Text style={{ position: 'absolute', right: 6, bottom: -10, fontFamily: 'display', fontWeight: '800', fontSize: 78, color: colors.onSoft }}>{r.number}</Text> : null}
         <View style={{ flex: 1, padding: 12, justifyContent: 'space-between' }}>
           <Text style={{ fontFamily: 'display', fontWeight: '800', fontSize: 24, color: colors.fg }}>{r.number ?? ''}</Text>
           <View><Text style={s.sub} numberOfLines={1}>{r.name.split(' ')[0]}</Text><Text style={{ color: colors.fg, fontSize: 19, fontWeight: '700' }} numberOfLines={1}>{r.name.split(' ').slice(1).join(' ')}</Text></View>
@@ -223,7 +224,7 @@ export function MotoPaddock({ navigation }) {
           <Grad color={col} from={0.75} to={0.1} dir="h" radius={18} border={0.45} style={{ padding: 14 }}>
             <View style={{ gap: 4 }}>{mem.map((r) => <Text key={r.name} style={{ color: colors.fg, fontSize: 15, fontWeight: '700' }}>{`${r.number != null ? r.number + '  ' : ''}${r.name}`}</Text>)}</View>
             <Text style={{ color: colors.fg, fontSize: 24, fontWeight: '700', marginTop: 10 }} numberOfLines={1}>{tm.name}</Text>
-            <Text style={{ color: 'rgba(255,255,255,0.75)', fontSize: 16 }}>{`P${tm.position} · ${tm.points} pts`}</Text>
+            <Text style={{ color: colors.onSoft, fontSize: 16 }}>{`P${tm.position} · ${tm.points} pts`}</Text>
           </Grad>
         </Press>); })}
     </Screen>
@@ -335,7 +336,7 @@ export function MotoEvent({ route }) {
 }
 const s = StyleSheet.create({
   stat: { width: '31.5%', backgroundColor: colors.surface2, borderWidth: 1, borderColor: colors.line, borderRadius: 12, padding: 10 }, statK: { color: colors.muted, fontFamily: 'label', fontSize: 9, letterSpacing: 1.2 }, statV: { color: colors.fg, fontSize: 22, fontWeight: '800', marginTop: 2 },
-  eyebrow: { color: 'rgba(255,255,255,0.8)', fontFamily: 'label', fontSize: 11, letterSpacing: 2, fontWeight: '700' },
+  eyebrow: { color: colors.onSoft, fontFamily: 'label', fontSize: 11, letterSpacing: 2, fontWeight: '700' },
   title: { color: colors.fg, fontSize: 24, fontWeight: '800', fontStyle: 'italic' }, sub: { color: colors.muted, fontSize: 14 },
   name: { color: colors.fg, fontSize: 18, fontWeight: '700' }, right: { color: colors.fg, fontSize: 16, fontWeight: '700' },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.line },

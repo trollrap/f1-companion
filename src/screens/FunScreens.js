@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { View, Pressable, Switch, Alert, ScrollView } from 'react-native';
+import { View, Pressable, Switch, ScrollView } from 'react-native';
+import { Alert } from '../lib/dialog';
 import { Ionicons } from '@expo/vector-icons';
 import { Text } from '../components/Text';
 import Screen, { Card, Eyebrow, Note } from '../components/Screen';
@@ -33,9 +34,9 @@ export function FunHome({ navigation }) {
           {p?.photo ? <View style={{ position: 'absolute', right: -6, bottom: -6 }}><Avatar uri={p.photo} size={150} radius={20} color={p.color} /></View> : null}
           {p?.photo ? <Scrim dir="h" from={0.6} to={0} style={{ right: '35%' }} /> : null}
           <View style={{ flex: 1, padding: 14, justifyContent: 'space-between' }}>
-            <Text style={{ color: 'rgba(255,255,255,0.8)', fontFamily: 'label', fontSize: 11, letterSpacing: 2 }}>YOUR DRIVER</Text>
-            {p ? (<View><Text style={{ color: colors.fg, fontSize: 28, fontWeight: '800', fontStyle: 'italic' }} numberOfLines={1}>{p.name || 'Unnamed'}</Text><Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 16 }}>{`#${p.number || '–'} · ${p.team || 'No team'} · ${stats.races} races · ${stats.wins} wins`}</Text></View>)
-              : (<View><Text style={{ color: colors.fg, fontSize: 24, fontWeight: '800' }}>Create your driver</Text><Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 16 }}>Photo, number, team, seasons and results</Text></View>)}
+            <Text style={{ color: colors.onSoft, fontFamily: 'label', fontSize: 11, letterSpacing: 2 }}>YOUR DRIVER</Text>
+            {p ? (<View><Text style={{ color: colors.fg, fontSize: 28, fontWeight: '800', fontStyle: 'italic' }} numberOfLines={1}>{p.name || 'Unnamed'}</Text><Text style={{ color: colors.onSoft, fontSize: 16 }}>{`#${p.number || '–'} · ${p.team || 'No team'} · ${stats.races} races · ${stats.wins} wins`}</Text></View>)
+              : (<View><Text style={{ color: colors.fg, fontSize: 24, fontWeight: '800' }}>Create your driver</Text><Text style={{ color: colors.onSoft, fontSize: 16 }}>Photo, number, team, seasons and results</Text></View>)}
           </View>
         </Grad>
       </Press>
@@ -87,12 +88,12 @@ export function FunProfile({ navigation }) {
   return (
     <Screen header={false}>
       <Grad color={d.color || colors.accent} from={0.68} to={0.06} border={0.5} style={{ height: 210 }}>
-        {d.photo ? <View style={{ position: 'absolute', right: -10, bottom: -10 }}><Avatar uri={d.photo} size={220} radius={24} color={d.color} /></View> : d.number !== '' ? <Text style={{ position: 'absolute', right: 8, bottom: -22, fontFamily: 'display', fontWeight: '800', fontSize: 150, color: 'rgba(255,255,255,0.12)' }}>{d.number}</Text> : null}
+        {d.photo ? <View style={{ position: 'absolute', right: -10, bottom: -10 }}><Avatar uri={d.photo} size={220} radius={24} color={d.color} /></View> : d.number !== '' ? <Text style={{ position: 'absolute', right: 8, bottom: -22, fontFamily: 'display', fontWeight: '800', fontSize: 150, color: colors.onSoft }}>{d.number}</Text> : null}
         {d.photo ? <Scrim dir="h" from={0.7} to={0} style={{ right: '25%' }} /> : null}
         <View style={{ flex: 1, padding: 16, justifyContent: 'space-between' }}>
           <Text style={{ color: colors.fg, fontFamily: 'display', fontWeight: '800', fontSize: 30 }}>{d.number !== '' ? `#${d.number}` : ''}</Text>
           <View style={{ maxWidth: '62%' }}>
-            <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 18 }} numberOfLines={1}>{nameParts(d.name).first}</Text>
+            <Text style={{ color: colors.onSoft, fontSize: 18 }} numberOfLines={1}>{nameParts(d.name).first}</Text>
             <Text style={{ fontFamily: 'display', fontStyle: 'italic', fontWeight: '800', fontSize: 34, color: colors.fg, lineHeight: 40 }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>{nameParts(d.name).last || 'Your name'}</Text>
             <Text style={{ color: colors.fg, fontSize: 17, fontWeight: '600' }}>{d.team}</Text>
           </View>

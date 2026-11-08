@@ -121,3 +121,6 @@ export function SessionShow({ visible, title, sub, rows, onClose }) {
     </Shell>
   );
 }
+TransferShow.ghost = true;
+ChampionShow.ghost = true;
+SessionShow.ghost = true;

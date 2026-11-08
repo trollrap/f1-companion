@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Pressable, Image, Linking, StyleSheet } from 'react-native';
+import { View, Pressable, Image, Linking, StyleSheet, Text as RNText } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Text } from '../components/Text';
 import Skeleton from '../components/Skeleton';
@@ -68,14 +68,14 @@ export function ArticleScreen({ route }) {
       {item.image ? <Image source={{ uri: item.image }} resizeMode="cover" style={{ width: '100%', aspectRatio: 16 / 9, borderRadius: 16, backgroundColor: colors.surface2 }} /> : null}
       <View style={{ gap: 6 }}>
         <Text style={{ color: colors.accent, fontFamily: 'label', fontSize: 12, letterSpacing: 1.6 }}>{`${item.sourceName.toUpperCase()}${item.date ? ` · ${ago(item.date).toUpperCase()}` : ''}`}</Text>
-        <Text style={{ color: colors.fg, fontSize: 28, fontWeight: '800', lineHeight: 32 }}>{item.title}</Text>
+        <RNText style={{ fontFamily: 'sans-serif', color: colors.fg, fontSize: 26, fontWeight: '800', lineHeight: 32 }}>{item.title}</RNText>
       </View>
       {body.loading && <Skeleton rows={5} />}
       {(body.v || []).map((b, i) => b.t === 'img'
         ? <Image key={i} source={{ uri: b.v }} resizeMode="cover" style={{ width: '100%', aspectRatio: 16 / 9, borderRadius: 14, backgroundColor: colors.surface2 }} />
-        : b.t === 'h' ? <Text key={i} style={{ color: colors.fg, fontSize: 21, fontWeight: '800', marginTop: 6 }}>{b.v}</Text>
-        : b.t === 'quote' ? <View key={i} style={{ borderLeftWidth: 3, borderLeftColor: colors.accent, paddingLeft: 12 }}><Text style={{ color: '#E6D9DC', fontSize: 18, fontStyle: 'italic', lineHeight: 26 }}>{b.v}</Text></View>
-        : <Text key={i} style={{ color: '#E6D9DC', fontSize: 18, lineHeight: 27 }}>{b.v}</Text>)}
+        : b.t === 'h' ? <RNText key={i} style={{ fontFamily: 'sans-serif', color: colors.fg, fontSize: 20, fontWeight: '800', marginTop: 8 }}>{b.v}</RNText>
+        : b.t === 'quote' ? <View key={i} style={{ borderLeftWidth: 3, borderLeftColor: colors.accent, paddingLeft: 12 }}><RNText style={{ fontFamily: 'sans-serif', color: colors.fg, fontSize: 17, fontStyle: 'italic', lineHeight: 27 }}>{b.v}</RNText></View>
+        : <RNText key={i} style={{ fontFamily: 'sans-serif', color: colors.fg, opacity: 0.93, fontSize: 17, lineHeight: 27, letterSpacing: 0.1 }}>{b.v}</RNText>)}
       {item.link ? (
         <Press onPress={() => Linking.openURL(item.link).catch(() => {})}>
           <View style={{ height: 48, borderRadius: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: colors.accentSoft, borderWidth: 1, borderColor: colors.accent }}>

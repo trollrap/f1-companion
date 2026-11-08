@@ -88,7 +88,7 @@ export default function CompareScreen({ route }) {
       <View style={{ flex: 1, padding: 12 }}>
         <Text style={{ fontFamily: 'display', fontWeight: '800', fontSize: 28, color: colors.fg, textAlign: side }}>{numOf(d)}</Text>
         <View style={{ flex: 1 }} />
-        <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 13, textAlign: side }} numberOfLines={1}>{d.first}</Text>
+        <Text style={{ color: colors.onSoft, fontSize: 13, textAlign: side }} numberOfLines={1}>{d.first}</Text>
         <Text style={{ color: colors.fg, fontSize: 20, fontWeight: '700', textAlign: side }} numberOfLines={1}>{d.last}</Text>
       </View>
     </Grad>); };
@@ -96,10 +96,10 @@ export default function CompareScreen({ route }) {
     <Screen header={false}>
       <Grad color={tc(a.teamId)} from={0.55} to={0.05} style={{ padding: 14, minHeight: 96, justifyContent: 'center' }}>
         {driverPhoto(a.driverId) ? <Image source={driverPhoto(a.driverId)} resizeMode="cover" resizeMethod="resize" fadeDuration={0} style={{ position: 'absolute', right: -6, bottom: -14, width: 118, height: 118 }} />
-          : a.number != null && a.number !== '' ? <Text style={{ position: 'absolute', right: 12, bottom: -10, fontFamily: 'display', fontWeight: '800', fontSize: 78, color: 'rgba(255,255,255,0.28)' }}>{a.number}</Text> : null}
+          : a.number != null && a.number !== '' ? <Text style={{ position: 'absolute', right: 12, bottom: -10, fontFamily: 'display', fontWeight: '800', fontSize: 78, color: colors.onSoft }}>{a.number}</Text> : null}
         <Text style={{ color: colors.muted, fontFamily: 'label', fontSize: 11, letterSpacing: 2 }}>COMPARING</Text>
         <Text style={{ color: colors.fg, fontSize: 26, fontWeight: '800', fontStyle: 'italic', maxWidth: '68%' }} numberOfLines={1}>{a.first} {a.last}</Text>
-        <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 15 }}>{year0 !== YEAR ? `Season ${year0} · pick a rival` : 'Pick a rival below'}</Text>
+        <Text style={{ color: colors.onSoft, fontSize: 15 }}>{year0 !== YEAR ? `Season ${year0} · pick a rival` : 'Pick a rival below'}</Text>
       </Grad>
       <SearchBox value={q} onChange={setQ} placeholder="Search any driver who ever raced" />
       {q.trim().length >= 2 ? (
