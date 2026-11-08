@@ -172,3 +172,19 @@ Expo Go (SDK 53+) does not include the `expo-notifications` native module; impor
 - Save safety (src/lib/durable.js, src/fun/store.js): saves are written to .tmp then swapped in, previous good file kept as .bak; read picks the newest copy that parses; saves over 1.5 MB no longer go to AsyncStorage (Android row limit); new "T:<time>\n<text>" format halves memory. Root cause of "lost everything": a corrupt/truncated save made load() fail silently, state stayed empty and the next write overwrote the file. Now a failed load blocks writes (`blocked`) instead of overwriting.
 - Audi colour now #A6123F (theme.js PINNED), was lime.
 - Fantasy bar: Paddock tab (teams with both drivers, tap a driver for the profile) replaces Settings; Settings is a small gear top-right (toggles). Main app already had the gear in Header.
+
+## V1.19.1
+- Rafael Câmara number 51 (api/paddock.js FIXED_NUMBERS, fun/realGrid.js).
+- LastSession: no longer falls back to the last race during a race weekend; practice without an official result uses best laps (`sessionBestLaps`, OpenF1 /laps). Unverified against live OpenF1.
+- Fantasy settings gear moved into the native header (top right, next to the save name); toggles the settings tab.
+
+## V1.19.2
+- UndoChip only appears for a change made while the screen is open (was reappearing for 9s on every screen mount). Settings "Undo last change" button stays.
+
+## V1.20.0 (JS-only)
+- Home "Explore" strip: Race weekend, Leaderboard, Quiz, Records.
+- `screens/ExploreScreens.js`: WeekendScreen (countdown, session timeline with done/live, Open-Meteo forecast per session via geocoding of the circuit location, "what to watch" from standings + circuit history), LeaderboardScreen (own picks + friends pasted as `F1P|name|round:pole:p1:p2:p3;...` codes, `lib/predFriends.js`; scored with `lib/predictions.score`), QuizScreen (history trivia + guess-the-driver from photos; best score in AsyncStorage `quizBest`), RecordsScreen (On this day / Records / All-time duel).
+- `lib/trivia.js`: everything offline from `data/history.json` (records, onThisDay, circuitHistory, duel, quiz questions).
+- `components/Anim.js`: CountUp, Bar, Pop.
+- Fantasy: Paddock tab now has Grid / Principal / Rivalries. `fun/tp.js` + `screens/FantasyTP.js`: Team Principal mode (budget from prize money, upgrades for car/reliability/pit, 2-year contracts that stop poaching in `simulateTransfers`, press conference, board target, log); rivalries from clashes and close fights.
+- Unverified on device: Open-Meteo calls, weekend hub layout, all new screens (Android bundle builds; trivia and tp logic tested in node). New screens are English only (not translated to Greek).

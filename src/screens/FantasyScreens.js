@@ -17,6 +17,7 @@ import { TransferShow, ChampionShow, SessionShow } from '../components/Shows';
 import { flagOfPlace, flagOfCountry, countryNames } from '../fun/geo';
 import { useFun, pickImage, uid, canPickImage } from '../fun/store';
 import LiveRace from '../components/LiveRace';
+import { TeamPrincipal, Rivalries } from './FantasyTP';
 import { makeGrid, nextStep, runStep, runWeekend, runSeason, sessionsOf, standings, freeNumber, randomDriver, TEAM_COLORS, DRIVER_ATTRS, TEAM_ATTRS, A, TA, ovr, makeDriverAttrs, simulateTransfers } from '../fun/sim';
 import { attrsFor } from '../fun/talent';
 import { driverPic, teamPic, viewOf, seasonList, seasonNo, careerOf, numberClash, closeSeason, isDone, allTime, seasonSummary, titleStatus } from '../fun/look';
@@ -237,8 +238,9 @@ export function FantasyNew({ navigation }) {
 
 /* ------------------------------------------------------------------ one fantasy season */
 export function Fantasy({ route, navigation }) {
-  const { id } = route.params; const fun = useFun(); const insets = useSafeAreaInsets(); const f = fun.get(id); const [tab, setTab] = useState(f?.ended ? 'stats' : 'home'); const [sub, setSub] = useState('drivers'); const [art, setArt] = useState(null); const [busy, setBusy] = useState(false); const [sel, setSel] = useState(null); const [exp, setExp] = useState(false); const [shw, setShw] = useState(null); const [live, setLive] = useState(null); const shotD = useRef(null), shotT = useRef(null);
-  useEffect(() => { if (f) navigation.setOptions({ title: f.name }); }, [f?.name]);
+  const { id } = route.params; const fun = useFun(); const insets = useSafeAreaInsets(); const f = fun.get(id); const [tab, setTab] = useState(f?.ended ? 'stats' : 'home'); const [sub, setSub] = useState('drivers'); const [art, setArt] = useState(null); const [busy, setBusy] = useState(false); const [sel, setSel] = useState(null); const [exp, setExp] = useState(false); const [shw, setShw] = useState(null); const [live, setLive] = useState(null); const [pad, setPad] = useState('grid'); const shotD = useRef(null), shotT = useRef(null);
+  useEffect(() => { if (f) navigation.setOptions({ title: f.name, headerRight: () => (
+    <Pressable onPress={() => { setArt(null); setTab((t) => (t === 'settings' ? 'home' : 'settings')); }} hitSlop={12} accessibilityLabel="Fantasy settings" style={({ pressed }) => [{ width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center', marginRight: 4, backgroundColor: tab === 'settings' ? alpha(colors.accent, 0.3) : 'transparent' }, pressed && { opacity: 0.6 }]}><Ionicons name="settings-outline" size={22} color={colors.fg} /></Pressable>) }); }, [f?.name, tab]);
   // Back (button or swipe) from an article or from another tab lands on this fantasy's Home, and only from Home leaves the fantasy.
   const sref = useRef(null); useEffect(() => { sref.current?.scrollTo?.({ y: 0, animated: false }); }, [tab, art]);
   const nav = useRef({ art, tab, leave: false }); nav.current.art = art; nav.current.tab = tab;
@@ -271,10 +273,7 @@ export function Fantasy({ route, navigation }) {
   const teamRows = st.teams.map((t) => ({ key: t.id, name: t.name, team: `${t.wins} wins`, color: t.color, points: t.points, logo: teamPic(t), teamRow: true }));
   return (
     <Screen header={false} scrollRef={sref} revealKey={`${shown}:${sub}`} footer={bar} swipe={{ index: Math.min(5, tabs.indexOf(tab)), count: 6, onIndex: (i) => { setArt(null); setTab(tabs[i]); } }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-        <View style={{ flex: 1 }}>{seasonList(f).length > 1 ? <Dropdown value={n} options={seasonList(f).map((k) => [k, k === cur ? `Season ${k} · ${off ? 'transfers' : 'current'}` : `Season ${k}`])} onChange={(k) => { setSel(k); setExp(false); }} prefix="Season" /> : null}</View>
-        <Pressable onPress={() => { setArt(null); setTab(tab === 'settings' ? 'home' : 'settings'); }} hitSlop={10} accessibilityLabel="Fantasy settings" style={({ pressed }) => [{ width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: tab === 'settings' ? alpha(colors.accent, 0.3) : 'rgba(255,255,255,0.08)' }, pressed && { opacity: 0.6 }]}><Ionicons name="settings-outline" size={20} color={colors.fg} /></Pressable>
-      </View>
+      {seasonList(f).length > 1 ? <Dropdown value={n} options={seasonList(f).map((k) => [k, k === cur ? `Season ${k} · ${off ? 'transfers' : 'current'}` : `Season ${k}`])} onChange={(k) => { setSel(k); setExp(false); }} prefix="Season" /> : null}
       <UndoChip depth={fun.undoDepth(id)} onPress={() => fun.undo(id)} />
       <LiveRace visible={!!live} race={live?.st.race.name || ''} laps={live?.laps} drivers={live?.drivers} sc={live?.sc} wet={live?.wet} onClose={endLive} />
       <SessionShow visible={shw?.type === 'session'} title={(shw?.type === 'session' && f.races.find((r) => r.id === shw.raceId)?.name) || ''} sub={shw?.session} rows={shw?.type === 'session' ? sessRows(f, shw.raceId, shw.session) : []} onClose={() => setShw(null)} />
@@ -382,6 +381,10 @@ export function Fantasy({ route, navigation }) {
         {news.map((a) => <NewsCard key={a.id} a={a} onPress={() => setArt(a)} />)}
       </>)}
       {shown === 'paddock' && (<>
+        <Segmented value={pad} onChange={setPad} items={[['grid', 'Grid'], ['tp', f.tp ? 'My team' : 'Principal'], ['rivals', 'Rivalries']]} />
+        {pad === 'tp' ? <TeamPrincipal f={f} id={id} fun={fun} /> : null}
+        {pad === 'rivals' ? <Rivalries f={f} /> : null}
+        {pad === 'grid' ? (<>
         {st.teams.map((t) => { const ds = st.drivers.filter((d) => d.teamId === t.id); return (
           <Grad key={t.id} color={t.color} from={0.5} to={0.06} dir="h" radius={18} border={0.4} style={{ padding: 12, gap: 10 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
@@ -396,6 +399,7 @@ export function Fantasy({ route, navigation }) {
                 </Pressable>))}
             </View>
           </Grad>); })}
+        </>) : null}
       </>)}
       {shown === 'stats' && <AllStats f={f} v={v} n={n} closed={complete || (ended && isCur)} navigation={navigation} />}
       {shown === 'settings' && <FunSettingsCard />}

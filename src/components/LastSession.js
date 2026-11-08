@@ -8,7 +8,7 @@ import { useAsync } from '../hooks/useAsync';
 import { useNow } from '../hooks/useSeason';
 import { useTeamColor } from '../hooks/useTeams';
 import { lastRace, sessionResults, driverStandings } from '../api/jolpica';
-import { sessionClassification, YEAR } from '../api/openf1';
+import { sessionClassification, sessionBestLaps, YEAR } from '../api/openf1';
 import { shortName } from '../lib/time';
 import { colors } from '../theme';
 
@@ -20,7 +20,7 @@ export default function LastSession({ season, navigation }) {
   const s = season.next ? ended.at(-1) : null; const meeting = s ? season.next : null;
   // Newest finished session first. A session whose results are not published yet (or whose request is slow) is skipped after a few seconds and the
   // previous one is tried, so the card shows something useful instead of waiting or staying empty; the last race is the final fallback.
-  const cands = s ? ended.slice(-3).reverse() : [];
+  const cands = s ? ended.slice(-4).reverse() : [];
   const res = useAsync(async () => {
     const quick = (p, ms = 7000) => Promise.race([p, new Promise((r) => setTimeout(() => r(null), ms))]);
     const lastRaceCard = async () => { const l = await lastRace(YEAR); return l ? { title: 'Race', gp: l.name, round: l.round, kind: 'race', rows: l.rows.slice(0, 3) } : null; };
@@ -31,11 +31,12 @@ export default function LastSession({ season, navigation }) {
       if (kind) rows = await quick(sessionResults(YEAR, meeting.round, kind).catch(() => null));
       else if (c.session_key) {
         rows = await quick(sessionClassification(c.session_key).catch(() => []));
+        if (!rows || !rows.length) rows = await quick(sessionBestLaps(c.session_key).catch(() => []), 9000);
         rows = (rows || []).map((r) => { const m = ids.find((x) => String(x.permNumber) === String(r.number)) || ids.find((x) => x.last && r.last && x.last.toLowerCase() === r.last.toLowerCase()); return { ...r, driverId: m?.driverId, teamId: m?.teamId }; });
       }
       if (rows && rows.length) return { ...base, kind: kind ? (kind === 'qualifying' ? 'quali' : 'race') : 'timing', rows: rows.slice(0, 3) };
     }
-    return (await quick(lastRaceCard(), 9000)) || { title: cands[0]?.session_name || 'Session', gp: meeting.meeting_name, round: Number(meeting.round), kind: 'none', rows: [] };
+    return { title: cands[0]?.session_name || 'Session', gp: meeting.meeting_name, round: Number(meeting.round), kind: 'none', rows: [] };
   }, [s?.session_name, meeting?.meeting_key]);
   const d = res.v;
   const open = () => { const m = d && (season.races || []).find((r) => Number(r.round) === d.round); if (m) navigation.navigate('Round', { meeting: m }); };

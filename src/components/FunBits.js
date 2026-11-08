@@ -147,7 +147,8 @@ export function Slide({ label, value, min = 30, max = 99, onChange, color = colo
 // Shows up when a change has just been made and goes away by itself after a few seconds; the Settings tab keeps a permanent Undo button.
 export function UndoChip({ depth = 0, show, onPress }) {
   const [on, setOn] = React.useState(false);
-  React.useEffect(() => { if (!depth) { setOn(false); return undefined; } setOn(true); const t = setTimeout(() => setOn(false), 9000); return () => clearTimeout(t); }, [depth]);
+  const seen = React.useRef(depth); // only a change made while this screen is open shows the chip, not the history that already existed
+  React.useEffect(() => { if (!depth) { seen.current = 0; setOn(false); return undefined; } if (depth <= seen.current) { seen.current = depth; return undefined; } seen.current = depth; setOn(true); const t = setTimeout(() => setOn(false), 9000); return () => clearTimeout(t); }, [depth]);
   if (!(show ?? depth > 0) || !on) return null;
   return (<Pressable onPress={onPress} accessibilityRole="button" style={({ pressed }) => [{ alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, height: 34, borderRadius: 17, backgroundColor: colors.surface2, borderWidth: 1, borderColor: colors.accent }, pressed && { opacity: 0.7 }]}><Ionicons name="arrow-undo" size={16} color={colors.accent} /><Text style={{ color: colors.fg, fontWeight: '700', fontSize: 14 }}>Undo last change</Text></Pressable>);
 }

@@ -74,6 +74,19 @@ export default function HomeScreen({ navigation }) {
         </Pressable>
       ) : <Card><Text style={s.big}>Season complete</Text></Card>}
 
+      <View>
+        <Eyebrow>Explore</Eyebrow>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingTop: 10 }}>
+          {[['Weekend', 'Race weekend', 'time', 'Timeline, weather, what to watch', colors.accent], ['Leaderboard', 'Leaderboard', 'podium', 'Predictions vs friends', colors.gold], ['Quiz', 'Quiz', 'help-circle', 'Test your F1 knowledge', colors.purple], ['Records', 'Records', 'stats-chart', 'On this day, records, duels', '#2CB67D'], ['FunProfile', 'Fantasy', 'sparkles', 'Your own seasons', '#4DA3FF']].filter((x) => x[0] !== 'FunProfile').map(([route, title, icon, sub, c], i) => (
+            <Pressable key={route} onPress={() => navigation.navigate(route)} style={({ pressed }) => pressed && { opacity: 0.8, transform: [{ scale: 0.98 }] }}>
+              <Grad color={c} from={0.5} to={0.06} radius={16} style={{ width: 168, height: 112, padding: 12, justifyContent: 'space-between' }}>
+                <Ionicons name={icon} size={26} color={c} />
+                <View><Text style={{ color: colors.fg, fontSize: 18, fontWeight: '800' }}>{title}</Text><Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12 }} numberOfLines={2}>{sub}</Text></View>
+              </Grad>
+            </Pressable>))}
+        </ScrollView>
+      </View>
+
       {(mine.length > 0 || mineT.length > 0) && (
         <View>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>

@@ -17,7 +17,7 @@ export async function loadRealGrid(taken = []) {
     const list = lu[tid]; const share = Math.pow((tpts[tid] || 0) / maxT, 0.6); const t = { id: uid(), ref: tid, name: list[0].team || cs.find((c) => c.teamId === tid)?.name || tid, color: teamColor(tid), logo: null, car: Math.round(46 + 50 * share), rel: Math.round(70 + 22 * share), dev: 60, pit: Math.round(68 + 22 * share) };
     teams.push(t);
     list.forEach((x) => {
-      const raw = Number(ds.find((d) => d.driverId === x.driverId)?.permNumber) || Number(meta?.drivers?.[x.driverId]?.number) || 0;
+      const raw = ({ rafael_camara: 51 })[x.driverId] || Number(ds.find((d) => d.driverId === x.driverId)?.permNumber) || Number(meta?.drivers?.[x.driverId]?.number) || 0;
       const number = raw && !used.has(raw) ? raw : freeNumber([...used]); used.add(number);
       const at = attrsFor(x.driverId, null); const pts = Math.round(58 + 38 * Math.pow((dpts[x.driverId] || 0) / maxD, 0.6));
       drivers.push({ id: uid(), ref: x.driverId, first: x.first, last: x.last, name: x.name || `${x.first} ${x.last}`, number, teamId: t.id, photo: null, ...(at.known ? at : { ...at, pace: pts, quali: pts, race: pts, skill: pts, pot: pts }) });

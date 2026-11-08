@@ -16,12 +16,13 @@ import { usePredictions, score } from '../lib/predictions';
 import { shortName } from '../lib/time';
 import { Pressable } from 'react-native';
 import { colors } from '../theme';
+import { useNavigation } from '@react-navigation/native';
 
 const NONE = '';
 const startOf = (sessions, name) => { const s = sessions?.find((x) => x.session_name === name); return s ? Date.parse(s.date_start) : null; };
 // Pick pole and podium for the next race, then see how many points the real result earns.
 export default function PredictScreen() {
-  const season = useSeason(); const now = useNow(30000); const P = usePredictions();
+  const nav = useNavigation(); const season = useSeason(); const now = useNow(30000); const P = usePredictions();
   const d = useAsync(() => driverStandings(YEAR), []);
   const next = season.next, round = next ? Number(next.round) : null, mine = (round && P.all[round]) || { pole: NONE, podium: [NONE, NONE, NONE] };
   const poleLock = startOf(season.sessions, 'Qualifying'), raceLock = startOf(season.sessions, 'Race');
@@ -45,6 +46,7 @@ export default function PredictScreen() {
   const shareText = () => Share.share({ message: `My ${shortName(next.meeting_name)} GP picks\nPole: ${name(mine.pole)}\nP1: ${name(mine.podium[0])}\nP2: ${name(mine.podium[1])}\nP3: ${name(mine.podium[2])}` }).catch(() => {});
   return (
     <Screen header={false}>
+      <Pressable onPress={() => nav.navigate('Leaderboard')} style={({ pressed }) => [{ flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-end', paddingHorizontal: 14, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.08)' }, pressed && { opacity: 0.6 }]}><Text style={{ color: colors.fg, fontWeight: '700', fontSize: 14 }}>Leaderboard · friends</Text></Pressable>
       {next ? (
         <Card>
           <Eyebrow>{`Predict · ${shortName(next.meeting_name)}`}</Eyebrow>

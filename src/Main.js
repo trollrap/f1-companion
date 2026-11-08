@@ -35,6 +35,7 @@ import RulesScreen from './screens/RulesScreen';
 import DriverSeasonsScreen from './screens/DriverSeasonsScreen';
 import WhatIfScreen from './screens/WhatIfScreen';
 import PredictScreen from './screens/PredictScreen';
+import { WeekendScreen, LeaderboardScreen, QuizScreen, RecordsScreen } from './screens/ExploreScreens';
 import ChartScreen from './screens/ChartScreen';
 import GridScreen from './screens/GridScreen';
 import TeamCompareScreen from './screens/TeamCompareScreen';
@@ -153,6 +154,10 @@ function Shell() {
               <Stack.Screen name="Rules" component={RulesScreen} options={{ title: tr('F1 rules') }} />
               <Stack.Screen name="WhatIf" component={WhatIfScreen} options={{ title: tr('What if') }} />
               <Stack.Screen name="Predict" component={PredictScreen} options={{ title: tr('Predictions') }} />
+              <Stack.Screen name="Weekend" component={WeekendScreen} options={{ title: 'Race weekend' }} />
+              <Stack.Screen name="Leaderboard" component={LeaderboardScreen} options={{ title: 'Leaderboard' }} />
+              <Stack.Screen name="Quiz" component={QuizScreen} options={{ title: 'Quiz' }} />
+              <Stack.Screen name="Records" component={RecordsScreen} options={{ title: 'Records & history' }} />
               <Stack.Screen name="Chart" component={ChartScreen} options={{ title: tr('Season chart') }} />
               <Stack.Screen name="Grid" component={GridScreen} options={{ title: tr('Next season grid') }} />
               <Stack.Screen name="FunProfile" component={FunProfile} options={{ title: 'Your driver' }} />

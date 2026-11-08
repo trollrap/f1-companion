@@ -88,3 +88,13 @@ export async function racePenalties(sessionKey) {
   });
   return out;
 }
+
+// Fallback for practice sessions whose official result is not published (yet): each driver's best lap, from the lap data.
+export async function sessionBestLaps(sessionKey) {
+  const [laps, drv] = await Promise.all([get(`/laps?session_key=${sessionKey}`, 120000), get(`/drivers?session_key=${sessionKey}`, DAY)]);
+  if (!Array.isArray(laps)) return [];
+  const best = {}; laps.forEach((l) => { if (typeof l.lap_duration === 'number' && l.lap_duration > 0 && !(best[l.driver_number] <= l.lap_duration)) best[l.driver_number] = l.lap_duration; });
+  const rows = Object.keys(best).map((n) => ({ n: Number(n), t: best[n] })).sort((a, b) => a.t - b.t);
+  return rows.map((r, i) => { const d = drv.find((x) => x.driver_number === r.n) || {}; const nm = d.last_name ? { first: nicePart(d.first_name), last: nicePart(d.last_name, true) } : splitName(d.full_name || `#${r.n}`);
+    return { position: i + 1, number: r.n, first: nm.first, last: nm.last, driver: `${nm.first} ${nm.last}`.trim(), team: d.team_name, color: d.team_colour ? `#${d.team_colour}` : null, time: lapFmt(r.t), gap: i ? `+${(r.t - rows[0].t).toFixed(3)}` : '' }; });
+}

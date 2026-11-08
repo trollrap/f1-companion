@@ -8,3 +8,5 @@ export const principalPhoto = (teamId) => (M.principals || {})[teamId] || null;
 export const engineerPhoto = (driverId) => (M.engineers || {})[driverId] || null;
 export const numberImage = (driverId) => (M.numbers || {})[driverId] || null;
 export const appLogo = M.appLogo || null;
+
+export const driverPhotoIds = () => Object.keys((M.drivers || {}));

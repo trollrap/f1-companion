@@ -197,17 +197,17 @@ export function simulateTransfers(f) {
     if (drivers.length - gone.length > keep && Math.random() < p) { gone.push(d); log.push({ kind: 'retire', who: snap(d), from: d.teamId, text: `${d.name} (${age}) retires from racing.` }); return false; } return true;
   });
   const moves = Math.max(1, Math.round(teams.length / 4)); let made = 0;
-  [...drivers].filter((d) => !d.me).sort((a, b) => ovr(b) - ovr(a)).forEach((d) => {
+  [...drivers].filter((d) => !d.me && !(d.contract > 0)).sort((a, b) => ovr(b) - ovr(a)).forEach((d) => {
     if (made >= moves) return; const ra = rank[d.teamId]; if (ra < 3 || Math.random() > 0.35) return;
-    const cands = drivers.filter((e) => !e.me && rank[e.teamId] < ra - 1 && ovr(e) < ovr(d) - 2); if (!cands.length) return;
+    const cands = drivers.filter((e) => !e.me && !(e.contract > 0) && rank[e.teamId] < ra - 1 && ovr(e) < ovr(d) - 2); if (!cands.length) return;
     const e = cands[Math.floor(Math.random() * cands.length)]; const ta = d.teamId, tb = e.teamId;
     d.teamId = tb; e.teamId = ta; made++; log.push({ kind: 'move', who: snap(d), from: ta, to: tb, with: snap(e), text: `${d.name} joins ${name(tb)} from ${name(ta)}; ${e.name} goes the other way.` });
   });
   // Empty seats are filled by existing drivers stepping up from slower teams (which leaves a seat there, and so on down the grid) - no rookies.
   const cnt = (id) => drivers.filter((d) => d.teamId === id).length;
   for (let guard = 0; guard < 60; guard++) {
-    const t = order.find((x) => cnt(x.id) < 2 && drivers.some((d) => !d.me && rank[d.teamId] > rank[x.id] && cnt(d.teamId) === 2)); if (!t) break;
-    const pool = drivers.filter((d) => !d.me && rank[d.teamId] > rank[t.id] && cnt(d.teamId) === 2).sort((x, y) => ovr(y) - ovr(x) + (Math.random() - 0.5) * 6).slice(0, 3);
+    const t = order.find((x) => cnt(x.id) < 2 && drivers.some((d) => !d.me && !(d.contract > 0) && rank[d.teamId] > rank[x.id] && cnt(d.teamId) === 2)); if (!t) break;
+    const pool = drivers.filter((d) => !d.me && !(d.contract > 0) && rank[d.teamId] > rank[t.id] && cnt(d.teamId) === 2).sort((x, y) => ovr(y) - ovr(x) + (Math.random() - 0.5) * 6).slice(0, 3);
     const d = pool[Math.floor(Math.random() * pool.length)]; const from = d.teamId; d.teamId = t.id;
     log.push({ kind: 'move', who: snap(d), from, to: t.id, step: true, text: `${d.name} steps up to ${t.name} from ${name(from)}.` });
   }
@@ -216,5 +216,6 @@ export function simulateTransfers(f) {
   [...order].reverse().forEach((t) => { while (cnt(t.id) < 2) { const r = { ...randomRookie([...(f.history || []).flatMap((h) => h.drivers || []), ...f.drivers, ...drivers], numbers), teamId: t.id }; numbers.push(r.number); drivers.push(r); log.push({ kind: 'rookie', who: snap(r), to: t.id, origin: r.from, text: `${r.name} (${A(r).age}), from ${r.from === 'Other series' ? 'another series' : r.from}, makes his debut with ${t.name}.` }); } });
   teams.forEach((t) => { if (cnt(t.id) === 0) { const d = drivers.filter((x) => !x.me && cnt(x.teamId) === 2).sort((x, y) => ovr(x) - ovr(y))[0]; if (d) { d.teamId = t.id; log.push({ kind: 'move', who: snap(d), from: null, to: t.id, text: `${d.name} moves to ${t.name}.` }); } } });
   if (!log.length) log.push({ kind: 'quiet', text: 'A quiet winter: nobody changed teams.' });
+  drivers = drivers.map((d) => (d.contract > 0 ? { ...d, contract: d.contract - 1 } : d)); // contracts signed in Team Principal mode run down by a year
   return { f: { ...f, drivers, news: log }, log };
 }
