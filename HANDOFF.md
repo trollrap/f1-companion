@@ -232,3 +232,18 @@ Expo Go (SDK 53+) does not include the `expo-notifications` native module; impor
 - Stability: ran ESLint (no-undef, rules-of-hooks) over src and App.js: clean. Only duplicate keys in i18n/el.js (harmless).
 - Already existed: race strategy view (components/Strategy.js in RoundScreen), football "My teams" filter.
 - Not possible without a native build / server: custom alert sounds, pole/red-flag push alerts, widgets.
+
+## V1.26.0 (JS-only)
+- Backup/restore: `lib/backup.js` (durable keys fun:v1, prefs:v2, welcomed, accent + all non-cache AsyncStorage keys, one JSON file). Backup writes into the remembered save folder or opens the share sheet; restore picks a folder (Storage Access Framework), lists backup files, writes everything back and restarts. UNTESTED on device.
+- Offline mode: option `offline` -> `ui.offline`; `lib/cache.js` serves saved data only (any age) and `liveJSON` returns status 0.
+- Tour: `components/Tour.js`, shown when `tourDone` is not set (also once for existing users), replay from Settings.
+- Fan zone: `screens/FanZoneScreen.js` daily 5-question quiz with streak (`dailyQuiz` seeded by date in lib/trivia.js; keys fanDaily, fanDotd), driver-of-the-day vote for the latest race (local only). Entry in Home Explore strip.
+- Team Principal: staff (designer, reliability head, commercial director, wages 1 per race) and sponsor deals (3 offers per season, points target by a deadline race; paid when reached, reputation loss when missed). `hire/fire/sponsorOffers/pickSponsor` in tp.js.
+- Not built yet from the wish list: mid-race strategy calls in live commentary, season prediction league power-ups, historic what-if changes (WhatIf screen exists), faster cold start work beyond cache warm-up, accessibility.
+
+## V1.27.0 (JS-only)
+- Season replay (Home > Explore): re-run any season from the offline history with other points systems, remove a driver, drop worst results. Sprint points not included.
+- Prediction league power-ups: 3 Double-downs per season, a yes/no bonus question each round (+2). Codes stay backward compatible. Season-champion trophy on the Leaderboard.
+- Live race: strategy calls (team radio) for your Team Principal team. Flavour only, the result is unchanged.
+- Accessibility: Colour-blind friendly option (blue/orange, restarts the app), screen-reader labels on tabs/cards/live controls, larger tap areas.
+- Route: eas update --branch preview --platform android --message "1.27.0"

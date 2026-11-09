@@ -264,7 +264,7 @@ export function Fantasy({ route, navigation }) {
   const startLive = () => {
     const st0 = nextStep(f); if (!st0) return; const g = runStep(f, st0); const res = g.results?.[st0.race.id]?.[st0.session] || []; if (!res.length) return;
     const nm = (x) => surname(g.drivers.find((d) => d.id === x));
-    const drivers = res.map((r) => { const d = g.drivers.find((x) => x.id === r.driverId); const t = d && teamOf(g, d.teamId); return { id: r.driverId, name: surname(d), code: codeOf(d), photo: d ? driverPic(d) : null, color: t?.color || colors.muted, pos: r.pos, grid: r.grid || r.pos, stops: r.status === 'OK' ? (r.stops || 0) : 0, out: r.status !== 'OK', lap: r.lap || 0, reason: r.reason, crash: !!r.crash, with: r.with, fault: !!r.fault, gap: r.status === 'OK' ? (r.gap ? parseFloat(String(r.gap).replace('+', '')) : 0) : null }; });
+    const drivers = res.map((r) => { const d = g.drivers.find((x) => x.id === r.driverId); const t = d && teamOf(g, d.teamId); return { id: r.driverId, name: surname(d), code: codeOf(d), photo: d ? driverPic(d) : null, color: t?.color || colors.muted, mine: !!g.tp && d?.teamId === g.tp.teamId, pos: r.pos, grid: r.grid || r.pos, stops: r.status === 'OK' ? (r.stops || 0) : 0, out: r.status !== 'OK', lap: r.lap || 0, reason: r.reason, crash: !!r.crash, with: r.with, fault: !!r.fault, gap: r.status === 'OK' ? (r.gap ? parseFloat(String(r.gap).replace('+', '')) : 0) : null }; });
     const laps = st0.session === 'Sprint' ? Math.max(10, Math.round((st0.race.laps || 57) / 3)) : (st0.race.laps || 57);
     setLive({ g, st: st0, drivers, laps, sc: !!res[0]?.sc, wet: !!res[0]?.wet });
   };

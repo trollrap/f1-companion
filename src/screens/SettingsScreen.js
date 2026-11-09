@@ -21,6 +21,8 @@ import ColorPicker from '../components/ColorPicker';
 import { restartApp } from '../lib/reload';
 import { homeLayout, HOME_CARDS } from '../lib/homeLayout';
 import { Segmented } from '../components/Shared';
+import { exportBackup, findBackups, restoreFrom } from '../lib/backup';
+import { Alert } from '../lib/dialog';
 import CodePrompt from '../components/CodePrompt';
 import { useNavigation } from '@react-navigation/native';
 import { colors, alpha } from '../theme';
@@ -53,7 +55,7 @@ const GAPS = [['leader', 'To the leader'], ['ahead', 'Interval (to the car ahead
 export default function SettingsScreen() {
   const { prefs, toggle, toggleResults, setOpt, setOpts } = usePrefs(); const o = prefs.opts;
   const [results, setResults] = useState([]); const [running, setRunning] = useState(false); const [msg, setMsg] = useState(''); const [upd, setUpd] = useState('');
-  const [msgT, setMsgT] = useState('');
+  const [msgT, setMsgT] = useState(''); const [bk, setBk] = useState('');
   // Secret: five quick taps on About, then the code, open the developer menu.
   const nav = useNavigation(); const taps = useRef({ n: 0, t: 0 }); const [codeOpen, setCodeOpen] = useState(false);
   const aboutTap = () => { const now = Date.now(); const k = taps.current; k.n = now - k.t < 1500 ? k.n + 1 : 1; k.t = now; if (k.n >= 5) { k.n = 0; setCodeOpen(true); } };
@@ -93,6 +95,20 @@ export default function SettingsScreen() {
         <Segmented value={String(Number(o.textScale) || 1)} onChange={(v) => setOpt('textScale', Number(v))} items={[['0.9', 'S'], ['1', 'M'], ['1.1', 'L'], ['1.2', 'XL'], ['1.3', 'XXL']]} />
         <Text style={{ color: colors.fg, fontSize: 17 }}>This is how normal text looks with your choice. Lap 52 of 71, P4, +3.2s.</Text>
         <Note>Changes show as screens redraw. Restart the app if something still looks old.</Note>
+      </Section>
+      <Section icon="eye-outline" title="Colour-blind friendly" summary={o.colorblind ? 'On: blue and orange' : 'Off'}>
+        <Note>Swaps the red and green used for good and bad news (gains, losses, retirements) for blue and orange, which stay distinct for red-green colour blindness. The app restarts to apply it.</Note>
+        <Segmented value={o.colorblind ? 'on' : 'off'} onChange={async (v) => { await setOpt('colorblind', v === 'on'); setTimeout(() => { restartApp().catch(() => {}); }, 700); }} items={[['off', 'Off'], ['on', 'On']]} />
+      </Section>
+      <Section icon="airplane-outline" title="Offline mode" summary={o.offline ? 'On: saved data only' : 'Off'}>
+        <Sw label="Use saved data only" hint="Nothing is downloaded. Screens show what the app saved earlier (the offline history always works). Good for saving data or flying. Screens with nothing saved show a message." value={!!o.offline} onChange={(v) => setOpt('offline', v)} />
+      </Section>
+      <Section icon="save-outline" title="Backup and restore" summary="Move everything to a new phone">
+        <Note>A backup holds your fantasy saves, settings, predictions, friends and favourites in one file.</Note>
+        <Btn tone="solid" icon="download-outline" onPress={async () => { setBk('Making the backup…'); try { setBk(await exportBackup()); } catch (e) { setBk(''); Alert.alert('Backup failed', String(e?.message || e)); } }}>Back up now</Btn>
+        <Btn icon="cloud-upload-outline" onPress={async () => { try { const l = await findBackups(); if (!l.length) { Alert.alert('No backup found', 'Choose the folder that holds your f1-companion-backup file.'); return; }
+          Alert.alert('Restore which backup?', 'This replaces the data on this phone with the backup.', [{ text: 'Cancel', style: 'cancel' }, ...l.slice(0, 4).map((b) => ({ text: b.name.slice(-30), onPress: async () => { try { const r = await restoreFrom(b.uri); setBk(`Restored ${r.keys} items (${r.saves} fantasy saves). Restarting…`); setTimeout(() => restartApp(), 1200); } catch (e) { Alert.alert('Restore failed', String(e?.message || e)); } } }))]); } catch (e) { Alert.alert('Restore failed', String(e?.message || e)); } }}>Restore from a backup file</Btn>
+        {bk ? <Note>{bk}</Note> : null}
       </Section>
       <Section icon="contrast-outline" title="Theme" summary={o.theme === 'light' ? 'White' : o.theme === 'amoled' ? 'AMOLED black' : 'Dark'}>
         {[['dark', 'Dark', 'The default look.'], ['amoled', 'AMOLED black', 'Pure black background. Saves battery on OLED screens.'], ['light', 'White', 'A light theme. Some screens with photos are still tuned for dark.']].map(([k, label, hint]) => { const on = (o.theme || 'dark') === k; return (
@@ -171,6 +187,7 @@ export default function SettingsScreen() {
         {msg ? <Note>{msg}</Note> : null}
       </Section>
       <Card>
+        <Btn icon="compass-outline" onPress={() => setOpt('tourDone', false)}>Show the app tour again</Btn>
         <Pressable onPress={aboutTap} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
           <View style={s.ico}><Ionicons name="information-circle-outline" size={22} color={colors.accent} /></View>
           <View style={{ flex: 1 }}><Text style={s.secTitle}>About</Text><Text style={s.hint}>{`F1 Companion v${currentVersion()}`}</Text></View>

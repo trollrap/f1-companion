@@ -140,3 +140,10 @@ export function makeQuiz(n = 10) {
   while (out.length < n && guard++ < 400) { const q = gens[rnd(gens.length)](); if (q && !seen.has(q.q)) { seen.add(q.q); out.push(q); } }
   return out;
 }
+
+// The same questions for everybody on the same day: the random generator is swapped for a seeded one while the quiz is built.
+export function dailyQuiz(dayKey, n = 5) {
+  let a = 0; for (const c of String(dayKey)) a = (Math.imul(a, 31) + c.charCodeAt(0)) >>> 0; const keep = Math.random;
+  Math.random = () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  try { return makeQuiz(n); } finally { Math.random = keep; }
+}

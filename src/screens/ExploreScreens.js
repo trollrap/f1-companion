@@ -154,7 +154,7 @@ export function LeaderboardScreen() {
   const players = [{ name: myName, me: true, picks: P.all }, ...F.list.filter((x) => !R.members.some((m) => m.name.toLowerCase() === x.name.toLowerCase())), ...R.members.filter((m) => m.name.toLowerCase() !== myName.toLowerCase())];
   const table = players.map((p) => {
     let total = 0, exact = 0, rd = 0, best = 0; const per = [];
-    rounds.forEach((r) => { const pk = p.picks[r]; if (!pk || !res.v?.[r]) return; const s = score(pk, res.v[r].q, res.v[r].rc); if (!s.done) return; total += s.total; rd++; best = Math.max(best, s.total); exact += s.podium.filter((x) => x === 3).length + (s.pole === 2 ? 1 : 0); per.push(s.total); });
+    rounds.forEach((r) => { const pk = p.picks[r]; if (!pk || !res.v?.[r]) return; const s = score(pk, res.v[r].q, res.v[r].rc, r); if (!s.done) return; total += s.total; rd++; best = Math.max(best, s.total); exact += s.podium.filter((x) => x === 3).length + (s.pole === 2 ? 1 : 0); per.push(s.total); });
     return { ...p, total, rd, best, exact, avg: rd ? total / rd : 0 };
   }).sort((a, b) => b.total - a.total || b.avg - a.avg);
   const maxT = Math.max(1, ...table.map((t) => t.total));
@@ -162,6 +162,11 @@ export function LeaderboardScreen() {
   const add = () => { const d = decode(code); if (!d) { Alert.alert('That code does not look right', 'Paste the whole code your friend shared from their Predictions screen.'); return; } F.add({ name: name.trim() || d.name, picks: d.picks }); setCode(''); setName(''); };
   return (
     <Screen header={false}>
+      {(season.races || []).length > 0 && done.length >= (season.races || []).length && rounds.length > 0 && table[0] && table[0].rd ? (
+        <Reveal index={0}><Grad color={colors.gold} from={0.4} to={0.05} border={0.5} style={{ padding: 18, alignItems: 'center' }}>
+          <Ionicons name="trophy" size={44} color={colors.gold} /><Text style={{ color: colors.gold, fontSize: 13, letterSpacing: 2, marginTop: 6 }}>SEASON CHAMPION</Text>
+          <Text style={{ color: colors.fg, fontSize: 28, fontWeight: '800' }}>{table[0].name}{table[0].me ? ' (you)' : ''}</Text><Text style={{ color: colors.muted, fontSize: 16 }}>{`${table[0].total} points over ${table[0].rd} rounds`}</Text>
+        </Grad></Reveal>) : null}
       <Reveal index={0}>
         <Card>
           <Eyebrow>Season leaderboard</Eyebrow>
@@ -185,7 +190,7 @@ export function LeaderboardScreen() {
       <Reveal index={4}>
         <Card>
           <Eyebrow>Your streaks and badges</Eyebrow>
-          {(() => { const mineRow = table.find((t) => t.me); const seq = rounds.filter((r) => P.all[r] && res.v?.[r]).map((r) => { const sc = score(P.all[r], res.v[r].q, res.v[r].rc); return sc.done ? sc : null; }).filter(Boolean);
+          {(() => { const mineRow = table.find((t) => t.me); const seq = rounds.filter((r) => P.all[r] && res.v?.[r]).map((r) => { const sc = score(P.all[r], res.v[r].q, res.v[r].rc, r); return sc.done ? sc : null; }).filter(Boolean);
             let cur = 0, best = 0, run = 0; seq.forEach((x) => { if (x.total >= 3) { run++; best = Math.max(best, run); } else run = 0; }); cur = run;
             const exactAny = seq.some((x) => x.podium.every((p) => p === 3)); const badges = [['flame', 'Hot streak', cur >= 3, `${cur} rounds in a row with 3+ points`], ['ribbon', 'Perfect podium', exactAny, 'All three podium places exact'], ['calendar', 'Regular', seq.length >= 5, '5 predicted races'], ['trophy', 'Season leader', !!mineRow && table[0]?.me && table.length > 1, 'Top of your leaderboard']];
             return (<View style={{ gap: 12, marginTop: 8 }}>

@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { ui } from './motion';
 import { bustAt, netOk, netFail, track, dataChanged } from './net';
 // Limits: OpenF1 free tier 3 req/s and 30 req/min. Jolpica 4 req/s and 500 req/hour (maintainer, GitHub discussion #80).
 // So: every call is cached, calls go through one throttled queue per host, and 429s are retried with backoff.
@@ -31,6 +32,7 @@ async function fetchRetry(url, signal) {
 }
 const inflight = new Map();
 function refresh(url, key, stale, signal, trackIt = true, low = false) {
+  if (ui.offline) return stale ? Promise.resolve(stale) : Promise.reject(new Error('Offline mode is on and nothing is saved for this yet.'));
   if (inflight.has(url)) return inflight.get(url);
   const p = throttled(url, async () => {
     const ctrl = signal ? null : new AbortController(); const timer = ctrl && setTimeout(() => ctrl.abort(), 15000);
@@ -57,6 +59,7 @@ export async function cachedJSON(url, ttlMs, { signal, low } = {}) {
     const raw = await AsyncStorage.getItem(key);
     if (raw) {
       const { t, v } = JSON.parse(raw); const busted = ttlMs <= HOUR && t < bustAt(), age = Date.now() - t;
+      if (ui.offline) return v; // offline mode: whatever is saved, however old
       if (age < ttlMs && !busted) return v;
       stale = v; staleOk = !busted && age < MAX_STALE;
     }
@@ -70,6 +73,7 @@ export async function cachedJSON(url, ttlMs, { signal, low } = {}) {
 }
 // Uncached request for diagnostics. Returns { status, json, ms }.
 export function liveJSON(url) {
+  if (ui.offline) return Promise.resolve({ status: 0, json: null, ms: 0 });
   return throttled(url, async () => {
     const t0 = Date.now(); const ctrl = new AbortController(); const timer = setTimeout(() => ctrl.abort(), 9000);
     try { const r = await fetch(url, { signal: ctrl.signal }); let json = null; try { json = await r.json(); } catch {} return { status: r.status, json, ms: Date.now() - t0 }; }

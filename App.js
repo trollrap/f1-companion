@@ -13,7 +13,7 @@ export default function App() {
   useEffect(() => {
     let on = true;
     Promise.all([AsyncStorage.getItem('prefs'), readDurable('accent'), readDurable('prefs:v2')])
-      .then(([r, acc, dur]) => { let a = acc; try { a = a || (dur && JSON.parse(dur)?.opts?.accent) || (r && JSON.parse(r)?.opts?.accent); } catch {} if (a) applyAccent(a); let th = null; try { th = (dur && JSON.parse(dur)?.opts?.theme) || (r && JSON.parse(r)?.opts?.theme); } catch {} if (th) applyTheme(th); })
+      .then(([r, acc, dur]) => { let a = acc; try { a = a || (dur && JSON.parse(dur)?.opts?.accent) || (r && JSON.parse(r)?.opts?.accent); } catch {} if (a) applyAccent(a); let th = null; try { th = (dur && JSON.parse(dur)?.opts?.theme) || (r && JSON.parse(r)?.opts?.theme); } catch {} if (th) applyTheme(th); let cb = false; try { cb = !!((dur && JSON.parse(dur)?.opts?.colorblind) || (r && JSON.parse(r)?.opts?.colorblind)); } catch {} if (cb) { colors.good = '#3B9CFF'; colors.red = '#FF9F1C'; } })
       .catch(() => {})
       .then(() => loadDev().catch(() => {}))
       .finally(() => { if (on) setMain(() => require('./src/Main').default); });

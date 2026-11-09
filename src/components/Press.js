@@ -6,7 +6,7 @@ export default function Press({ onPress, style, children, scale = 0.975, disable
   const v = useRef(new Animated.Value(1)).current;
   const to = (x) => { if (!ui.reduceMotion) Animated.spring(v, { toValue: x, speed: 40, bounciness: x === 1 ? 7 : 0, useNativeDriver: true }).start(); };
   return (
-    <Pressable onPress={onPress} disabled={disabled} onPressIn={() => to(scale)} onPressOut={() => to(1)} {...rest}>
+    <Pressable accessibilityRole="button" hitSlop={6} onPress={onPress} disabled={disabled} onPressIn={() => to(scale)} onPressOut={() => to(1)} {...rest}>
       <Animated.View style={[{ transform: [{ scale: v }] }, style]}>{children}</Animated.View>
     </Pressable>
   );

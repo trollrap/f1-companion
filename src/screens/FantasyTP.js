@@ -9,7 +9,7 @@ import Reveal from '../components/Reveal';
 import { Btn } from '../components/FunBits';
 import { CountUp, Bar, Pop } from '../components/Anim';
 import { TA } from '../fun/sim';
-import { UPGRADES, EXTEND_COST, costOf, startTP, endTP, settle, buy, extend, pressFor, answerPress, eventFor, resolveEvent, latestRaceId, position, teamPoints, rivalries } from '../fun/tp';
+import { UPGRADES, EXTEND_COST, costOf, startTP, endTP, settle, buy, extend, pressFor, answerPress, eventFor, resolveEvent, latestRaceId, position, teamPoints, rivalries, STAFF, hire, fire, sponsorOffers, pickSponsor } from '../fun/tp';
 import { colors, alpha } from '../theme';
 
 const ord = (n) => `${n}${[, 'st', 'nd', 'rd'][n % 10 > 3 || Math.floor(n / 10) === 1 ? 0 : n % 10] || 'th'}`;
@@ -111,6 +111,39 @@ export function TeamPrincipal({ f, id, fun, reveal = 0 }) {
         </Card>
       </Reveal>
       <Reveal index={reveal + 4}>
+        <Card>
+          <Eyebrow>Sponsor deal</Eyebrow>
+          {tp.sponsor ? (
+            <View style={{ marginTop: 6, gap: 4 }}>
+              <Text style={{ color: colors.fg, fontSize: 19, fontWeight: '700' }}>{tp.sponsor.name}</Text>
+              <Text style={{ color: colors.muted, fontSize: 15 }}>{`Score ${tp.sponsor.target} points by race ${tp.sponsor.by} for a ${tp.sponsor.reward} bonus.`}</Text>
+              <Bar pct={Math.min(100, (teamPoints(f, tp.teamId) / tp.sponsor.target) * 100)} color={tp.sponsor.done === 'lost' ? colors.red : colors.gold} height={7} />
+              <Text style={{ color: tp.sponsor.done === 'won' ? colors.good : tp.sponsor.done === 'lost' ? colors.red : colors.muted, fontSize: 14 }}>{tp.sponsor.done === 'won' ? 'Target reached. Bonus paid.' : tp.sponsor.done === 'lost' ? 'Target missed. Reputation lost.' : `${Math.round(teamPoints(f, tp.teamId))} of ${tp.sponsor.target} points`}</Text>
+            </View>
+          ) : (
+            <View style={{ gap: 8, marginTop: 8 }}>
+              <Note>Pick one sponsor for this season. A bigger target pays more but costs reputation if you miss it.</Note>
+              {sponsorOffers(f).map((o) => (
+                <Pressable key={o.id} onPress={() => fun.update(id, (g) => pickSponsor(g, o.id))} style={({ pressed }) => [{ padding: 12, borderRadius: 12, backgroundColor: colors.surface2, borderWidth: 1, borderColor: colors.line }, pressed && { opacity: 0.7 }]}>
+                  <Text style={{ color: colors.fg, fontSize: 17, fontWeight: '700' }}>{`${o.name} · ${o.reward} bonus`}</Text>
+                  <Text style={{ color: colors.muted, fontSize: 13 }}>{`${o.target} points within ${o.by} races`}</Text>
+                </Pressable>))}
+            </View>)}
+        </Card>
+      </Reveal>
+      <Reveal index={reveal + 4}>
+        <Card>
+          <Eyebrow>Staff</Eyebrow>
+          <Note>Hired for good. Each member costs 1 budget in wages after every race.</Note>
+          {Object.entries(STAFF).map(([k, st]) => { const on = !!tp.staff?.[k]; return (
+            <View key={k} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 8 }}>
+              <Ionicons name={st.icon} size={24} color={on ? colors.gold : colors.muted} />
+              <View style={{ flex: 1 }}><Text style={{ color: colors.fg, fontSize: 17, fontWeight: '700' }}>{st.label}</Text><Text style={{ color: colors.muted, fontSize: 13 }}>{st.blurb}</Text></View>
+              <Pressable onPress={() => (on ? Alert.alert(`Let ${st.label.toLowerCase()} go?`, 'You will not get the hiring cost back.', [{ text: 'Cancel', style: 'cancel' }, { text: 'Let go', style: 'destructive', onPress: () => fun.update(id, (g) => fire(g, k)) }]) : tp.budget < st.cost ? Alert.alert('Not enough budget', `${st.label} costs ${st.cost}.`) : fun.update(id, (g) => hire(g, k).f))} style={({ pressed }) => [{ paddingHorizontal: 14, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: on ? 'transparent' : colors.accent, borderWidth: on ? 1 : 0, borderColor: colors.line }, pressed && { opacity: 0.8 }]}><Text style={{ color: on ? colors.muted : '#fff', fontWeight: '700' }}>{on ? 'Hired' : `Hire ${st.cost}`}</Text></Pressable>
+            </View>); })}
+        </Card>
+      </Reveal>
+      <Reveal index={reveal + 5}>
         <Card>
           <Eyebrow>Driver contracts</Eyebrow>
           {mine.map((d, i) => (

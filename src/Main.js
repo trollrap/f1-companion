@@ -2,6 +2,7 @@ import React from 'react';
 import { View, UIManager, Platform, AppState, Pressable } from 'react-native';
 import { HeaderBackButton } from '@react-navigation/elements';
 import HomeBtn from './components/HomeBtn';
+import Tour from './components/Tour';
 import DialogHost from './components/DialogHost';
 import { refreshAll } from './lib/net';
 import { useFonts } from 'expo-font';
@@ -37,6 +38,8 @@ import RulesScreen from './screens/RulesScreen';
 import DriverSeasonsScreen from './screens/DriverSeasonsScreen';
 import WhatIfScreen from './screens/WhatIfScreen';
 import PredictScreen from './screens/PredictScreen';
+import ReplayScreen from './screens/ReplayScreen';
+import FanZoneScreen from './screens/FanZoneScreen';
 import TeammatesScreen from './screens/TeammatesScreen';
 import { warmCaches } from './lib/warm';
 import RaceDayScreen from './screens/RaceDayScreen';
@@ -119,7 +122,7 @@ const detail = ({ navigation }) => ({ ...detailBase, headerLeft: (p) => (p.canGo
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) UIManager.setLayoutAnimationEnabledExperimental(true);
 function Shell() {
   // Changing the language rebuilds the navigation tree so every screen and title is drawn again in the new language.
-  const { prefs, ready } = usePrefs();
+  const { prefs, ready, setOpt } = usePrefs();
   // Coming back to the app after a while (or after a race ended) reloads the short-lived data, so the Home cards are never a stale copy.
   React.useEffect(() => warmCaches(), []);
   React.useEffect(() => {
@@ -132,6 +135,7 @@ function Shell() {
           <NavigationContainer key={`${prefs.opts.lang === 'el' ? 'el' : 'en'}-${prefs.opts.sport === 'motogp' ? 'mg' : prefs.opts.sport === 'football' ? 'fb' : 'f1'}`} theme={navTheme}>
             <StatusBar style={colors.isLight ? 'dark' : 'light'} />
             <AlertScheduler />
+            <Tour visible={!prefs.opts.tourDone} onClose={() => setOpt('tourDone', true)} />
             {prefs.opts.sport === 'football' ? (
               <Stack.Navigator screenOptions={detail}>
                 <Stack.Screen name="Tabs" component={FootTabs} options={{ headerShown: false }} />
@@ -161,6 +165,8 @@ function Shell() {
               <Stack.Screen name="Rules" component={RulesScreen} options={{ title: tr('F1 rules') }} />
               <Stack.Screen name="WhatIf" component={WhatIfScreen} options={{ title: tr('What if') }} />
               <Stack.Screen name="Predict" component={PredictScreen} options={{ title: tr('Predictions') }} />
+              <Stack.Screen name="Replay" component={ReplayScreen} options={{ title: 'Season replay' }} />
+              <Stack.Screen name="FanZone" component={FanZoneScreen} options={{ title: 'Fan zone' }} />
               <Stack.Screen name="Teammates" component={TeammatesScreen} options={{ title: 'Team-mate battles' }} />
               <Stack.Screen name="RaceDay" component={RaceDayScreen} options={{ title: 'Race day' }} />
               <Stack.Screen name="Dev" component={DevScreen} options={{ title: 'Developer menu' }} />

@@ -12,7 +12,8 @@ import { useAsync } from '../hooks/useAsync';
 import { useSeason, useNow } from '../hooks/useSeason';
 import { driverStandings, sessionResults } from '../api/jolpica';
 import { YEAR } from '../api/openf1';
-import { usePredictions, score } from '../lib/predictions';
+import { usePredictions, score, bonusFor, DOUBLES } from '../lib/predictions';
+import { Switch } from 'react-native';
 import { shortName } from '../lib/time';
 import { Pressable } from 'react-native';
 import { colors } from '../theme';
@@ -38,7 +39,7 @@ export default function PredictScreen() {
     for (const r of past) { const [q, rc] = await Promise.all([sessionResults(YEAR, r, 'qualifying').catch(() => null), sessionResults(YEAR, r, 'results').catch(() => null)]); out[r] = { q, rc }; }
     return out;
   }, [past.join(',')]);
-  const results = past.map((r) => ({ r, pred: P.all[r], sc: res.v ? score(P.all[r], res.v[r]?.q, res.v[r]?.rc) : null, gp: season.races?.find((x) => Number(x.round) === r) })).filter((x) => x.sc);
+  const results = past.map((r) => ({ r, pred: P.all[r], sc: res.v ? score(P.all[r], res.v[r]?.q, res.v[r]?.rc, r) : null, gp: season.races?.find((x) => Number(x.round) === r) })).filter((x) => x.sc);
   const total = results.reduce((a, x) => a + x.sc.total, 0);
   const tc = useTeamColor(); const cardRef = useRef(null); const pastRef = useRef(null);
   const pick = (id) => { const x = d.v?.find((y) => y.driverId === id); return x ? { driverId: x.driverId, first: x.first, last: x.last, teamId: x.teamId, team: x.team, color: tc(x.teamId) } : null; };
@@ -56,6 +57,18 @@ export default function PredictScreen() {
             <View style={{ gap: 10, marginTop: 12 }}>
               <View><Text style={s.lab}>{poleLocked ? 'Pole (locked)' : 'Pole position'}</Text>{poleLocked ? <Text style={s.val}>{name(mine.pole)}</Text> : <Dropdown value={mine.pole} options={opts} onChange={setPole} />}</View>
               {[0, 1, 2].map((i) => (<View key={i}><Text style={s.lab}>{raceLocked ? `P${i + 1} (locked)` : `Podium P${i + 1}`}</Text>{raceLocked ? <Text style={s.val}>{name(mine.podium[i])}</Text> : <Dropdown value={mine.podium[i]} options={opts} onChange={(id) => setSlot(i, id)} />}</View>))}
+              <View style={{ gap: 8, marginTop: 4, padding: 12, borderRadius: 14, backgroundColor: colors.surface2 }}>
+                <Text style={s.lab}>POWER-UPS</Text>
+                {(() => { const used = Object.keys(P.all).filter((r) => Number(r) !== round && P.all[r]?.x2).length; const left = DOUBLES - used; return (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                    <View style={{ flex: 1 }}><Text style={s.val}>Double down</Text><Text style={s.sub}>{`Doubles all your points for this race. ${left} of ${DOUBLES} left this season.`}</Text></View>
+                    <Switch value={!!mine.x2} disabled={raceLocked || (left <= 0 && !mine.x2)} onValueChange={(v) => P.set(round, { ...mine, x2: v })} trackColor={{ true: colors.accent }} />
+                  </View>); })()}
+                <View><Text style={s.val}>{`Bonus question (+2): ${bonusFor(round).q}`}</Text>
+                  <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>{[['y', 'Yes'], ['n', 'No']].map(([k, l]) => (
+                    <Pressable key={k} disabled={raceLocked} onPress={() => P.set(round, { ...mine, bonus: mine.bonus === k ? null : k })} style={({ pressed }) => [{ flex: 1, height: 42, borderRadius: 12, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: mine.bonus === k ? colors.accent : colors.line, backgroundColor: mine.bonus === k ? colors.accentSoft : 'transparent', opacity: raceLocked ? 0.5 : 1 }, pressed && { opacity: 0.7 }]}><Text style={{ color: colors.fg, fontSize: 16, fontWeight: '700' }}>{l}</Text></Pressable>))}</View>
+                </View>
+              </View>
               <View ref={cardRef} collapsable={false}><PredictCard gp={shortName(next.meeting_name)} flag={flagOf(next.country_code)} pole={pick(mine.pole)} podium={mine.podium.map(pick)} /></View>
               <ExportBar target={cardRef} fallback={shareText} />
             </View>)}
@@ -68,7 +81,7 @@ export default function PredictScreen() {
         {results.map(({ r, pred, sc, gp }) => (
           <View key={r} style={{ marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.line }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}><Text style={s.val}>{gp ? shortName(gp.meeting_name) : `Round ${r}`}</Text><Text style={{ color: colors.accent, fontWeight: '800', fontSize: 18 }}>{sc.total} pts</Text></View>
-            <Text style={s.sub}>{`Pole ${name(pred.pole)}${sc.pole != null ? ` (+${sc.pole})` : ' (waiting)'}`}</Text>
+            <Text style={s.sub}>{`Pole ${name(pred.pole)}${sc.pole != null ? ` (+${sc.pole})` : ' (waiting)'}${sc.bonus != null ? ` · Bonus +${sc.bonus}` : ''}${sc.double ? ' · Doubled' : ''}`}</Text>
             <Pressable onPress={() => setOpen(open === r ? null : r)} hitSlop={8} style={{ marginTop: 8, alignSelf: 'flex-start' }}><Text style={{ color: colors.accent, fontWeight: '700', fontSize: 15 }}>{open === r ? 'Hide picture' : 'Picture to share or save'}</Text></Pressable>
             {open === r && (
               <View style={{ marginTop: 10, gap: 10 }}>

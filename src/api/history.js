@@ -178,3 +178,10 @@ export function localTeammates(id) {
   }));
   return Object.values(out).filter((o) => o.races >= 3).sort((a, b) => b.year - a.year || b.races - a.races).map((o) => { const d = H.d[o.mate]; return { ...o, mateName: `${d[1]} ${d[2]}`, mateId: IX.idOf[o.mate] }; });
 }
+
+// Raw race rows of one season for the what-if replay: [{round, name, rows: [{id, name, team, pos, pts, fast}]}]
+export const historyYears = () => Object.keys(load().r).map(Number).sort((a, b) => b - a);
+export function seasonRaw(year) {
+  load(); const rs = H.r[year]; if (!rs) return null;
+  return rs.map((rc) => ({ round: rc[0], name: rc[1], rows: rc[4].map((r) => ({ id: IX.idOf[r[0]] || String(r[0]), name: `${H.d[r[0]][1]} ${H.d[r[0]][2]}`, team: H.t[r[1]][1], pos: r[3] != null && r[3] > 0 ? r[3] : null, pts: r[5] || 0, fast: r[7] === 1 })) }));
+}

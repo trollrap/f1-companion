@@ -58,19 +58,32 @@ export default function LiveRace({ visible, race, laps, drivers, sc, wet, onClos
   const total = Math.max(1, laps || 1);
   const model = useMemo(() => { if (!visible || !drivers?.length) return null; const drv = drivers.map((d) => ({ ...d })); const chart = plan(drv, total, race); return { drv, chart, ev: eventsOf(drv, chart, total, sc, wet) }; }, [visible, drivers, total, sc, wet, race]);
   const [lap, setLap] = useState(0); const [play, setPlay] = useState(true); const [speed, setSpeed] = useState(1); const [log, setLog] = useState([]);
-  const lapRef = useRef(0);
-  useEffect(() => { if (visible) { lapRef.current = 0; setLap(0); setPlay(true); setSpeed(1); setLog(model?.ev[0].map((e) => ({ ...e, lap: 0 })) || []); } }, [visible, model]);
+  const lapRef = useRef(0); const [call, setCall] = useState(null); const [calls, setCalls] = useState([]);
+  useEffect(() => { if (visible) { lapRef.current = 0; setLap(0); setPlay(true); setSpeed(1); setLog(model?.ev[0].map((e) => ({ ...e, lap: 0 })) || []); setCall(null); setCalls([]); } }, [visible, model]);
   const done = lap >= total;
+  const prompts = useMemo(() => {
+    if (!model) return {}; const mine = model.drv.filter((d) => d.mine && !d.out); if (!mine.length || total < 12) return {};
+    const m = {}; const pick = (n, i) => mine[(hash(race + n + i) % mine.length)];
+    [0.25, 0.5, 0.75].forEach((fr, i) => { const L = Math.round(total * fr); const d = pick(L, i); const next = d.stopLaps.find((p) => p >= L && p <= L + 8);
+      m[L] = i === 1 || !next ? { id: d.id, name: d.name, q: `${d.name} asks: tyres are going off, what's the plan?`, opts: [['Push', 'push'], ['Conserve', 'save']], truth: next ? 'pit' : 'long' } : { id: d.id, name: d.name, q: `${d.name} asks: box this lap or stay out?`, opts: [['Box now', 'box'], ['Stay out', 'stay']], truth: 'pit', next }; });
+    return m;
+  }, [model, total, race]);
   useEffect(() => {
     if (!visible || !play || done || !model) return undefined;
     const h = setInterval(() => {
       const nx = Math.min(total, lapRef.current + 1); lapRef.current = nx;
       try { LayoutAnimation.configureNext(LayoutAnimation.create(Math.min(380, 700 / speed), 'easeInEaseOut', 'opacity')); } catch (e) { /* ignore */ }
-      setLap(nx); const add = model.ev[nx].map((e) => ({ ...e, lap: nx })); if (add.length) setLog((l) => [...add.reverse(), ...l].slice(0, 40));
+      if (prompts[nx]) { setCall({ ...prompts[nx], lap: nx }); setPlay(false); } setLap(nx); const add = model.ev[nx].map((e) => ({ ...e, lap: nx })); if (add.length) setLog((l) => [...add.reverse(), ...l].slice(0, 40));
     }, Math.max(90, 900 / speed));
     return () => clearInterval(h);
-  }, [visible, play, done, speed, model, total]);
-  const skip = () => { if (!model) return; lapRef.current = total; setLap(total); setLog((l) => [...model.ev[total].map((e) => ({ ...e, lap: total })), ...l].slice(0, 40)); setPlay(false); };
+  }, [visible, play, done, speed, model, total, prompts]);
+  const answer = (v) => {
+    const c = call; if (!c) return; let ok, t;
+    if (c.opts[0][1] === 'box') { ok = v === 'box' ? c.next - c.lap <= 3 : c.next - c.lap > 3; t = v === 'box' ? (ok ? 'Good call, the stop was due.' : 'Early stop, tyres had life in them.') : (ok ? 'Right to stay out, the window was later.' : 'Stayed out too long, lost time.'); }
+    else { ok = c.truth === 'pit' ? v === 'save' : v === 'push'; t = v === 'push' ? (ok ? 'Pushing paid off.' : 'Pushed too hard, the tyres paid for it.') : (ok ? 'Smart tyre management.' : 'Too cautious, pace left on the table.'); }
+    setCalls((a) => [...a, ok]); setLog((l) => [{ k: 'lead', lap: c.lap, t: `Radio to ${c.name}: ${v === 'box' ? 'box, box' : v === 'stay' ? 'stay out' : v === 'push' ? 'push' : 'look after the tyres'}. ${t}` }, ...l].slice(0, 40)); setCall(null); setPlay(true);
+  };
+  const skip = () => { if (!model) return; lapRef.current = total; setLap(total); setCall(null); setLog((l) => [...model.ev[total].map((e) => ({ ...e, lap: total })), ...l].slice(0, 40)); setPlay(false); };
   const by = useMemo(() => { const m = {}; (model?.drv || []).forEach((d) => { m[d.id] = d; }); return m; }, [model]);
   const order = model ? model.chart[Math.min(lap, total)] : [];
   const outs = model ? model.drv.filter((d) => d.out && d.lap <= lap && lap > 0).sort((a, b) => b.lap - a.lap) : [];
@@ -111,12 +124,19 @@ export default function LiveRace({ visible, race, laps, drivers, sc, wet, onClos
           {log.slice(0, 8).map((e, i) => (<View key={`${e.lap}-${i}-${e.t}`} style={{ flexDirection: 'row', gap: 8, opacity: Math.max(0.35, 1 - i * 0.1) }}><Text style={{ color: colors.accent, fontWeight: '800', fontSize: 13, width: 44 }}>{`LAP ${e.lap}`}</Text><Text style={{ flex: 1, color: e.k === 'out' ? '#ff8a8a' : e.k === 'lead' ? colors.gold : '#fff', fontSize: 14 }}>{e.t}</Text></View>))}
           <View style={{ height: 120 }} />
         </ScrollView>
+        {call ? (
+          <View accessibilityLiveRegion="polite" style={{ position: 'absolute', left: 12, right: 12, bottom: Math.max(ins.bottom, 12) + 70, padding: 14, borderRadius: 18, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.accent, gap: 10 }}>
+            <Text style={{ color: colors.accent, fontFamily: 'label', fontSize: 11, letterSpacing: 2 }}>TEAM RADIO · STRATEGY CALL</Text>
+            <Text style={{ color: colors.fg, fontSize: 16, fontWeight: '700' }}>{call.q}</Text>
+            <View style={{ flexDirection: 'row', gap: 10 }}>{call.opts.map(([l, v]) => (<Pressable key={v} accessibilityRole="button" accessibilityLabel={l} onPress={() => answer(v)} style={{ flex: 1, height: 48, borderRadius: 24, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' }}><Text style={{ color: '#fff', fontWeight: '800', fontSize: 16 }}>{l}</Text></Pressable>))}</View>
+          </View>) : null}
+        {done && calls.length ? <View style={{ position: 'absolute', left: 12, right: 12, bottom: Math.max(ins.bottom, 12) + 70, padding: 12, borderRadius: 16, backgroundColor: colors.card }}><Text style={{ color: colors.fg, fontWeight: '700', textAlign: 'center' }}>{`Strategy calls: ${calls.filter(Boolean).length} of ${calls.length} right. They add colour only; the race result is unchanged.`}</Text></View> : null}
         <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, paddingBottom: Math.max(ins.bottom, 12) + 8, paddingTop: 12, paddingHorizontal: 16, backgroundColor: 'rgba(10,5,6,0.96)', flexDirection: 'row', alignItems: 'center', gap: 8 }}>
           {done ? (
             <Pressable onPress={onClose} style={{ flex: 1, height: 48, borderRadius: 24, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' }}><Text style={{ color: '#fff', fontWeight: '800', fontSize: 17 }}>See the result</Text></Pressable>
           ) : (
             <>
-              <Pressable onPress={() => setPlay((p) => !p)} style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center' }}><Ionicons name={play ? 'pause' : 'play'} size={22} color="#fff" /></Pressable>
+              <Pressable accessibilityRole="button" accessibilityLabel={play ? 'Pause' : 'Play'} disabled={!!call} onPress={() => setPlay((p) => !p)} style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center' }}><Ionicons name={play ? 'pause' : 'play'} size={22} color="#fff" /></Pressable>
               <Speed v={1} /><Speed v={3} /><Speed v={8} />
               <View style={{ flex: 1 }} />
               <Pressable onPress={skip} style={{ paddingHorizontal: 16, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 6 }}><Ionicons name="play-skip-forward" size={16} color="#fff" /><Text style={{ color: '#fff', fontWeight: '700' }}>Skip</Text></Pressable>

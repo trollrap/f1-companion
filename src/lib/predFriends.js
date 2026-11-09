@@ -5,13 +5,13 @@ const KEY = 'predFriends';
 const clean = (s) => String(s || '').replace(/[|;:]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 24);
 export function encode(name, all) {
   const rows = Object.keys(all || {}).sort((a, b) => a - b).filter((r) => all[r] && (all[r].pole || (all[r].podium || []).some(Boolean)))
-    .map((r) => `${r}:${all[r].pole || ''}:${(all[r].podium || []).concat([null, null, null]).slice(0, 3).map((x) => x || '').join(':')}`);
+    .map((r) => `${r}:${all[r].pole || ''}:${(all[r].podium || []).concat([null, null, null]).slice(0, 3).map((x) => x || '').join(':')}${all[r].x2 || all[r].bonus ? `:${all[r].x2 ? 1 : 0}:${all[r].bonus || ''}` : ''}`);
   return `F1P|${clean(name) || 'Me'}|${rows.join(';')}`;
 }
 export function decode(code) {
   const parts = String(code || '').trim().split('|'); if (parts[0] !== 'F1P' || parts.length < 3) return null;
   const picks = {};
-  parts[2].split(';').filter(Boolean).forEach((s) => { const [r, pole, a, b, c] = s.split(':'); const n = Number(r); if (n > 0) picks[n] = { pole: pole || null, podium: [a || null, b || null, c || null] }; });
+  parts[2].split(';').filter(Boolean).forEach((s) => { const [r, pole, a, b, c, x2, bonus] = s.split(':'); const n = Number(r); if (n > 0) picks[n] = { pole: pole || null, podium: [a || null, b || null, c || null], ...(x2 === '1' ? { x2: true } : {}), ...(bonus === 'y' || bonus === 'n' ? { bonus } : {}) }; });
   return Object.keys(picks).length ? { name: clean(parts[1]) || 'Friend', picks } : null;
 }
 export function useFriends() {

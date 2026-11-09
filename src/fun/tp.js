@@ -30,11 +30,15 @@ const note = (tp, text) => [{ season: tp.season, text }, ...(tp.log || [])].slic
 // Pays out races that have been run since the last visit; a new season brings a sponsor bonus and a fresh target. Returns the same object when nothing changed.
 export function settle(f) {
   const tp = f.tp; if (!tp) return f; let t = { ...tp, paid: { ...tp.paid }, press: { ...tp.press } }; let changed = false;
-  if (t.season !== f.season) { const bonus = Math.round(10 + t.hype * 0.2); t = { ...t, season: f.season, paid: {}, press: {}, levels: {}, budget: r1(t.budget + bonus), target: Math.max(1, rank(f).findIndex((x) => x.id === t.teamId) + 1 - 1), log: note({ ...t, season: f.season }, `New season: sponsors pay a ${bonus} bonus.`) }; changed = true; }
+  if (t.season !== f.season) { const bonus = Math.round(10 + t.hype * 0.2); t = { ...t, season: f.season, paid: {}, press: {}, levels: {}, sponsor: null, events: {}, budget: r1(t.budget + bonus), target: Math.max(1, rank(f).findIndex((x) => x.id === t.teamId) + 1 - 1), log: note({ ...t, season: f.season }, `New season: sponsors pay a ${bonus} bonus.`) }; changed = true; }
   const mine = (f.drivers || []).filter((d) => d.teamId === t.teamId).map((d) => d.id);
   f.races.forEach((r) => { const res = f.results?.[r.id]?.Race; if (!res || t.paid[r.id]) return;
-    const pts = res.filter((x) => mine.includes(x.driverId)).reduce((a, x) => a + (x.points || 0), 0); const income = r1(4 + pts * 0.5 + (t.hype - 50) / 10);
+    const pts = res.filter((x) => mine.includes(x.driverId)).reduce((a, x) => a + (x.points || 0), 0); const staffN = Object.keys(t.staff || {}).filter((k) => t.staff[k]).length; const income = r1(4 + pts * 0.5 + (t.hype - 50) / 10 + (t.staff?.commercial ? 1.5 : 0) - staffN * 1);
     t.paid[r.id] = true; t.budget = r1(t.budget + income); t.log = note(t, `${r.name}: ${pts} points, ${income} in prize and sponsor money.`); changed = true; });
+  // sponsor goal: paid as soon as the points target is reached, lost when the deadline race has passed
+  const sp = t.sponsor; if (sp && !sp.done) { const raced = f.races.filter((r) => f.results?.[r.id]?.Race).length; const pts = teamPoints(f, t.teamId);
+    if (pts >= sp.target) { t = { ...t, budget: r1(t.budget + sp.reward), hype: clamp(t.hype + 3, 0, 100), sponsor: { ...sp, done: 'won' }, log: note(t, `${sp.name}: target reached, ${sp.reward} bonus paid.`) }; changed = true; }
+    else if (raced >= sp.by) { t = { ...t, hype: clamp(t.hype - 4, 0, 100), sponsor: { ...sp, done: 'lost' }, log: note(t, `${sp.name}: target missed after ${sp.by} races. They are not happy.`) }; changed = true; } }
   return changed ? { ...f, tp: t } : f;
 }
 // mode 'safe': a steady gain. mode 'bold': a big gamble, it can flop and cost performance. Rivals who are close behind sometimes copy a big win.
@@ -44,7 +48,8 @@ export function buy(f, k, mode = 'safe') {
   const cur = field(t, u.field); const span = u.gain[1] - u.gain[0]; const damp = cur > 85 ? 0.6 : 1; let eff, flop = false;
   if (mode === 'bold') { if (Math.random() < 0.38) { flop = true; eff = -(0.2 + Math.random() * 0.5) * (u.field === 'car' ? 1 : 2); } else eff = (u.gain[1] + Math.random() * span * 1.5) * 1.25; }
   else eff = (u.gain[0] + Math.random() * span) * 0.85;
-  const gain = r1(eff * (eff > 0 ? damp : 1)); const next = clamp(r1(cur + gain), 30, 99);
+  const staffMul = eff > 0 ? (u.field === 'car' && tp.staff?.designer ? 1.2 : (u.field !== 'car' && tp.staff?.engineer ? 1.25 : 1)) : 1;
+  const gain = r1(eff * (eff > 0 ? damp * staffMul : 1)); const next = clamp(r1(cur + gain), 30, 99);
   const teams = f.teams.map((x) => (x.id === t.id ? { ...x, [u.field]: next } : x));
   const text = flop ? `${u.label} gamble failed: ${r1(next - cur)} (${r1(cur)} to ${next}). The part did not work in the wind tunnel.` : `${u.label} ${mode === 'bold' ? 'breakthrough' : 'upgrade'}: +${r1(next - cur)} (${r1(cur)} to ${next}).`;
   return { f: { ...f, teams, tp: { ...tp, budget: r1(tp.budget - cost), levels: { ...tp.levels, [k]: (tp.levels[k] || 0) + 1 }, log: note(tp, text) } }, ok: true, text, flop };
@@ -131,3 +136,23 @@ export function resolveEvent(f, raceId, optId) {
   const hype = clamp(tp.hype + (o2.hype || 0), 0, 100); const text = o2.text;
   return { f: { ...f, teams, tp: { ...tp, hype, budget: r1(Math.max(0, tp.budget + (o2.budget || 0))), events: { ...(tp.events || {}), [raceId]: text }, log: note(tp, text) } }, text };
 }
+
+// ---- staff: hired once, kept for good, each costs 1 budget per race in wages ----
+export const STAFF = {
+  designer: { label: 'Chief designer', icon: 'color-wand', cost: 24, blurb: 'Aero and power upgrades give 20% more.' },
+  engineer: { label: 'Head of reliability', icon: 'construct', cost: 18, blurb: 'Reliability and pit crew upgrades give 25% more.' },
+  commercial: { label: 'Commercial director', icon: 'briefcase', cost: 20, blurb: '+1.5 prize and sponsor money after every race.' },
+};
+export function hire(f, k) {
+  const tp = f.tp, st = STAFF[k]; if (!tp || !st || tp.staff?.[k]) return { f, ok: false, text: '' }; if (tp.budget < st.cost) return { f, ok: false, text: 'Not enough budget.' };
+  return { f: { ...f, tp: { ...tp, budget: r1(tp.budget - st.cost), staff: { ...(tp.staff || {}), [k]: true }, log: note(tp, `${st.label} hired.`) } }, ok: true, text: `${st.label} hired.` };
+}
+export function fire(f, k) { const tp = f.tp; if (!tp?.staff?.[k]) return f; return { ...f, tp: { ...tp, staff: { ...tp.staff, [k]: false }, log: note(tp, `${STAFF[k].label} leaves the team.`) } }; }
+// ---- sponsors: three offers per season (safe, fair, ambitious); a points target to hit before a deadline race ----
+const PTS = [43, 33, 25, 18, 12, 8, 5, 3, 1, 0];
+export function sponsorOffers(f) {
+  const tp = f.tp; if (!tp) return []; const order = rank(f); const pos = Math.max(0, order.findIndex((t) => t.id === tp.teamId)); const n = f.races.length; const by = Math.max(3, Math.round(n * 0.6));
+  const exp = Math.max(6, Math.round(PTS[Math.min(pos, 9)] * by * 0.9 / 2)); // two cars, rough expectation
+  return [{ id: 'safe', name: 'Local partner', target: Math.max(4, Math.round(exp * 0.6)), by, reward: 8 }, { id: 'fair', name: 'Regional sponsor', target: exp, by, reward: 16 }, { id: 'bold', name: 'Global brand', target: Math.round(exp * 1.5) + 4, by, reward: 30 }];
+}
+export function pickSponsor(f, id) { const tp = f.tp; if (!tp || tp.sponsor) return f; const o = sponsorOffers(f).find((x) => x.id === id); if (!o) return f; return { ...f, tp: { ...tp, sponsor: { ...o, done: null }, log: note(tp, `Signed ${o.name}: ${o.target} points in ${o.by} races for ${o.reward}.`) } }; }

@@ -12,7 +12,7 @@ export function BarView({ items, active, onPress }) {
   return (
     <View style={{ flexDirection: 'row', backgroundColor: colors.surface, borderTopWidth: 1, borderTopColor: colors.line, paddingTop: 5, paddingBottom: Math.max(insets.bottom, 6) }}>
       {items.map(([k, ic, label]) => { const on = active === k; return (
-        <Pressable key={k} onPress={() => onPress(k)} accessibilityRole="tab" accessibilityState={{ selected: on }} style={{ flex: 1, alignItems: 'center', paddingVertical: 4, gap: 1 }}>
+        <Pressable key={k} onPress={() => onPress(k)} accessibilityRole="tab" accessibilityLabel={String(label)} accessibilityState={{ selected: on }} style={{ flex: 1, alignItems: 'center', paddingVertical: 4, gap: 1 }}>
           <Ionicons name={on ? ic : `${ic}-outline`} size={22} color={on ? colors.accent : colors.muted} />
           <Text style={{ fontSize: 10.5, color: on ? colors.accent : colors.muted, fontWeight: on ? '700' : '500' }} numberOfLines={1}>{label}</Text>
         </Pressable>); })}
