@@ -2,7 +2,7 @@
   "expo": {
     "name": "F1 Companion",
     "slug": "f1-companion",
-    "version": "1.22.0",
+    "version": "1.23.0",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
     "backgroundColor": "#0A0506",
@@ -15,7 +15,7 @@
     },
     "android": {
       "package": "com.f1companion.app",
-      "versionCode": 12200,
+      "versionCode": 12300,
       "adaptiveIcon": {
         "foregroundImage": "./assets/app/adaptive-icon.png",
         "backgroundColor": "#0A0506"

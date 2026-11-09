@@ -37,6 +37,7 @@ import RulesScreen from './screens/RulesScreen';
 import DriverSeasonsScreen from './screens/DriverSeasonsScreen';
 import WhatIfScreen from './screens/WhatIfScreen';
 import PredictScreen from './screens/PredictScreen';
+import RaceDayScreen from './screens/RaceDayScreen';
 import DevScreen from './screens/DevScreen';
 import { WeekendScreen, LeaderboardScreen, QuizScreen, RecordsScreen } from './screens/ExploreScreens';
 import ChartScreen from './screens/ChartScreen';
@@ -157,6 +158,7 @@ function Shell() {
               <Stack.Screen name="Rules" component={RulesScreen} options={{ title: tr('F1 rules') }} />
               <Stack.Screen name="WhatIf" component={WhatIfScreen} options={{ title: tr('What if') }} />
               <Stack.Screen name="Predict" component={PredictScreen} options={{ title: tr('Predictions') }} />
+              <Stack.Screen name="RaceDay" component={RaceDayScreen} options={{ title: 'Race day' }} />
               <Stack.Screen name="Dev" component={DevScreen} options={{ title: 'Developer menu' }} />
               <Stack.Screen name="Weekend" component={WeekendScreen} options={{ title: 'Race weekend' }} />
               <Stack.Screen name="Leaderboard" component={LeaderboardScreen} options={{ title: 'Leaderboard' }} />

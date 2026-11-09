@@ -19,6 +19,8 @@ import { clearCache } from '../lib/cache';
 import Reveal from '../components/Reveal';
 import ColorPicker from '../components/ColorPicker';
 import { restartApp } from '../lib/reload';
+import { homeLayout, HOME_CARDS } from '../lib/homeLayout';
+import { Segmented } from '../components/Shared';
 import CodePrompt from '../components/CodePrompt';
 import { useNavigation } from '@react-navigation/native';
 import { colors, alpha } from '../theme';
@@ -75,6 +77,22 @@ export default function SettingsScreen() {
         })}
         <Note>Names of drivers, teams and team principals stay as they are.</Note>
         {o.lang === 'el' ? <Note>The Greek translation is in beta. Some texts may still appear in English.</Note> : null}
+      </Section>
+      <Section icon="reorder-three-outline" title="Home layout" summary="Reorder or hide the cards on Home">
+        {homeLayout(o.homeLayout).map((x, i, arr) => { const label = (HOME_CARDS.find(([k]) => k === x.k) || [])[1]; const move = (d) => { const n = [...arr]; const j = i + d; if (j < 0 || j >= n.length) return; [n[i], n[j]] = [n[j], n[i]]; LayoutAnimation.configureNext(LayoutAnimation.create(200, 'easeInEaseOut', 'opacity')); setOpt('homeLayout', n); };
+          return (<View key={x.k} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 6 }}>
+            <Switch value={x.on} onValueChange={(v) => setOpt('homeLayout', arr.map((y) => (y.k === x.k ? { ...y, on: v } : y)))} trackColor={{ true: colors.accent }} />
+            <Text style={{ color: x.on ? colors.fg : colors.muted, fontSize: 17, flex: 1 }}>{label}</Text>
+            <Pressable onPress={() => move(-1)} hitSlop={8} style={{ padding: 8, opacity: i === 0 ? 0.3 : 1 }}><Ionicons name="chevron-up" size={22} color={colors.fg} /></Pressable>
+            <Pressable onPress={() => move(1)} hitSlop={8} style={{ padding: 8, opacity: i === arr.length - 1 ? 0.3 : 1 }}><Ionicons name="chevron-down" size={22} color={colors.fg} /></Pressable>
+          </View>); })}
+        <Btn onPress={() => setOpt('homeLayout', null)}>Reset the order</Btn>
+      </Section>
+      <Section icon="text-outline" title="Font and text size" summary={`${o.font === 'system' ? 'Phone font' : 'App font'} · ${Math.round((Number(o.textScale) || 1) * 100)}%`}>
+        <Segmented value={o.font === 'system' ? 'system' : 'default'} onChange={(v) => setOpt('font', v)} items={[['default', 'App font'], ['system', 'Phone font']]} />
+        <Segmented value={String(Number(o.textScale) || 1)} onChange={(v) => setOpt('textScale', Number(v))} items={[['0.9', 'S'], ['1', 'M'], ['1.1', 'L'], ['1.2', 'XL'], ['1.3', 'XXL']]} />
+        <Text style={{ color: colors.fg, fontSize: 17 }}>This is how normal text looks with your choice. Lap 52 of 71, P4, +3.2s.</Text>
+        <Note>Changes show as screens redraw. Restart the app if something still looks old.</Note>
       </Section>
       <Section icon="contrast-outline" title="Theme" summary={o.theme === 'light' ? 'White' : o.theme === 'amoled' ? 'AMOLED black' : 'Dark'}>
         {[['dark', 'Dark', 'The default look.'], ['amoled', 'AMOLED black', 'Pure black background. Saves battery on OLED screens.'], ['light', 'White', 'A light theme. Some screens with photos are still tuned for dark.']].map(([k, label, hint]) => { const on = (o.theme || 'dark') === k; return (

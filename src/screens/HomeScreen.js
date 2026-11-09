@@ -14,6 +14,7 @@ import { useAsync } from '../hooks/useAsync';
 import { driverStandings, constructorStandings } from '../api/jolpica';
 import { usePrefs } from '../hooks/usePrefs';
 import { TeamBadge } from '../components/Shared';
+import { homeOrder } from '../lib/homeLayout';
 import LastSession from '../components/LastSession';
 import { YEAR } from '../api/openf1';
 import { colors, alpha } from '../theme';
@@ -49,10 +50,9 @@ export default function HomeScreen({ navigation }) {
   // The card shows the chosen kind; when only one kind has favourites it shows that one. The swap button appears when both exist.
   const both = mine.length > 0 && mineT.length > 0; const showTeams = mineT.length > 0 && (mineView === 'teams' || mine.length === 0);
   const openDriver = (r) => navigation.navigate('Driver', { driverId: r.driverId, name: r.name, first: r.first, last: r.last, teamId: r.teamId, team: r.team });
-  return (
-    <Screen>
-      <UpdateBanner />
-      {prefs.opts.name ? <Text style={{ color: colors.muted, fontSize: 17 }}>{`Hi, ${prefs.opts.name} 👋`}</Text> : null}
+  const P = {
+    next: (
+      <View>
       {next ? (
         <Pressable onPress={() => navigation.navigate('RaceDetail', { meeting: next })} style={({ pressed }) => pressed && { transform: [{ scale: 0.99 }] }}>
           <Grad color={colors.accent} from={0.34} to={0.04} border={0.45} style={{ padding: 14 }}>
@@ -74,10 +74,13 @@ export default function HomeScreen({ navigation }) {
         </Pressable>
       ) : <Card><Text style={s.big}>Season complete</Text></Card>}
 
+      </View>
+    ),
+    explore: (
       <View>
         <Eyebrow>Explore</Eyebrow>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingTop: 10 }}>
-          {[['Weekend', 'Race weekend', 'time', 'Timeline, weather, what to watch', colors.accent], ['Leaderboard', 'Leaderboard', 'podium', 'Predictions vs friends', colors.gold], ['Quiz', 'Quiz', 'help-circle', 'Test your F1 knowledge', colors.purple], ['Records', 'Records', 'stats-chart', 'On this day, records, duels', '#2CB67D'], ['FunProfile', 'Fantasy', 'sparkles', 'Your own seasons', '#4DA3FF']].filter((x) => x[0] !== 'FunProfile').map(([route, title, icon, sub, c], i) => (
+          {[['RaceDay', 'Race day', 'pulse', 'Live session, weather, order', colors.red], ['Weekend', 'Race weekend', 'time', 'Timeline, weather, what to watch', colors.accent], ['Leaderboard', 'Leaderboard', 'podium', 'Predictions vs friends', colors.gold], ['Quiz', 'Quiz', 'help-circle', 'Test your F1 knowledge', colors.purple], ['Records', 'Records', 'stats-chart', 'On this day, records, duels', '#2CB67D'], ['FunProfile', 'Fantasy', 'sparkles', 'Your own seasons', '#4DA3FF']].filter((x) => x[0] !== 'FunProfile').map(([route, title, icon, sub, c], i) => (
             <Pressable key={route} onPress={() => navigation.navigate(route)} style={({ pressed }) => pressed && { opacity: 0.8, transform: [{ scale: 0.98 }] }}>
               <Grad color={c} from={0.5} to={0.06} radius={16} style={{ width: 168, height: 112, padding: 12, justifyContent: 'space-between' }}>
                 <Ionicons name={icon} size={26} color={c} />
@@ -87,6 +90,9 @@ export default function HomeScreen({ navigation }) {
         </ScrollView>
       </View>
 
+    ),
+    mine: (
+      <View>
       {(mine.length > 0 || mineT.length > 0) && (
         <View>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -123,8 +129,15 @@ export default function HomeScreen({ navigation }) {
         </View>
       )}
 
+      </View>
+    ),
+    last: (
+      <View>
       <LastSession season={season} navigation={navigation} />
 
+      </View>
+    ),
+    standings: (
       <Card>
         <Eyebrow>Driver standings</Eyebrow>
         {stand.loading && <Skeleton />}
@@ -136,6 +149,14 @@ export default function HomeScreen({ navigation }) {
         </View>
         {rows.length > 0 && <Pressable onPress={() => navigation.navigate('Standings')} style={s.more}><Text style={{ color: colors.accent, fontWeight: '700', fontSize: 16 }}>Full standings</Text><Ionicons name="chevron-forward" size={16} color={colors.accent} /></Pressable>}
       </Card>
+    ),
+  };
+  const order = homeOrder(prefs.opts.homeLayout);
+  return (
+    <Screen>
+      <UpdateBanner />
+      {prefs.opts.name ? <Text style={{ color: colors.muted, fontSize: 17 }}>{`Hi, ${prefs.opts.name} 👋`}</Text> : null}
+      {order.map((k) => (P[k] && !(k === 'mine' && !mine.length && !mineT.length) ? <View key={k}>{P[k]}</View> : null))}
     </Screen>
   );
 }

@@ -212,3 +212,8 @@ Expo Go (SDK 53+) does not include the `expo-notifications` native module; impor
 - Articles (real news and fantasy): system sans-serif (`fontFamily: 'sans-serif'`) 17/27 instead of the Rajdhani display font.
 - Themes: Settings > Theme (Dark / AMOLED black / White). `applyTheme` in theme.js runs at start-up in App.js after the accent; app restarts to apply. Hard-coded white text on cards became `colors.onSoft`. White theme is best effort (photo heroes tuned for dark).
 - Dev menu: tap About 5 times in Settings, code `op81`. `screens/DevScreen.js`, `lib/dev.js` (perm layer in AsyncStorage `dev:ov`, temp layer in memory): colours, photos (gallery or URL), team colours, fantasy editor (temp edits can be reverted), options editor, storage browser/editor, actions, info.
+
+## V1.23.0 (JS-only)
+- Home layout: Home is built from cards keyed next/explore/mine/last/standings (`lib/homeLayout.js`, option `homeLayout` = [{k,on}]); Settings > Home layout reorders and hides them.
+- Font and text size: options `font` ('default' | 'system') and `textScale` (0.9-1.3), applied in `components/Text.js` through `ui.font` / `ui.scale` (set in usePrefs `sync`). Raw RN Text (articles) is not scaled.
+- Race day: `screens/RaceDayScreen.js` (route RaceDay, first card in the Home Explore strip). OpenF1 `sessions/drivers/position/weather/race_control/intervals` with `session_key=latest`, refresh 15 s live / 60 s otherwise. UNTESTED against the real API (sandbox cannot reach it).
