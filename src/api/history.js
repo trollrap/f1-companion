@@ -161,3 +161,20 @@ export function localSeasonPoints(year) {
   const fin = (l) => l.map((o) => ({ ...o, pts: cum(o.by) })).sort((a, b) => b.pts[b.pts.length - 1] - a.pts[a.pts.length - 1]);
   return { rounds: rl.map((rc) => ({ round: rc[0], name: rc[1] })), drivers: fin(Object.values(drv)), teams: fin(Object.values(team)) };
 }
+
+// Teammate battles: for every season, the head-to-head against each team-mate over the races they shared (qualifying = grid slot, race = finishing order).
+export function localTeammates(id) {
+  const i = dIdx(id); if (i < 0) return null; const out = {};
+  Object.keys(H.r).forEach((y) => H.r[y].forEach((rc) => {
+    const mine = rc[4].find((r) => r[0] === i); if (!mine) return;
+    rc[4].forEach((m) => {
+      if (m[0] === i || m[1] !== mine[1]) return;
+      const k = `${y}:${m[0]}`; const o = (out[k] = out[k] || { year: +y, mate: m[0], team: H.t[mine[1]][1], races: 0, qa: 0, qb: 0, ra: 0, rb: 0, pa: 0, pb: 0 });
+      const g = (r) => (r[2] > 0 ? r[2] : 99), p = (r) => (r[3] != null && r[3] > 0 ? r[3] : 99);
+      o.races++; if (g(mine) < g(m)) o.qa++; else if (g(m) < g(mine)) o.qb++;
+      if (p(mine) < p(m)) o.ra++; else if (p(m) < p(mine)) o.rb++;
+      o.pa += mine[5] || 0; o.pb += m[5] || 0;
+    });
+  }));
+  return Object.values(out).filter((o) => o.races >= 3).sort((a, b) => b.year - a.year || b.races - a.races).map((o) => { const d = H.d[o.mate]; return { ...o, mateName: `${d[1]} ${d[2]}`, mateId: IX.idOf[o.mate] }; });
+}

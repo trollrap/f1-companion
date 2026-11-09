@@ -217,3 +217,10 @@ Expo Go (SDK 53+) does not include the `expo-notifications` native module; impor
 - Home layout: Home is built from cards keyed next/explore/mine/last/standings (`lib/homeLayout.js`, option `homeLayout` = [{k,on}]); Settings > Home layout reorders and hides them.
 - Font and text size: options `font` ('default' | 'system') and `textScale` (0.9-1.3), applied in `components/Text.js` through `ui.font` / `ui.scale` (set in usePrefs `sync`). Raw RN Text (articles) is not scaled.
 - Race day: `screens/RaceDayScreen.js` (route RaceDay, first card in the Home Explore strip). OpenF1 `sessions/drivers/position/weather/race_control/intervals` with `session_key=latest`, refresh 15 s live / 60 s otherwise. UNTESTED against the real API (sandbox cannot reach it).
+
+## V1.24.0 (JS-only)
+- Team-mate battles: `localTeammates(id)` in `api/history.js` (offline history, per season vs each team-mate: qualifying = grid slot, race = finishing order, points; seasons with fewer than 3 shared races hidden) and `screens/TeammatesScreen.js` (route Teammates, button on the driver page).
+- Fantasy news: "Rivalry watch" Feature article every 4th race from `rivalries()` (tp.js): story so far, head to head, quote (made-up drivers only), what comes next.
+- Offline/speed: `lib/warm.js` loads standings and last race 4 s after start-up into the shared cache.
+- Alerts: option `raceMorning` schedules an 08:00 local reminder on race/sprint day (`scheduleSessionAlerts`). Settings > Notifications.
+- Not done (asked for): MotoGP/football upgrades, share cards/streaks, strategy view, custom alert sounds (needs a native build), push alerts for pole/red flag (needs a server).

@@ -125,6 +125,7 @@ export default function SettingsScreen() {
             </Pressable>); })}
         </View>
         <View style={{ marginTop: 10 }}><NotifPrefs title="Remind me before" /></View>
+        <Sw label="Race morning reminder" hint="At 8:00 on the day of a race or sprint, with the start time." value={!!o.raceMorning} onChange={(v) => setOpt('raceMorning', v)} />
         <Sw label="Session results" hint="A notification once a qualifying, sprint or race result is published. Android can be minutes late." value={prefs.results} onChange={toggleResults} />
         <Btn onPress={async () => { const n = await checkResults({ force: true }); setMsg(n ? `Sent ${n} result alert${n > 1 ? 's' : ''}.` : 'No new results to send right now.'); }}>Check for results now</Btn>
         <Btn onPress={async () => { const r = await sendTestNotification(); setMsg(r === 'ok' ? 'A test alert arrives in 5 seconds.' : r === 'denied' ? 'Notifications are not allowed for this app. Enable them in system settings.' : 'Alerts only work in the installed app.'); }}>Send a test alert</Btn>

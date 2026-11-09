@@ -94,6 +94,9 @@ export default function DriverScreen({ route, navigation }) {
         <Pressable onPress={() => navigation.navigate('Compare', { a: { driverId, name, first: nm.first, last: nm.last, teamId: sTeamId, team: sTeam }, year: isCur ? undefined : year })} style={({ pressed }) => [s.btn, { backgroundColor: alpha(color, 0.18), borderColor: alpha(color, 0.55) }, pressed && { opacity: 0.85 }]}>
           <Ionicons name="git-compare" size={18} color={color} /><Text style={s.btnText}>Compare with another driver</Text>
         </Pressable>
+        <Pressable onPress={() => navigation.navigate('Teammates', { driverId, name, color })} style={({ pressed }) => [s.btn, { backgroundColor: alpha(color, 0.12), borderColor: alpha(color, 0.4) }, pressed && { opacity: 0.85 }]}>
+          <Ionicons name="people" size={18} color={color} /><Text style={s.btnText}>Team-mate battles</Text>
+        </Pressable>
         <Segmented value={tab} onChange={setTab} items={[['season', `${year}`], ['career', 'Career'], ['profile', 'Profile']]} />
 
         {tab === 'season' && (seasons.v || []).length > 1 ? <SeasonSwitch compact year={year} years={[...new Set([...(activeNow ? [YEAR] : []), ...(seasons.v || [])])].sort((a, b) => b - a)} onChange={setPick} /> : null}

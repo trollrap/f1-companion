@@ -6,6 +6,7 @@
 // Every article carries `stats` and a `subject` so the screen can show a team-coloured banner and numbers instead of photos.
 import { ovr, A, TA } from './sim';
 import { careerOf } from './look';
+import { rivalries } from './tp';
 
 const hash = (s) => { let h = 2166136261; for (const c of String(s)) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
 const rng = (seed) => { let a = hash(seed); return () => { a |= 0; a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; };
@@ -260,5 +261,23 @@ export function buildNews(f, v, st, n) {
   if (!feats.length && !out.length) push({ id: 'quiet', kind: 'Paddock', order: 1, kicker: 'QUIET WEEK', title: 'Nothing to report yet', body: ['The season has not started. Run the first race to get the newspaper going.'] });
 
   function career(d) { return careerOf(f, d.id); }
+  // ---- rivalry watch: every fourth race the fiercest rivalry of the season so far gets a long feature, built from the real results
+  for (let k = 4; k <= done.length; k += 4) {
+    let rv = null; try { rv = rivalries({ ...f, races: races.slice(0, k), results: v.results, drivers: f.drivers }, 1)[0]; } catch {}
+    if (!rv || !rv.da || !rv.db) continue; const A1 = D(rv.da.id) || rv.da, B1 = D(rv.db.id) || rv.db; const r = rng(`${f.id}:rv:${k}:${rv.a}:${rv.b}`);
+    const lead = rv.aw >= rv.bw ? [A1, rv.aw, B1, rv.bw] : [B1, rv.bw, A1, rv.aw]; const tm = rv.mates ? T(A1.teamId) : null;
+    const body = [
+      `${pk(r, 'rw1', ['It has been building for weeks.', 'Every paddock has one, and this season it is these two.', 'You could feel it in the garage before it showed on the track.'])} After ${k} rounds, ${sn(A1)} and ${sn(B1)} have been in each other's way ${rv.clashes ? `${rv.clashes} ${pl(rv.clashes, 'time')} with contact` : 'again and again'}, and ${rv.close} ${pl(rv.close, 'close fight')} on the road.`,
+      '## The story so far',
+      `${rv.mates ? `They share a garage at ${tm?.name || 'the same team'}, which makes every shared lap more awkward than a rival's.` : `${sn(A1)} drives for ${T(A1.teamId)?.name || 'one team'}, ${sn(B1)} for ${T(B1.teamId)?.name || 'another'}, and neither side will give an inch.`} ${rv.clashes >= 2 ? 'The stewards have seen both names more than once.' : 'So far the stewards have stayed out of it, but not for lack of trying.'}`,
+      '## Head to head',
+      `In the fights that mattered, ${sn(lead[0])} has finished ahead ${lead[1]} ${pl(lead[1], 'time')} to ${lead[3]}. ${lead[1] === lead[3] ? 'It could not be closer.' : `${sn(lead[2])} knows the gap is smaller than it looks.`}`,
+      `> ${say(r, lead[2], rv.clashes ? 'fury' : 'gutted', { other: lead[0] })}`,
+      '## What comes next',
+      `${pk(r, 'rw2', ['Expect more of the same. Neither driver has shown any interest in backing down.', 'The next time they share a corner, the whole paddock will be watching.', 'Rivalries like this decide seasons, and sometimes careers.'])}`,
+    ];
+    push({ id: `rival:${k}:${rv.a}:${rv.b}`, kind: 'Feature', order: 95 + k * 10, kicker: 'RIVALRY WATCH', color: T(lead[0].teamId)?.color, title: pk(r, 'rwt', [`${sn(A1)} against ${sn(B1)}: the feud that will not go away`, `Inside the ${sn(A1)} and ${sn(B1)} rivalry`, `${sn(A1)} versus ${sn(B1)}: round ${k} and no truce`]), body,
+      stats: [['CLASHES', String(rv.clashes)], ['CLOSE FIGHTS', String(rv.close)], [sn(lead[0]).toUpperCase(), String(lead[1])], [sn(lead[2]).toUpperCase(), String(lead[3])]] });
+  }
   const seen = new Set(); return out.filter((a) => (seen.has(a.id) ? false : seen.add(a.id))).sort((a, b) => b.order - a.order);
 }

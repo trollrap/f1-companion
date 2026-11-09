@@ -55,7 +55,12 @@ export async function scheduleSessionAlerts(meeting, sessions, prefs) {
   // "Results" alerts: a local alert shortly after a qualifying, sprint or race ends. It is set up in advance, so it arrives even when the app is closed
   // and Android never gets to run the background check. It says the classification should be up, because it is timed rather than read from a server.
   const results = prefs.results ? sessions.filter((x) => ['Qualifying', 'Sprint', 'Race'].includes(x.session_name) && prefs.types[x.session_name] !== false).map((x) => ({ x, at: Date.parse(x.date_end) + 30 * 60000 })).filter((r) => r.at > Date.now()) : [];
-  if ((!wanted.length && !results.length) || !(await ensurePermission())) return 0;
+  // "Race morning": one reminder at 08:00 local time on the day of a race or sprint, if that is still ahead.
+  const morning = prefs.opts?.raceMorning ? sessions.filter((x) => ['Race', 'Sprint'].includes(x.session_name)).map((x) => { const d = new Date(Date.parse(x.date_start)); d.setHours(8, 0, 0, 0); return { x, at: d.getTime(), start: Date.parse(x.date_start) }; }).filter((m) => m.at > Date.now() && m.at < m.start - 30 * 60000) : [];
+  if ((!wanted.length && !results.length && !morning.length) || !(await ensurePermission())) return 0;
+  for (const m of morning) {
+    try { await n.scheduleNotificationAsync({ content: { title: `${tr(m.x.session_name)} day · ${tr(shortName(meeting.meeting_name))}`, body: ui.lang === 'el' ? `Σήμερα στις ${hm(m.start)}` : `Today at ${hm(m.start)}. Time to get ready.` }, trigger: { type: n.SchedulableTriggerInputTypes.DATE, date: new Date(m.at), channelId: 'sessions' } }); } catch {}
+  }
   for (const r of results) {
     try { await n.scheduleNotificationAsync({ content: { title: `${tr(r.x.session_name)} · ${tr(shortName(meeting.meeting_name))}`, body: ui.lang === 'el' ? 'Τα αποτελέσματα πρέπει να είναι διαθέσιμα τώρα.' : 'The results should be available now.' }, trigger: { type: n.SchedulableTriggerInputTypes.DATE, date: new Date(r.at), channelId: 'sessions' } }); } catch {}
   }
@@ -65,7 +70,7 @@ export async function scheduleSessionAlerts(meeting, sessions, prefs) {
       trigger: { type: n.SchedulableTriggerInputTypes.DATE, date: new Date(a.at), channelId: 'sessions' },
     });
   }
-  return wanted.length + results.length;
+  return wanted.length + results.length + morning.length;
 }
 // Shows a notification straight away (used for session results).
 export async function notifyNow(title, body) {
