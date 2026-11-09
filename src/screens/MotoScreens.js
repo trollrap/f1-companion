@@ -130,6 +130,10 @@ export function MotoStandings({ navigation }) {
   const st = useAsync(() => (m.season && catId ? standings(m.season.id, catId) : Promise.resolve(null)), [m.season?.id, catId]);
   const rows = useMemo(() => (!st.v ? null : view === 'riders' ? st.v : groupStandings(st.v, view === 'teams' ? 'team' : 'bike')), [st.v, view]);
   const top = rows?.[0]?.points || 0;
+  // Title picture: rounds left in the current season and the most a rider can still score (MotoGP: 12 sprint + 25 race = 37 a weekend, other classes 25).
+  const evs = useAsync(() => (m.season && m.isCur ? events(m.season.id, m.season.year) : Promise.resolve(null)), [m.season?.id]);
+  const left = evs.v ? evs.v.filter((e) => Date.parse(e.end || e.start) > Date.now()).length : 0; const perRound = isTop ? 37 : 25; const maxLeft = left * perRound;
+  const alive = view === 'riders' && rows && maxLeft > 0 && rows.length > 1 ? rows.filter((r) => top - r.points <= maxLeft) : [];
   return (
     <Screen swipe={{ index: ['riders', 'teams', 'bikes'].indexOf(view), count: 3, onIndex: (i) => setView(['riders', 'teams', 'bikes'][i]) }}>
       {m.years.length > 0 && <SeasonSwitch year={m.season?.year} years={m.years} max={m.years[0]} onChange={(y) => { setCat(null); m.setYear(y); }} />}
@@ -138,6 +142,14 @@ export function MotoStandings({ navigation }) {
       {(m.ss.loading || cats.loading || st.loading) && <Skeleton rows={6} />}
       {(m.ss.error || cats.error || st.error) && <ErrorNote error={m.ss.error || cats.error || st.error} onRetry={() => { m.ss.reload(); cats.reload(); st.reload(); }} />}
       {rows && !rows.length && <Note>No standings published for this class yet.</Note>}
+      {alive.length > 0 && (
+        <Card>
+          <Eyebrow>Title picture</Eyebrow>
+          <Text style={{ color: colors.fg, fontSize: 18, fontWeight: '700', marginTop: 6 }}>{`${left} ${left === 1 ? 'round' : 'rounds'} left · up to ${maxLeft} points to win`}</Text>
+          <Text style={{ color: colors.muted, fontSize: 15, marginTop: 4 }}>{alive.length === 1 ? `${alive[0].name} has clinched the title.` : `${alive.length} riders can still win the title: ${alive.slice(0, 6).map((r) => (r.name || '').split(' ').pop()).join(', ')}${alive.length > 6 ? '…' : ''}.`}</Text>
+          <Note>{`A rider needs to be within ${maxLeft} points of the leader (${perRound} per round) to stay in the fight.`}</Note>
+        </Card>
+      )}
       {rows?.map((r, i) => (
         <Row key={`${r.riderId || r.name}${i}`} fav={view === 'riders' && mf.has(r.riderId)} r={view === 'riders' ? { ...r, right: String(r.points), rightSub: i > 0 ? `−${top - r.points}` : 'Leader' } : { position: r.position, name: r.name, team: r.riders.join(' · '), right: String(r.points), rightSub: i > 0 ? `−${top - r.points}` : 'Leader' }}
           onPress={view === 'riders' && r.riderId && isTop ? () => navigation.navigate('MotoRider', { rider: r, season: m.season }) : undefined} />))}

@@ -224,3 +224,11 @@ Expo Go (SDK 53+) does not include the `expo-notifications` native module; impor
 - Offline/speed: `lib/warm.js` loads standings and last race 4 s after start-up into the shared cache.
 - Alerts: option `raceMorning` schedules an 08:00 local reminder on race/sprint day (`scheduleSessionAlerts`). Settings > Notifications.
 - Not done (asked for): MotoGP/football upgrades, share cards/streaks, strategy view, custom alert sounds (needs a native build), push alerts for pole/red flag (needs a server).
+
+## V1.25.0 (JS-only)
+- Leaderboard: "Your streaks and badges" card (current/best streak of rounds with 3+ points, badges) and a Share my results button (system share sheet, text).
+- MotoGP standings: "Title picture" card for the current season (rounds left, max points still available: 37 per MotoGP weekend, 25 for other classes, riders still in the fight). Needs the OpenF1-free MotoGP events call; untested live.
+- Football scores: live matches first in each league and a live count.
+- Stability: ran ESLint (no-undef, rules-of-hooks) over src and App.js: clean. Only duplicate keys in i18n/el.js (harmless).
+- Already existed: race strategy view (components/Strategy.js in RoundScreen), football "My teams" filter.
+- Not possible without a native build / server: custom alert sounds, pole/red-flag push alerts, widgets.

@@ -43,7 +43,7 @@ export function FootScores({ navigation }) {
   const data = useAsync(() => allScores(ymd(day), off === 0), [ymd(day), off === 0 ? Math.floor(now / 30000) : 0]);
   const ff = useFootFavs();
   const list = (data.v || []).filter((g) => (lg === 'all' || (lg === 'mine' ? ff.has(g.home.id) || ff.has(g.away.id) : g.league.slug === lg)));
-  const groups = LEAGUES.map((l) => ({ l, games: list.filter((g) => g.league.slug === l.slug) })).filter((x) => x.games.length);
+  const groups = LEAGUES.map((l) => ({ l, games: list.filter((g) => g.league.slug === l.slug).sort((a, b) => (b.state === 'in') - (a.state === 'in') || Date.parse(a.date) - Date.parse(b.date)) })).filter((x) => x.games.length);
   return (
     <Screen>
       <View style={{ flexDirection: 'row', gap: 6 }}>
@@ -53,6 +53,7 @@ export function FootScores({ navigation }) {
       <Dropdown value={lg} options={[['all', 'All leagues'], ['mine', 'My teams'], ...LEAGUES.map((l) => [l.slug, l.name])]} onChange={setLg} />
       {data.loading && <Skeleton rows={5} />}
       {data.error && <ErrorNote error={data.error} onRetry={data.reload} />}
+      {data.v && list.some((g) => g.state === 'in') ? <Note>{`${list.filter((g) => g.state === 'in').length} live now. Live matches are listed first in each league.`}</Note> : null}
       {data.v && !groups.length && <Note>No matches on this day.</Note>}
       {groups.map(({ l, games }) => (
         <Card key={l.slug}><Eyebrow>{l.name}</Eyebrow><View style={{ marginTop: 8, gap: 8 }}>{games.map((g) => <Game key={g.id} g={g} ff={ff} onPress={() => navigation.navigate('FootMatch', { g })} onTeam={(t) => navigation.navigate('FootTeam', { slug: l.slug, id: t.id, name: t.name, logo: t.logo })} />)}</View></Card>))}

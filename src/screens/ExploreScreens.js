@@ -182,6 +182,21 @@ export function LeaderboardScreen() {
           {rounds.length ? <Note>Scoring: pole 2, each podium pick 3 when exact or 1 when the driver finishes on the podium elsewhere. Best round: 11.</Note> : null}
         </Card>
       </Reveal>
+      <Reveal index={4}>
+        <Card>
+          <Eyebrow>Your streaks and badges</Eyebrow>
+          {(() => { const mineRow = table.find((t) => t.me); const seq = rounds.filter((r) => P.all[r] && res.v?.[r]).map((r) => { const sc = score(P.all[r], res.v[r].q, res.v[r].rc); return sc.done ? sc : null; }).filter(Boolean);
+            let cur = 0, best = 0, run = 0; seq.forEach((x) => { if (x.total >= 3) { run++; best = Math.max(best, run); } else run = 0; }); cur = run;
+            const exactAny = seq.some((x) => x.podium.every((p) => p === 3)); const badges = [['flame', 'Hot streak', cur >= 3, `${cur} rounds in a row with 3+ points`], ['ribbon', 'Perfect podium', exactAny, 'All three podium places exact'], ['calendar', 'Regular', seq.length >= 5, '5 predicted races'], ['trophy', 'Season leader', !!mineRow && table[0]?.me && table.length > 1, 'Top of your leaderboard']];
+            return (<View style={{ gap: 12, marginTop: 8 }}>
+              <View style={{ flexDirection: 'row', gap: 12 }}>
+                {[['Current streak', cur], ['Best streak', best], ['Rounds', seq.length]].map(([l, v]) => <View key={l} style={{ flex: 1, padding: 12, borderRadius: 14, backgroundColor: colors.surface2, alignItems: 'center' }}><CountUp value={v} style={{ color: colors.fg, fontSize: 26, fontWeight: '800' }} /><Text style={{ color: colors.muted, fontSize: 12 }}>{l}</Text></View>)}
+              </View>
+              {badges.map(([ic, l, on, h]) => <View key={l} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, opacity: on ? 1 : 0.4 }}><Ionicons name={ic} size={24} color={on ? colors.gold : colors.muted} /><View style={{ flex: 1 }}><Text style={{ color: colors.fg, fontSize: 17, fontWeight: '700' }}>{l}</Text><Text style={{ color: colors.muted, fontSize: 13 }}>{h}</Text></View></View>)}
+              <Btn icon="share-social" onPress={() => Share.share({ message: `My F1 predictions: ${mineRow ? mineRow.total : 0} points over ${seq.length} rounds, best streak ${best}${table.length > 1 ? `, rank ${table.findIndex((t) => t.me) + 1} of ${table.length}` : ''}.` }).catch(() => {})}>Share my results</Btn>
+            </View>); })()}
+        </Card>
+      </Reveal>
       <Reveal index={1}>
         <Card>
           <Eyebrow>Live room</Eyebrow>
