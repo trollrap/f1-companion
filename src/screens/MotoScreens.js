@@ -186,6 +186,12 @@ export function MotoRider({ route, navigation }) {
         {res.loading && <Note>Loading the season's races. The first time can take several seconds.</Note>}
         {res.error && <Note>{`Results unavailable: ${res.error}`}</Note>}
       </Card>
+      {fin.length >= 3 ? (() => {
+        const f5 = fin.slice(-5), p5 = fin.slice(-10, -5), av = (a) => a.reduce((x, y) => x + y, 0) / a.length; const a1 = av(f5), a0 = p5.length >= 3 ? av(p5) : null;
+        const pts5 = races.slice(-5).reduce((x, r) => x + (Number(r.race.points) || 0), 0); const trend = a0 == null ? null : a0 - a1 > 1 ? 'up' : a1 - a0 > 1 ? 'down' : 'flat';
+        return (<Card><View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}><Eyebrow>{`Form, last ${f5.length}`}</Eyebrow>{trend ? <Text style={{ color: trend === 'up' ? colors.good : trend === 'down' ? colors.red : colors.muted, fontWeight: '800', fontSize: 13 }}>{trend === 'up' ? '▲ Improving' : trend === 'down' ? '▼ Slipping' : '● Steady'}</Text> : null}</View>
+          <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>{[['Avg finish', a1.toFixed(1)], ['Points', String(pts5)], ['Best', `P${Math.min(...f5)}`]].map(([k, v]) => <View key={k} style={s.stat}><Text style={s.statK}>{up(k)}</Text><Text style={s.statV}>{v}</Text></View>)}</View></Card>);
+      })() : null}
       {races.length > 0 && (
         <Card>
           <Eyebrow>Race results</Eyebrow>

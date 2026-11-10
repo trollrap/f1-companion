@@ -12,9 +12,9 @@ const arrow = (n, was) => (was == null ? 'new' : was - n > 0 ? `▲${was - n}` :
 // Season replay: any past season from the offline history, with another points system, a driver taken out, or the worst results dropped.
 export default function ReplayScreen() {
   const years = useMemo(() => historyYears().filter((y) => y < new Date().getFullYear() + 1), []);
-  const [year, setYear] = useState(years[1] || years[0]); const [system, setSystem] = useState('actual'); const [remove, setRemove] = useState('none'); const [drop, setDrop] = useState(0); const [view, setView] = useState('drivers');
+  const [year, setYear] = useState(years[1] || years[0]); const [system, setSystem] = useState('actual'); const [remove, setRemove] = useState('none'); const [drop, setDrop] = useState(0); const [sprint, setSprint] = useState(true); const [view, setView] = useState('drivers');
   const base = useMemo(() => replay(year, {}), [year]);
-  const r = useMemo(() => replay(year, { system, remove: remove === 'none' ? null : remove, drop }), [year, system, remove, drop]);
+  const r = useMemo(() => replay(year, { system, remove: remove === 'none' ? null : remove, drop, sprint }), [year, system, remove, drop, sprint]);
   if (!r) return <Screen header={false}><Card><Text style={{ color: colors.fg, fontSize: 18, fontWeight: '700' }}>No data for {year}</Text></Card></Screen>;
   const changed = r.champion.now?.id !== r.champion.was?.id; const list = view === 'drivers' ? r.drivers : r.teams;
   return (
@@ -26,6 +26,7 @@ export default function ReplayScreen() {
           <Dropdown value={system} options={SYSTEMS.map((x) => [x[0], x[1]])} onChange={setSystem} prefix="Points" />
           <Dropdown value={remove} options={[['none', 'Nobody'], ...(base?.roster || []).map((x) => [x.id, x.name])]} onChange={setRemove} prefix="Take out" />
           <Dropdown value={drop} options={[[0, 'None'], [1, 'Worst 1'], [2, 'Worst 2'], [3, 'Worst 3'], [4, 'Worst 4']]} onChange={(v) => setDrop(Number(v))} prefix="Drop results" />
+          <Dropdown value={sprint ? 'yes' : 'no'} options={[['yes', 'Counted as scored'], ['no', 'Left out']]} onChange={(v) => setSprint(v === 'yes')} prefix="Sprint points" />
         </View>
       </Card>
       <Card>
@@ -43,7 +44,7 @@ export default function ReplayScreen() {
             <Text style={{ width: 46, textAlign: 'right', color: x.was != null && x.was - x.pos > 0 ? colors.good : x.was != null && x.was - x.pos < 0 ? colors.red : colors.muted, fontSize: 14, fontWeight: '700' }}>{arrow(x.pos, x.was)}</Text>
             <Text style={{ width: 54, textAlign: 'right', color: colors.fg, fontSize: 18, fontWeight: '800' }}>{x.total}</Text>
           </View>))}
-        <Note>Built from race results in the offline history: sprint points are not included and old best-N-results rules are not applied unless you drop results. Fastest-lap points are only counted where that rule is chosen.</Note>
+        <Note>Built from race results in the offline history: sprint points are the season totals as scored (they do not change with the points system) and old best-N-results rules are not applied unless you drop results. Fastest-lap points are only counted where that rule is chosen.</Note>
       </Card>
     </Screen>
   );

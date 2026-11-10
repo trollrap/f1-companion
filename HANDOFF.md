@@ -247,3 +247,33 @@ Expo Go (SDK 53+) does not include the `expo-notifications` native module; impor
 - Live race: strategy calls (team radio) for your Team Principal team. Flavour only, the result is unchanged.
 - Accessibility: Colour-blind friendly option (blue/orange, restarts the app), screen-reader labels on tabs/cards/live controls, larger tap areas.
 - Route: eas update --branch preview --platform android --message "1.27.0"
+
+## V1.28.0 (JS-only)
+- Season replay: sprint points now included (season totals as scored), with a Counted/Left out switch. Checked: 2021 Verstappen 395.5, 2022 Verstappen 454.
+- Driver page: Form card (avg finish, points, grid gain, trend, scoring streak, last 5).
+- Live race strategy calls now matter: right calls give TP budget and hype, wrong ones cost them (race result itself is unchanged). Logged in the TP log.
+- Fan zone: Higher or lower game (offline history, streak saved in fanHL).
+- MotoGP rider Form card; football team page Next-match countdown.
+- Faster start: 10 secondary screens are loaded on first open (getComponent).
+- Route: eas update --branch preview --platform android --message "1.28.0"
+
+## V1.29.0 (JS-only)
+- Circuit page: Past winners card (offline history, matched by Grand Prix name): top 3 winners, pole-to-win rate, year list.
+- Race tyre strategy: stops column and lap axis (OpenF1 data, unverified live).
+- Fantasy: Hall of fame in the Stats tab (champions per season, title leaders, retired numbers for 2+ titles; src/fun/legends.js).
+- Fantasy: Season rules card in Settings (points table, reliability Bulletproof/Normal/Fragile) via f.rules, applies to future races.
+- Tab bar icon pop animation (respects reduced motion).
+- Route: eas update --branch preview --platform android --message "1.29.0"
+
+## V1.30.0 (JS-only)
+- Race page: Race stats card (biggest climbers/fallers from the grid via Jolpica; fastest pit stops via OpenF1 /pit, label depends on whether stop_duration or lane time is published) (components/RaceStats.js, api/openf1.js pitStops). OpenF1 part unverified live.
+- Race page: Forecast card for upcoming weekends (Open-Meteo, shared lib/forecast.js, also used by the Weekend screen).
+- Search everything (Home > Explore > Search): drivers and teams from the offline history, circuits, rules text, app pages (screens/SearchScreen.js).
+- Route: eas update --branch preview --platform android --message "1.30.0"
+
+## V1.31.0 (JS-only)
+- Time machine (Home > Explore): pick any past race (offline history) and watch it in the live-race view. Real grid, finishing order and retirements; the laps in between (stops, retirement laps, gaps, lap count from circuit length) are reconstructed.
+- Driver DNA: six-axis radar on the driver page Career tab, from every race in the history (api/history.js dnaOf, components/DriverDNA.js).
+- Race Director mode: flag chip in the live race bar (fantasy). Stewards decisions on contacts (penalise A/B or racing incident) and safety-car calls, judged against who was actually at fault in the sim. Record kept in f.steward and shown on the fantasy Stats tab.
+- Paddock rumours (fantasy Home): three rumours about the next race, Believe or Doubt, judged after the race against the real simulated result; score = 4 + 20 x (1 - chance of the side picked). Picks stored in f.rumours (fun/rumours.js, screens/FantasyRumours.js).
+- Route: eas update --branch preview --platform android --message "1.31.0"

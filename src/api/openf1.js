@@ -55,6 +55,15 @@ export async function raceStints(sessionKey) {
   const out = rows.filter((r) => by[r.number]).map((r) => ({ position: r.position, number: r.number, last: r.last, color: r.color, stints: by[r.number].sort((a, b) => a.n - b.n) }));
   return { laps, rows: out };
 }
+// Pit stops of a session, fastest first. OpenF1 reports the stationary time as stop_duration (newer data) or the lane time as pit_duration.
+export async function pitStops(sessionKey) {
+  const [pits, drv] = await Promise.all([get(`/pit?session_key=${sessionKey}`, DAY), get(`/drivers?session_key=${sessionKey}`, DAY)]);
+  if (!Array.isArray(pits)) throw new Error('Unexpected OpenF1 response');
+  const stat = pits.some((p) => typeof p.stop_duration === 'number'); const val = (p) => (stat ? p.stop_duration : p.pit_duration ?? p.lane_duration);
+  const rows = pits.filter((p) => typeof val(p) === 'number' && val(p) > 0 && val(p) < 90).map((p) => { const d = drv.find((x) => x.driver_number === p.driver_number) || {};
+    return { number: p.driver_number, last: d.last_name ? nicePart(d.last_name, true) : `#${p.driver_number}`, team: d.team_name, color: d.team_colour ? `#${d.team_colour}` : null, lap: p.lap_number, dur: Math.round(val(p) * 100) / 100 }; }).sort((a, b) => a.dur - b.dur);
+  return { stat, rows, total: pits.length };
+}
 // Session key of a past session (the schedule rebuilt from Jolpica has none): OpenF1 has sessions from 2023 on.
 export async function findSessionKey(year, name, dateISO) {
   if (Number(year) < 2023) return null;

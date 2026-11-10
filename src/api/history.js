@@ -181,7 +181,42 @@ export function localTeammates(id) {
 
 // Raw race rows of one season for the what-if replay: [{round, name, rows: [{id, name, team, pos, pts, fast}]}]
 export const historyYears = () => Object.keys(load().r).map(Number).sort((a, b) => b - a);
+export function sprintPoints(year) {
+  load(); const m = H.sp[String(year)]; if (!m) return {}; const out = {};
+  Object.keys(m).forEach((k) => { const i = Number(k); out[IX.idOf[i] || String(i)] = m[k]; });
+  return out;
+}
 export function seasonRaw(year) {
   load(); const rs = H.r[year]; if (!rs) return null;
   return rs.map((rc) => ({ round: rc[0], name: rc[1], rows: rc[4].map((r) => ({ id: IX.idOf[r[0]] || String(r[0]), name: `${H.d[r[0]][1]} ${H.d[r[0]][2]}`, team: H.t[r[1]][1], pos: r[3] != null && r[3] > 0 ? r[3] : null, pts: r[5] || 0, fast: r[7] === 1 })) }));
+}
+// Past winners of a Grand Prix of this name (offline history). Matches by race name, so a race that moved circuits is shown together.
+export function raceHistory(name) {
+  load(); if (!name) return null; const key = String(name).toLowerCase().trim(); const out = [];
+  Object.keys(H.r).forEach((y) => H.r[y].forEach((rc) => { if (String(rc[1]).toLowerCase().trim() !== key) return; const w = rc[4].find((r) => r[4] === '1'); if (!w) return; const pole = rc[5] ? rc[5][0] : null;
+    out.push({ year: +y, id: IX.idOf[w[0]] || String(w[0]), name: `${H.d[w[0]][1]} ${H.d[w[0]][2]}`, team: H.t[w[1]][1], grid: w[2], pole: pole != null ? `${H.d[pole][1]} ${H.d[pole][2]}` : null }); }));
+  if (!out.length) return null; out.sort((a, b) => b.year - a.year);
+  const cnt = {}; out.forEach((x) => { cnt[x.name] = (cnt[x.name] || 0) + 1; }); const top = Object.entries(cnt).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).slice(0, 3).map(([n, c]) => ({ name: n, wins: c }));
+  const fromPole = out.filter((x) => x.grid === 1).length;
+  return { list: out, top, races: out.length, fromPole, first: out[out.length - 1].year };
+}
+// One past race as a list of results (real grid, finishing order and status), for the Time machine.
+export function raceRowsOf(year, round) {
+  load(); const rc = (H.r[year] || []).find((x) => x[0] === round); if (!rc) return null;
+  const rows = rc[4].map((r) => ({ id: IX.idOf[r[0]] || String(r[0]), name: `${H.d[r[0]][2]}`, full: `${H.d[r[0]][1]} ${H.d[r[0]][2]}`, code: H.d[r[0]][6] || String(H.d[r[0]][2]).slice(0, 3).toUpperCase(), teamId: H.t[r[1]][0], team: H.t[r[1]][1], grid: r[2] > 0 ? r[2] : 20, pos: r[3] != null && r[3] > 0 ? r[3] : null, posText: r[4], status: r[6] || '', pts: r[5] || 0 }));
+  return { round, name: rc[1], country: rc[2], date: rc[3], rows };
+}
+export const roundsOf = (year) => { load(); return (H.r[year] || []).map((rc) => ({ round: rc[0], name: rc[1], date: rc[3] })); };
+// Driver DNA: six 0-100 scores from every race the driver started in the history.
+export function dnaOf(id) {
+  const i = dIdx(id); if (i < 0) return null; const rows = driverRows(i).map((x) => x.row).filter((r) => r[3] != null);
+  if (rows.length < 8) return null;
+  const fin = rows.filter((r) => r[3] > 0 && /^\d+$/.test(String(r[4]))), n = rows.length;
+  const gr = rows.filter((r) => r[2] > 0); const avgGrid = gr.length ? gr.reduce((a, r) => a + r[2], 0) / gr.length : 12;
+  const gain = gr.filter((r) => /^\d+$/.test(String(r[4])) && r[3] > 0); const avgGain = gain.length ? gain.reduce((a, r) => a + (r[2] - r[3]), 0) / gain.length : 0;
+  const pos = fin.map((r) => r[3]); const mean = pos.length ? pos.reduce((a, b) => a + b, 0) / pos.length : 15; const sd = pos.length ? Math.sqrt(pos.reduce((a, b) => a + (b - mean) ** 2, 0) / pos.length) : 6;
+  const clamp = (v) => Math.max(0, Math.min(100, Math.round(v)));
+  return { races: n, axes: [
+    ['Qualifying', clamp(100 - (avgGrid - 1) * 6)], ['Racecraft', clamp(50 + avgGain * 10)], ['Consistency', clamp(100 - sd * 7)],
+    ['Reliability', clamp((fin.length / n) * 100)], ['Podiums', clamp((rows.filter((r) => r[3] > 0 && r[3] <= 3 && /^\d+$/.test(String(r[4]))).length / n) * 170)], ['Fast laps', clamp((rows.filter((r) => r[7] === 1).length / n) * 500)] ] };
 }

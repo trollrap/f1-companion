@@ -9,6 +9,7 @@ import Screen, { Card, Eyebrow, Note } from '../components/Screen';
 import Grad from '../components/Grad';
 import { circuitFor } from '../data/circuits';
 import { fetchOutline, YEAR } from '../api/openf1';
+import { raceHistory } from '../api/history';
 import { flag } from '../lib/time';
 import { colors } from '../theme';
 
@@ -22,7 +23,7 @@ function Outline({ pts }) {
 }
 export default function CircuitScreen({ route, navigation }) {
   const { meeting } = route.params; const c = circuitFor(meeting); const [pts, setPts] = useState(null); const [failed, setFailed] = useState(false);
-  const [miss, setMiss] = useState('');
+  const [miss, setMiss] = useState(''); const [all, setAll] = useState(false); const hist = React.useMemo(() => { try { return raceHistory(meeting.meeting_name); } catch { return null; } }, [meeting.meeting_name]);
   // Opens the race weekend of a given year at this circuit (optionally on a chosen session).
   const open = async (year, session) => { setMiss(''); try { const m = await weekendAt(c, Number(year)); if (m) navigation.push('Round', { meeting: m, session }); else setMiss(`No ${year} race weekend was found for this circuit.`); } catch { setMiss('Could not load that weekend. Check your connection.'); } };
   useEffect(() => { navigation.setOptions({ title: c ? c.name : meeting.circuit_short_name }); fetchOutline(meeting.circuit_key).then((p) => (p ? setPts(p) : setFailed(true))).catch(() => setFailed(true)); }, []);
@@ -50,6 +51,17 @@ export default function CircuitScreen({ route, navigation }) {
       {miss ? <Note>{miss}</Note> : null}
       {meeting.year && meeting.year < YEAR ? <Note>{`Shown with today's track details. The ${meeting.year} layout may have been different.`}</Note> : null}
       {c && c.facts.length > 0 && <Card><Eyebrow>Notable details</Eyebrow>{c.facts.map(([t, x]) => <Text key={t} style={s.fact}><Text style={{ fontWeight: '700', color: colors.fg }}>{t}. </Text>{x}</Text>)}</Card>}
+      {hist ? (
+        <Card>
+          <Eyebrow>{`Past winners · ${hist.races} races since ${hist.first}`}</Eyebrow>
+          <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
+            {hist.top.map((t) => (<View key={t.name} style={[s.stat, { width: undefined, flex: 1 }]}><Text style={s.k}>{`${t.wins} WIN${t.wins === 1 ? '' : 'S'}`}</Text><Text style={{ color: colors.fg, fontSize: 15, fontWeight: '700', marginTop: 2 }} numberOfLines={2}>{t.name}</Text></View>))}
+          </View>
+          <Text style={[s.fact, { marginTop: 10 }]}>{`${hist.fromPole} of ${hist.races} were won from pole (${Math.round((hist.fromPole / hist.races) * 100)}%).`}</Text>
+          {hist.list.slice(0, all ? 80 : 8).map((x) => (<View key={x.year} style={{ flexDirection: 'row', gap: 10, paddingVertical: 5, borderTopWidth: 1, borderTopColor: colors.line }}><Text style={{ width: 44, color: colors.muted, fontWeight: '700' }}>{x.year}</Text><Text style={{ flex: 1, color: colors.fg, fontWeight: '600' }} numberOfLines={1}>{x.name}</Text><Text style={{ color: colors.muted, fontSize: 13 }} numberOfLines={1}>{`${x.team} · P${x.grid > 0 ? x.grid : 'pit'}`}</Text></View>))}
+          {hist.list.length > 8 ? <Pressable onPress={() => setAll(!all)} hitSlop={8} accessibilityRole="button"><Text style={{ color: colors.accent, fontWeight: '700', marginTop: 8 }}>{all ? 'Show fewer' : `Show all ${hist.list.length}`}</Text></Pressable> : null}
+          <Note>Matched by the race's name, so earlier years may have been held at a different circuit.</Note>
+        </Card>) : null}
       {c && <Card><Eyebrow>About</Eyebrow><Text style={s.fact}>{c.about}</Text></Card>}
     </Screen>
   );

@@ -31,7 +31,9 @@ export default function Strategy({ sessionKey, onHide }) {
                 {r.stints.map((s) => { const [bg, fg, ch] = TYRE[s.compound] || TYRE.UNKNOWN, len = Math.max(1, s.to - s.from + 1);
                   return (<View key={s.n} style={{ flex: len, backgroundColor: bg, borderRadius: 4, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>{len >= 6 ? <Text style={{ color: fg, fontSize: 11, fontWeight: '800' }} numberOfLines={1}>{ch}{len >= 12 ? ` ${len}` : ''}</Text> : null}</View>); })}
               </View>
+              <Text style={{ width: 22, color: colors.muted, fontSize: 12, textAlign: 'right' }} accessibilityLabel={`${Math.max(0, r.stints.length - 1)} stops`}>{Math.max(0, r.stints.length - 1)}</Text>
             </View>))}
+          <View style={{ flexDirection: 'row', marginTop: 2 }}><View style={{ width: 126 }} /><View style={{ flex: 1, flexDirection: 'row', justifyContent: 'space-between' }}><Text style={{ color: colors.muted, fontSize: 11 }}>Lap 1</Text><Text style={{ color: colors.muted, fontSize: 11 }}>{`Lap ${Math.round(d.laps / 2)}`}</Text><Text style={{ color: colors.muted, fontSize: 11 }}>{`Lap ${d.laps}`}</Text></View><Text style={{ width: 22, color: colors.muted, fontSize: 11, textAlign: 'right' }}>Stops</Text></View>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 8 }}>
             {['SOFT', 'MEDIUM', 'HARD', 'INTERMEDIATE', 'WET'].map((k) => (<View key={k} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}><View style={{ width: 12, height: 12, borderRadius: 3, backgroundColor: TYRE[k][0] }} /><Text style={{ color: colors.muted, fontSize: 13 }}>{k[0] + k.slice(1).toLowerCase()}</Text></View>))}
           </View>

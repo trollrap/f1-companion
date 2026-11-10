@@ -5,6 +5,9 @@ import { randomCountry } from './geo';
 import { realRookie, demonymToCountry } from './juniors';
 
 export const POINTS = [25, 18, 15, 12, 10, 8, 6, 4, 2, 1], SPRINT_POINTS = [8, 7, 6, 5, 4, 3, 2, 1];
+// Optional per-save rules (f.rules): a points table and a reliability multiplier.
+export const RULE_POINTS = { modern: ['Modern 25-18-15', POINTS], y2003: ['2003: 10-8-6-5-4-3-2-1', [10, 8, 6, 5, 4, 3, 2, 1]], y1991: ['1991: 10-6-4-3-2-1', [10, 6, 4, 3, 2, 1]], podium: ['Podium only: 5-3-1', [5, 3, 1]] };
+export const RULE_REL = { 0.5: 'Bulletproof', 1: 'Normal', 2: 'Fragile' };
 const TEAM_NAMES = ['Apex Dynamics', 'Nova GP', 'Vortex Racing', 'Halcyon Motorsport', 'Ember Racing', 'Cobalt Works', 'Sable Racing', 'Meridian GP', 'Tempest Racing', 'Aurora Speed', 'Falcon Rush', 'Obsidian GP', 'Zenith Racing', 'Quasar Motorsport', 'Titan Forge', 'Helix Racing'];
 export const TEAM_COLORS = ['#E8002D', '#27F4D2', '#3671C6', '#FF8000', '#229971', '#FF87BC', '#64C4FF', '#B6BABD', '#6692FF', '#52E252', '#F5C400', '#B26BFF', '#FF2D87', '#2D8CFF', '#14B8A6', '#E5E7EB'];
 const FIRST = ['Luca', 'Mateo', 'Noah', 'Elias', 'Theo', 'Kai', 'Jonas', 'Nico', 'Rafael', 'Ivan', 'Tomas', 'Felix', 'Oskar', 'Dante', 'Arlo', 'Marek', 'Soren', 'Anton', 'Viktor', 'Emil', 'Zane', 'Hugo', 'Leon', 'Damian', 'Ravi', 'Kenji', 'Mika', 'Aiden', 'Silas', 'Bruno'];
@@ -102,7 +105,7 @@ function raceSession(f, race, session, prior, w) {
   const rows = ds.map((d) => {
     const a = A(d), t = TA(teamFor(f, d)); const g = grid[d.id] || n;
     const crashP = (isSprint ? 0.025 : 0.04) + (a.aggr - 50) * 0.0005 + (100 - a.cons) * 0.0004 + (w.wet ? 0.03 : 0);
-    const mechP = (isSprint ? 0.015 : 0.03) + (100 - t.rel) * 0.0011;
+    const mechP = ((isSprint ? 0.015 : 0.03) + (100 - t.rel) * 0.0011) * (f.rules?.rel ?? 1);
     const r = Math.random(); const out = r < mechP ? 'mech' : r < mechP + crashP ? 'crash' : null;
     const stops = isSprint ? 0 : (Math.random() < 0.12 ? 3 : Math.random() < 0.55 ? 2 : 1) + (w.wet && Math.random() < 0.5 ? 1 : 0);
     const stopLoss = Array.from({ length: stops }, () => 20.5 + (100 - t.pit) * 0.04 + Math.abs(gauss()) * 0.6 + (Math.random() < (100 - t.pit) / 900 ? 3 + Math.random() * 7 : 0)).reduce((x, y) => x + y, 0);
@@ -124,7 +127,7 @@ function raceSession(f, race, session, prior, w) {
   });
   const fin = rows.filter((x) => !x.out), top = Math.max(...fin.map((x) => x.s));
   fin.forEach((x) => { x.t = (top - x.s) * 2.1 * scale + x.stopLoss + x.pen + Math.random() * 0.4; }); fin.sort((a, b) => a.t - b.t);
-  const base = fin[0]?.t || 0; const pts = isSprint ? SPRINT_POINTS : POINTS; const winT = laps * lapT + base;
+  const base = fin[0]?.t || 0; const pts = isSprint ? SPRINT_POINTS : (RULE_POINTS[f.rules?.points]?.[1] || POINTS); const winT = laps * lapT + base;
   const flPool = fin.slice(0, Math.min(10, fin.length)); const flDriver = flPool.length ? flPool[Math.floor(Math.pow(Math.random(), 1.6) * flPool.length)] : null;
   const res = fin.map((x, i) => {
     const gap = x.t - base, lapped = Math.floor(gap / lapT);

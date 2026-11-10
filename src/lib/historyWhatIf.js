@@ -1,4 +1,4 @@
-import { seasonRaw } from '../api/history';
+import { seasonRaw, sprintPoints } from '../api/history';
 // Replays a past season from the offline history with different rules: another points system, a driver taken out, the worst results dropped.
 export const SYSTEMS = [
   ['actual', 'As it happened', null],
@@ -11,8 +11,8 @@ export const SYSTEMS = [
   ['podium', 'Podium only: 5-3-1', [5, 3, 1]],
 ];
 const rankOf = (rows, key) => { const o = [...rows].sort((a, b) => b.total - a.total || b.wins - a.wins || a.name.localeCompare(b.name)); const m = {}; o.forEach((r, i) => { m[r[key]] = i + 1; }); return { o, m }; };
-export function replay(year, { system = 'actual', remove = null, drop = 0 } = {}) {
-  const races = seasonRaw(year); if (!races) return null; const sys = SYSTEMS.find((x) => x[0] === system) || SYSTEMS[0];
+export function replay(year, { system = 'actual', remove = null, drop = 0, sprint = true } = {}) {
+  const races = seasonRaw(year); if (!races) return null; const sprints = sprintPoints(year); const sys = SYSTEMS.find((x) => x[0] === system) || SYSTEMS[0];
   const calc = (opts) => {
     const per = {}, teams = {};
     races.forEach((rc) => {
@@ -24,10 +24,11 @@ export function replay(year, { system = 'actual', remove = null, drop = 0 } = {}
         teams[r.team] = (teams[r.team] || 0) + p;
       });
     });
-    const drivers = Object.values(per).map((d) => { const s = [...d.list].sort((a, b) => b - a); const kept = opts.drop ? s.slice(0, Math.max(0, s.length - opts.drop)) : s; return { ...d, total: Math.round(kept.reduce((a, b) => a + b, 0) * 10) / 10 }; });
+    Object.keys(sprints).forEach((id) => { if (!opts.sprint || id === opts.remove || !per[id]) return; teams[per[id].team] = (teams[per[id].team] || 0) + sprints[id]; });
+    const drivers = Object.values(per).map((d) => { const s = [...d.list].sort((a, b) => b - a); const kept = opts.drop ? s.slice(0, Math.max(0, s.length - opts.drop)) : s; const sp = opts.sprint && d.id !== opts.remove ? sprints[d.id] || 0 : 0; return { ...d, total: Math.round((kept.reduce((a, b) => a + b, 0) + sp) * 10) / 10 }; });
     return { drivers, teams: Object.entries(teams).map(([name, total]) => ({ name, total: Math.round(total * 10) / 10, wins: 0 })) };
   };
-  const base = calc({ sys: SYSTEMS[0], remove: null, drop: 0 }); const alt = calc({ sys, remove, drop });
+  const base = calc({ sys: SYSTEMS[0], remove: null, drop: 0, sprint: true }); const alt = calc({ sys, remove, drop, sprint });
   const bd = rankOf(base.drivers, 'id'), ad = rankOf(alt.drivers, 'id'); const bt = rankOf(base.teams, 'name'), at = rankOf(alt.teams, 'name');
   return {
     races: races.length,

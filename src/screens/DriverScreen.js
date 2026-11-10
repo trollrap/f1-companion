@@ -4,6 +4,7 @@ import HomeBtn from '../components/HomeBtn';
 import { View, Pressable, ScrollView, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Skeleton from '../components/Skeleton';
+import DriverDNA from '../components/DriverDNA';
 import { Text } from '../components/Text';
 import Screen, { ErrorNote, Card, Eyebrow, Note } from '../components/Screen';
 import { StatGrid, ExpandStats, StarButton, Segmented, TeamBadge } from '../components/Shared';
@@ -130,6 +131,22 @@ export default function DriverScreen({ route, navigation }) {
             </View>
             {season.v && !rows.length && <Note>{isCur ? 'No races yet this season.' : 'No races found for this season.'}</Note>}
             {rows.length > 0 && <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingTop: 10 }}>{[...rows].reverse().slice(0, 5).map((r) => <RaceCard key={r.round} r={r} color={color} onPress={() => openRace(r)} />)}</ScrollView>}
+            {rows.length >= 3 && (() => {
+              const asc = [...rows].sort((a, b) => a.round - b.round); const fin = (r) => (Number(r.position) > 0 && !/^(R|D|W|N|E|F)$/.test(String(r.positionText)) ? Number(r.position) : null);
+              const last = asc.slice(-5), prev = asc.slice(-10, -5); const avg = (a) => { const v = a.map(fin).filter((x) => x != null); return v.length ? v.reduce((x, y) => x + y, 0) / v.length : null; };
+              const a1 = avg(last), a0 = prev.length >= 3 ? avg(prev) : null; const pts = last.reduce((x, r) => x + (Number(r.points) || 0), 0);
+              const gain = last.map((r) => (Number(r.grid) > 0 && fin(r) != null ? Number(r.grid) - fin(r) : null)).filter((x) => x != null); const g = gain.length ? gain.reduce((x, y) => x + y, 0) / gain.length : null;
+              let streak = 0; for (let i = asc.length - 1; i >= 0 && Number(asc[i].points) > 0; i--) streak++;
+              const pod = last.filter((r) => fin(r) != null && fin(r) <= 3).length; const dnf = last.filter((r) => fin(r) == null).length;
+              const trend = a1 != null && a0 != null ? (a0 - a1 > 0.5 ? 'up' : a1 - a0 > 0.5 ? 'down' : 'flat') : null;
+              const Cell = ({ k, v, c }) => (<View style={{ flex: 1, alignItems: 'center' }}><Text style={{ color: c || colors.fg, fontSize: 20, fontWeight: '800' }}>{v}</Text><Text style={{ color: colors.muted, fontSize: 11, letterSpacing: 1 }}>{k}</Text></View>);
+              return (
+                <View accessible accessibilityLabel={`Form over the last ${last.length} races`} style={{ marginTop: 12, padding: 12, borderRadius: 16, backgroundColor: alpha(color, 0.1), borderWidth: 1, borderColor: alpha(color, 0.3), gap: 8 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}><Eyebrow>{`Form, last ${last.length}`}</Eyebrow>{trend ? <Text style={{ color: trend === 'up' ? colors.good : trend === 'down' ? colors.red : colors.muted, fontWeight: '800', fontSize: 13 }}>{trend === 'up' ? '▲ Improving' : trend === 'down' ? '▼ Slipping' : '● Steady'}</Text> : null}</View>
+                  <View style={{ flexDirection: 'row' }}><Cell k="AVG FINISH" v={a1 != null ? a1.toFixed(1) : '-'} /><Cell k="POINTS" v={String(pts)} /><Cell k="GRID GAIN" v={g != null ? `${g > 0 ? '+' : ''}${g.toFixed(1)}` : '-'} c={g != null ? (g > 0 ? colors.good : g < 0 ? colors.red : undefined) : undefined} /></View>
+                  <Text style={{ color: colors.muted, fontSize: 13 }}>{`${pod} podium${pod === 1 ? '' : 's'}, ${dnf} not classified. Scoring in ${streak} race${streak === 1 ? '' : 's'} in a row.`}</Text>
+                </View>);
+            })()}
             {all && (
               <View style={{ marginTop: 10 }}>
                 <Eyebrow>{`All ${year} results`}</Eyebrow>
@@ -151,6 +168,7 @@ export default function DriverScreen({ route, navigation }) {
             {C && <StatGrid cols={3} items={[['Seasons', dash(C.seasons)], ['Races', dash(C.races)], ['Wins', dash(C.wins)], ['Podiums', dash(C.podiums)], ['Poles', dash(C.poles)], ['Fast laps', dash(C.fastest)], ['Titles', titles.loading ? '…' : dash(titles.v)], ['Points', pts.loading ? '…' : dash(pts.v)], ['First year', dash(C.first)]]} />}
           </Card>
         )}
+        {tab === 'career' ? <DriverDNA driverId={driverId} color={color} /> : null}
         {tab === 'career' && (teamsList.v || []).length > 0 && (
           <Card>
             <Eyebrow>Teams</Eyebrow>

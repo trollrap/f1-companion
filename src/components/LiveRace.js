@@ -58,9 +58,17 @@ export default function LiveRace({ visible, race, laps, drivers, sc, wet, onClos
   const total = Math.max(1, laps || 1);
   const model = useMemo(() => { if (!visible || !drivers?.length) return null; const drv = drivers.map((d) => ({ ...d })); const chart = plan(drv, total, race); return { drv, chart, ev: eventsOf(drv, chart, total, sc, wet) }; }, [visible, drivers, total, sc, wet, race]);
   const [lap, setLap] = useState(0); const [play, setPlay] = useState(true); const [speed, setSpeed] = useState(1); const [log, setLog] = useState([]);
-  const lapRef = useRef(0); const [call, setCall] = useState(null); const [calls, setCalls] = useState([]);
-  useEffect(() => { if (visible) { lapRef.current = 0; setLap(0); setPlay(true); setSpeed(1); setLog(model?.ev[0].map((e) => ({ ...e, lap: 0 })) || []); setCall(null); setCalls([]); } }, [visible, model]);
+  const lapRef = useRef(0); const [call, setCall] = useState(null); const [calls, setCalls] = useState([]); const [dir, setDir] = useState(false); const [stew, setStew] = useState([]);
+  useEffect(() => { if (visible) { lapRef.current = 0; setLap(0); setPlay(true); setSpeed(1); setLog(model?.ev[0].map((e) => ({ ...e, lap: 0 })) || []); setCall(null); setCalls([]); setStew([]); } }, [visible, model]);
   const done = lap >= total;
+  const dPrompts = useMemo(() => {
+    if (!model) return {}; const m = {}; const seen = new Set(); const by2 = {}; model.drv.forEach((d) => { by2[d.id] = d; });
+    model.drv.filter((d) => d.out && d.with && by2[d.with]).forEach((d) => { const w = by2[d.with]; const k = [d.id, w.id].sort().join('|'); if (seen.has(k) || Object.keys(m).length >= 3) return; seen.add(k);
+      const L = Math.max(2, Math.min(d.lap, total - 1)); if (m[L]) return;
+      m[L] = { kind: 'dir', id: d.id, name: d.name, q: `Stewards: ${d.name} and ${w.name} make contact. Your decision?`, opts: [[`Penalise ${d.name}`, 'a'], [`Penalise ${w.name}`, 'b'], ['Racing incident', 'r']], truth: d.fault ? 'a' : w.fault ? 'b' : 'r', a: d.name, b: w.name }; });
+    const scL = model.ev.findIndex((e) => e.some((x) => x.k === 'sc' && /deployed/i.test(x.t))); if (scL > 0 && !m[scL]) m[scL] = { kind: 'dir', q: 'Debris on the straight. Deploy the safety car?', opts: [['Safety car', 'sc'], ['Local yellows', 'y']], truth: 'sc' };
+    return m;
+  }, [model, total]);
   const prompts = useMemo(() => {
     if (!model) return {}; const mine = model.drv.filter((d) => d.mine && !d.out); if (!mine.length || total < 12) return {};
     const m = {}; const pick = (n, i) => mine[(hash(race + n + i) % mine.length)];
@@ -73,12 +81,13 @@ export default function LiveRace({ visible, race, laps, drivers, sc, wet, onClos
     const h = setInterval(() => {
       const nx = Math.min(total, lapRef.current + 1); lapRef.current = nx;
       try { LayoutAnimation.configureNext(LayoutAnimation.create(Math.min(380, 700 / speed), 'easeInEaseOut', 'opacity')); } catch (e) { /* ignore */ }
-      if (prompts[nx]) { setCall({ ...prompts[nx], lap: nx }); setPlay(false); } setLap(nx); const add = model.ev[nx].map((e) => ({ ...e, lap: nx })); if (add.length) setLog((l) => [...add.reverse(), ...l].slice(0, 40));
+      const pr = prompts[nx] || (dir ? dPrompts[nx] : null); if (pr) { setCall({ ...pr, lap: nx }); setPlay(false); } setLap(nx); const add = model.ev[nx].map((e) => ({ ...e, lap: nx })); if (add.length) setLog((l) => [...add.reverse(), ...l].slice(0, 40));
     }, Math.max(90, 900 / speed));
     return () => clearInterval(h);
-  }, [visible, play, done, speed, model, total, prompts]);
+  }, [visible, play, done, speed, model, total, prompts, dPrompts, dir]);
   const answer = (v) => {
     const c = call; if (!c) return; let ok, t;
+    if (c.kind === 'dir') { ok = v === c.truth; t = ok ? 'The replay backs the stewards.' : 'The replay tells a different story. Controversial.'; setStew((a) => [...a, ok]); setLog((l) => [{ k: 'flag', lap: c.lap, t: `Stewards: ${c.opts.find((o) => o[1] === v)?.[0]}. ${t}` }, ...l].slice(0, 40)); setCall(null); setPlay(true); return; }
     if (c.opts[0][1] === 'box') { ok = v === 'box' ? c.next - c.lap <= 3 : c.next - c.lap > 3; t = v === 'box' ? (ok ? 'Good call, the stop was due.' : 'Early stop, tyres had life in them.') : (ok ? 'Right to stay out, the window was later.' : 'Stayed out too long, lost time.'); }
     else { ok = c.truth === 'pit' ? v === 'save' : v === 'push'; t = v === 'push' ? (ok ? 'Pushing paid off.' : 'Pushed too hard, the tyres paid for it.') : (ok ? 'Smart tyre management.' : 'Too cautious, pace left on the table.'); }
     setCalls((a) => [...a, ok]); setLog((l) => [{ k: 'lead', lap: c.lap, t: `Radio to ${c.name}: ${v === 'box' ? 'box, box' : v === 'stay' ? 'stay out' : v === 'push' ? 'push' : 'look after the tyres'}. ${t}` }, ...l].slice(0, 40)); setCall(null); setPlay(true);
@@ -91,7 +100,7 @@ export default function LiveRace({ visible, race, laps, drivers, sc, wet, onClos
   const lead = order[0]?.t || 0;
   const Speed = ({ v }) => (<Pressable onPress={() => setSpeed(v)} style={{ paddingHorizontal: 14, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: speed === v ? colors.accent : 'rgba(255,255,255,0.10)' }}><Text style={{ color: '#fff', fontWeight: '800', fontSize: 14 }}>{`${v}x`}</Text></Pressable>);
   return (
-    <Modal visible={!!visible} animationType="fade" transparent={false} onRequestClose={onClose}>
+    <Modal visible={!!visible} animationType="fade" transparent={false} onRequestClose={() => onClose(calls, stew)}>
       <StatusBar barStyle="light-content" backgroundColor={colors.deep} />
       <View style={{ flex: 1, backgroundColor: colors.deep }}>
         <LinearGradient pointerEvents="none" colors={[alpha(colors.accent, 0.35), alpha(colors.accent, 0)]} style={{ position: 'absolute', left: 0, right: 0, top: 0, height: 240 }} />
@@ -130,14 +139,15 @@ export default function LiveRace({ visible, race, laps, drivers, sc, wet, onClos
             <Text style={{ color: colors.fg, fontSize: 16, fontWeight: '700' }}>{call.q}</Text>
             <View style={{ flexDirection: 'row', gap: 10 }}>{call.opts.map(([l, v]) => (<Pressable key={v} accessibilityRole="button" accessibilityLabel={l} onPress={() => answer(v)} style={{ flex: 1, height: 48, borderRadius: 24, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' }}><Text style={{ color: '#fff', fontWeight: '800', fontSize: 16 }}>{l}</Text></Pressable>))}</View>
           </View>) : null}
-        {done && calls.length ? <View style={{ position: 'absolute', left: 12, right: 12, bottom: Math.max(ins.bottom, 12) + 70, padding: 12, borderRadius: 16, backgroundColor: colors.card }}><Text style={{ color: colors.fg, fontWeight: '700', textAlign: 'center' }}>{`Strategy calls: ${calls.filter(Boolean).length} of ${calls.length} right. They add colour only; the race result is unchanged.`}</Text></View> : null}
+        {done && (calls.length || stew.length) ? <View style={{ position: 'absolute', left: 12, right: 12, bottom: Math.max(ins.bottom, 12) + 70, padding: 12, borderRadius: 16, backgroundColor: colors.card }}><Text style={{ color: colors.fg, fontWeight: '700', textAlign: 'center' }}>{[calls.length ? `Strategy calls: ${calls.filter(Boolean).length} of ${calls.length} right (right calls earn budget and hype).` : '', stew.length ? `Steward calls: ${stew.filter(Boolean).length} of ${stew.length} right.` : ''].filter(Boolean).join(' ')}</Text></View> : null}
         <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, paddingBottom: Math.max(ins.bottom, 12) + 8, paddingTop: 12, paddingHorizontal: 16, backgroundColor: 'rgba(10,5,6,0.96)', flexDirection: 'row', alignItems: 'center', gap: 8 }}>
           {done ? (
-            <Pressable onPress={onClose} style={{ flex: 1, height: 48, borderRadius: 24, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' }}><Text style={{ color: '#fff', fontWeight: '800', fontSize: 17 }}>See the result</Text></Pressable>
+            <Pressable onPress={() => onClose(calls, stew)} style={{ flex: 1, height: 48, borderRadius: 24, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' }}><Text style={{ color: '#fff', fontWeight: '800', fontSize: 17 }}>See the result</Text></Pressable>
           ) : (
             <>
               <Pressable accessibilityRole="button" accessibilityLabel={play ? 'Pause' : 'Play'} disabled={!!call} onPress={() => setPlay((p) => !p)} style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center' }}><Ionicons name={play ? 'pause' : 'play'} size={22} color="#fff" /></Pressable>
               <Speed v={1} /><Speed v={3} /><Speed v={8} />
+              {Object.keys(dPrompts).length ? <Pressable accessibilityRole="switch" accessibilityState={{ checked: dir }} accessibilityLabel="Race Director mode" onPress={() => setDir((x) => !x)} style={{ paddingHorizontal: 10, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: dir ? colors.gold : 'rgba(255,255,255,0.10)' }}><Ionicons name="flag" size={16} color={dir ? '#000' : '#fff'} /></Pressable> : null}
               <View style={{ flex: 1 }} />
               <Pressable onPress={skip} style={{ paddingHorizontal: 16, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 6 }}><Ionicons name="play-skip-forward" size={16} color="#fff" /><Text style={{ color: '#fff', fontWeight: '700' }}>Skip</Text></Pressable>
             </>)}

@@ -17,6 +17,8 @@ import { SprintBadge, Pill } from '../components/Badge';
 import Schedule from '../components/Schedule';
 import NextSession from '../components/NextSession';
 import Strategy from '../components/Strategy';
+import RaceStats from '../components/RaceStats';
+import { forecastFor } from '../lib/forecast';
 import { sessionResults, driverStandings } from '../api/jolpica';
 import { norm } from '../lib/names';
 import { useAsync } from '../hooks/useAsync';
@@ -38,6 +40,7 @@ export default function RoundScreen({ route, navigation }) {
   const openTiming = (r) => { const m = matchTiming(r); navigation.navigate('Driver', m ? { ...driverParams(m, year), color: r.color } : { driverId: norm(r.last).replace(/[^a-z0-9]+/g, '_'), name: r.driver, first: r.first, last: r.last, teamId: null, team: r.team, color: r.color }); };
   const done = Date.parse(meeting.date_end) < now;
   const [showStrat, setShowStrat] = useState(false); const [sessions, setSessions] = useState([]); const [sel, setSel] = useState(route.params.session || null); const [res, setRes] = useState({ loading: true });
+  const wx = useAsync(() => (!done && sessions.length ? forecastFor(meeting.location || meeting.circuit_short_name, meeting.country_name, sessions).catch(() => ({})) : Promise.resolve({})), [meeting.meeting_key, sessions.length, done]);
   // Old seasons only publish the race date, so the weekend is rebuilt from what the results archive holds: race, qualifying (since 1994) and a sprint when there was one.
   useEffect(() => {
     sessionsOf(meeting).then((l) => {
@@ -148,6 +151,18 @@ export default function RoundScreen({ route, navigation }) {
       {(cur === 'Race' || cur === 'Sprint') && !isGrid && sessions.find((x) => x.session_name === cur && x.session_key) ? (
         showStrat ? <Strategy key={cur} sessionKey={sessions.find((x) => x.session_name === cur).session_key} onHide={() => setShowStrat(false)} />
           : <Press onPress={() => setShowStrat(true)}><View style={{ height: 48, borderRadius: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: colors.accentSoft, borderWidth: 1, borderColor: colors.accent }}><Ionicons name="color-fill-outline" size={18} color={colors.accent} /><Text style={{ color: colors.fg, fontWeight: '700', fontSize: 16 }}>{`Show tire strategy (${cur.toLowerCase()})`}</Text></View></Press>) : null}
+      {cur === 'Race' && !isGrid && raceRows && raceRows.length ? <RaceStats rows={raceRows} sessionKey={sessions.find((x) => x.session_name === 'Race')?.session_key} colorOf={tc} /> : null}
+      {!done && sessions.length && wx.v?.by && Object.keys(wx.v.by).length ? (
+        <Card><Eyebrow>Forecast</Eyebrow>
+          <View style={{ marginTop: 6 }}>{sessions.filter((x) => wx.v.by[x.session_name]).map((x) => { const w = wx.v.by[x.session_name]; return (
+            <View key={x.session_name} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 6, borderTopWidth: 1, borderTopColor: colors.line }}>
+              <Ionicons name={w.rain >= 50 ? 'rainy' : w.rain >= 25 ? 'partly-sunny' : 'sunny'} size={20} color={w.rain >= 50 ? '#4DA3FF' : colors.gold} />
+              <Text style={{ flex: 1, color: colors.fg, fontWeight: '600' }} numberOfLines={1}>{x.session_name}</Text>
+              <Text style={{ color: colors.muted, fontSize: 13 }}>{`${w.rain ?? '–'}% rain · ${w.wind} km/h`}</Text>
+              <Text style={{ width: 40, textAlign: 'right', color: colors.fg, fontWeight: '800' }}>{`${w.t}°`}</Text>
+            </View>); })}</View>
+          <Note>Forecast from Open-Meteo for the town, at the middle of each session. It can change.</Note>
+        </Card>) : null}
       {!done && <Card><Eyebrow>Schedule</Eyebrow>{sessions.length ? <Schedule sessions={sessions} now={now} off={null} /> : <Note>Session times appear here once they are published.</Note>}</Card>}
       <CircuitBox meeting={meeting} />
     </Screen>

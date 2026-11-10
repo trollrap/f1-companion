@@ -20,8 +20,10 @@ import { flagOfPlace, flagOfCountry, countryNames } from '../fun/geo';
 import { useFun, pickImage, uid, canPickImage } from '../fun/store';
 import LiveRace from '../components/LiveRace';
 import { TeamPrincipal, Rivalries } from './FantasyTP';
-import { makeGrid, nextStep, runStep, runWeekend, runSeason, sessionsOf, standings, freeNumber, randomDriver, TEAM_COLORS, DRIVER_ATTRS, TEAM_ATTRS, A, TA, ovr, makeDriverAttrs, simulateTransfers } from '../fun/sim';
+import { RULE_POINTS, RULE_REL, makeGrid, nextStep, runStep, runWeekend, runSeason, sessionsOf, standings, freeNumber, randomDriver, TEAM_COLORS, DRIVER_ATTRS, TEAM_ATTRS, A, TA, ovr, makeDriverAttrs, simulateTransfers } from '../fun/sim';
 import { attrsFor } from '../fun/talent';
+import { hallOfFame } from '../fun/legends';
+import FantasyRumours from './FantasyRumours';
 import { driverPic, teamPic, viewOf, seasonList, seasonNo, careerOf, numberClash, closeSeason, isDone, allTime, seasonSummary, titleStatus } from '../fun/look';
 import { buildNews } from '../fun/articles';
 import { loadRealGrid } from '../fun/realGrid';
@@ -268,7 +270,12 @@ export function Fantasy({ route, navigation }) {
     const laps = st0.session === 'Sprint' ? Math.max(10, Math.round((st0.race.laps || 57) / 3)) : (st0.race.laps || 57);
     setLive({ g, st: st0, drivers, laps, sc: !!res[0]?.sc, wet: !!res[0]?.wet });
   };
-  const endLive = () => { const l = live; setLive(null); if (l) apply(() => l.g, l.st); };
+  const endLive = (calls, stew) => {
+    const l = live; setLive(null); if (!l) return; let g = l.g;
+    if (Array.isArray(stew) && stew.length) g = { ...g, steward: { right: (g.steward?.right || 0) + stew.filter(Boolean).length, total: (g.steward?.total || 0) + stew.length } };
+    if (Array.isArray(calls) && calls.length && g.tp) { const ok = calls.filter(Boolean).length, bad = calls.length - ok; const bud = Math.round((ok * 0.6 - bad * 0.4) * 10) / 10, hy = ok * 2 - bad * 2; g = { ...g, tp: { ...g.tp, budget: Math.round((g.tp.budget + bud) * 10) / 10, hype: Math.max(0, Math.min(100, (g.tp.hype ?? 50) + hy)), log: [{ season: g.tp.season, text: `Strategy calls: ${ok} right, ${bad} wrong (${bud >= 0 ? '+' : ''}${bud} budget, ${hy >= 0 ? '+' : ''}${hy} hype)` }, ...(g.tp.log || [])].slice(0, 30) } }; }
+    apply(() => g, l.st);
+  };
   const sessRows = (g, raceId, ses) => { const gv = g; const rs = gv.results?.[raceId]?.[ses] || []; return rs.map((r) => { const d = gv.drivers.find((x) => x.id === r.driverId); const t = d && teamOf(gv, d.teamId); return { key: r.driverId, pos: r.pos, name: surname(d), code: codeOf(d), photo: d ? driverPic(d) : null, logo: teamPic(t), color: t?.color || colors.muted, right: r.points ? `${r.time}  +${r.points}` : r.time }; }); };
   const champ = complete ? st.drivers[0] : null, tchamp = complete ? st.teams[0] : null; const tabs = ['home', 'calendar', 'standings', 'news', 'stats', 'paddock', 'settings']; const news = tab === 'news' || tab === 'home' || art ? memo(f, `n${n}`, () => buildNews(f, v, st, n)) : [];
   const shown = art ? 'article' : tab;
@@ -289,6 +296,7 @@ export function Fantasy({ route, navigation }) {
         teamPodium={st.teams.slice(0, 3).map((t) => ({ name: t.name, logo: teamPic(t), color: t.color, points: t.points }))} onClose={() => setShw(null)} />
       {shown === 'home' && (<>
         {banner(ts)}
+        {isCur && !ended && !off && !complete ? <FantasyRumours f={f} onPick={(rid, k, v) => fun.update(id, (g) => { const cur = { ...((g.rumours || {})[rid] || {}) }; if (v) cur[k] = v; else delete cur[k]; return { ...g, rumours: { ...(g.rumours || {}), [rid]: cur } }; })} /> : null}
         {ended ? (
           <Card>
             <Eyebrow>Save ended</Eyebrow>
@@ -408,6 +416,11 @@ export function Fantasy({ route, navigation }) {
       </>)}
       {shown === 'stats' && <AllStats f={f} v={v} n={n} closed={complete || (ended && isCur)} navigation={navigation} />}
       {shown === 'settings' && <FunSettingsCard />}
+      {shown === 'settings' && !f.preset ? (<Card><Eyebrow>Season rules</Eyebrow><View style={{ gap: 12, marginTop: 10 }}>
+        <Text style={{ color: colors.muted, fontSize: 13 }}>Applies to races simulated from now on. Points already scored stay as they are.</Text>
+        <Dropdown value={f.rules?.points || 'modern'} options={Object.entries(RULE_POINTS).map(([k, x]) => [k, x[0]])} onChange={(k) => fun.update(id, (g) => ({ ...g, rules: { ...(g.rules || {}), points: k } }))} prefix="Points" />
+        <Segmented value={String(f.rules?.rel ?? 1)} onChange={(k) => fun.update(id, (g) => ({ ...g, rules: { ...(g.rules || {}), rel: Number(k) } }))} items={Object.entries(RULE_REL).map(([k, l]) => [k, l])} />
+      </View></Card>) : null}
       {shown === 'settings' && (<Card><Eyebrow>Save</Eyebrow><View style={{ gap: 10, marginTop: 10 }}>
         {fun.canUndo(id) ? <Btn icon="arrow-undo" onPress={() => fun.undo(id)}>Undo last change</Btn> : null}
         <Btn icon={f.archived ? 'archive' : 'archive-outline'} onPress={() => { fun.update(id, (g) => ({ ...g, archived: !g.archived })); if (!f.archived) { nav.current.leave = true; navigation.goBack(); } }}>{f.archived ? 'Restore from the archive' : 'Archive this save'}</Btn>
@@ -715,6 +728,14 @@ function AllStats({ f, v, n, closed, navigation }) {
   if (!a.races) return <Card><Note>Nothing has been simulated yet. Once races are run, every total shows up here.</Note></Card>;
   const champ = a.drivers[0]; const ex = a.drivers.map((x) => ({ key: x.id, name: surname(x.d), photo: driverPic(x.d), code: codeOf(x.d), logo: teamPic(x.team), team: x.titles ? `${x.titles} title${x.titles > 1 ? 's' : ''}` : '', color: x.team?.color || colors.muted, points: x.points }));
   const open = (x) => navigation.navigate('FantasyDriver', { id: f.id, driverId: x.id, season: x.last });
+  const hof = hallOfFame(f);
+  const hofCard = hof.seasons.length ? (
+    <Card>
+      <Eyebrow>Hall of fame</Eyebrow>
+      {hof.legends.length ? <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 }}>{hof.legends.slice(0, 3).map((x) => (<View key={x.name} style={{ flexGrow: 1, minWidth: '30%', padding: 10, borderRadius: 12, backgroundColor: alpha(colors.gold, 0.12), borderWidth: 1, borderColor: alpha(colors.gold, 0.4) }}><Text style={{ color: colors.gold, fontFamily: 'label', fontSize: 10, letterSpacing: 1.5 }}>{`${x.titles} TITLE${x.titles > 1 ? 'S' : ''}`}</Text><Text style={{ color: colors.fg, fontWeight: '800', fontSize: 15 }} numberOfLines={1}>{x.name}</Text></View>))}</View> : null}
+      {hof.retired.length ? <Text style={{ color: colors.muted, fontSize: 13, marginTop: 10 }}>{`Retired numbers: ${hof.retired.map((x) => `#${x.number} ${x.name}`).join(', ')}`}</Text> : null}
+      <View style={{ marginTop: 8 }}>{hof.seasons.map((x) => (<View key={x.n} style={{ flexDirection: 'row', gap: 10, paddingVertical: 6, borderTopWidth: 1, borderTopColor: colors.line }}><Text style={{ width: 34, color: colors.muted, fontWeight: '700' }}>{`S${x.n}`}</Text><View style={{ flex: 1 }}><Text style={{ color: colors.fg, fontWeight: '700' }} numberOfLines={1}>{x.driver}</Text><Text style={{ color: colors.muted, fontSize: 12 }} numberOfLines={1}>{`${x.team}${x.constructor && x.constructor !== x.team ? ` · constructors: ${x.constructor}` : ''}`}</Text></View><Text style={{ color: colors.fg, fontWeight: '800' }}>{`${x.points} pts`}</Text></View>))}</View>
+    </Card>) : null;
   // Season summary: tiles with the leaders of each category
   let summary = null;
   if (sm) {
@@ -747,6 +768,8 @@ function AllStats({ f, v, n, closed, navigation }) {
       </Section>);
   }
   return (<View style={{ gap: 16 }}>
+    {hofCard}
+    {f.steward?.total ? <Card><Eyebrow>Race Director record</Eyebrow><Text style={{ color: colors.fg, fontSize: 16, fontWeight: '700', marginTop: 6 }}>{`${f.steward.right} of ${f.steward.total} steward calls right (${Math.round((f.steward.right / f.steward.total) * 100)}%)`}</Text></Card> : null}
     {f.ended ? <Grad color={colors.gold} from={0.3} to={0.04} border={0.5} style={{ padding: 14 }}><Text style={{ color: colors.gold, fontFamily: 'label', fontSize: 11, letterSpacing: 2 }}>FINAL STATS</Text><Text style={{ color: colors.fg, fontSize: 22, fontWeight: '800', marginTop: 4 }}>{f.name}</Text><Text style={{ color: colors.muted, fontSize: 15 }}>{`${a.seasons} season${a.seasons > 1 ? 's' : ''} · ${a.races} races`}</Text></Grad> : null}
     <Card>
       <Eyebrow>Totals</Eyebrow>

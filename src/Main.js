@@ -34,20 +34,10 @@ import CircuitScreen from './screens/CircuitScreen';
 import DriverScreen from './screens/DriverScreen';
 import TeamScreen from './screens/TeamScreen';
 import CompareScreen from './screens/CompareScreen';
-import RulesScreen from './screens/RulesScreen';
 import DriverSeasonsScreen from './screens/DriverSeasonsScreen';
-import WhatIfScreen from './screens/WhatIfScreen';
 import PredictScreen from './screens/PredictScreen';
-import ReplayScreen from './screens/ReplayScreen';
-import FanZoneScreen from './screens/FanZoneScreen';
-import TeammatesScreen from './screens/TeammatesScreen';
 import { warmCaches } from './lib/warm';
-import RaceDayScreen from './screens/RaceDayScreen';
-import DevScreen from './screens/DevScreen';
 import { WeekendScreen, LeaderboardScreen, QuizScreen, RecordsScreen } from './screens/ExploreScreens';
-import ChartScreen from './screens/ChartScreen';
-import GridScreen from './screens/GridScreen';
-import TeamCompareScreen from './screens/TeamCompareScreen';
 import { MotoHome, MotoCalendar, MotoStandings, MotoEvent, MotoRider, MotoPaddock, MotoTeam } from './screens/MotoScreens';
 import { FootScores, FootTable, FootMatch, FootTeam } from './screens/FootScreens';
 import { FunHome, FunProfile } from './screens/FunScreens';
@@ -161,21 +151,23 @@ function Shell() {
               <Stack.Screen name="Team" component={TeamScreen} options={({ route }) => ({ title: route.params.name })} />
               <Stack.Screen name="DriverSeasons" component={DriverSeasonsScreen} options={({ route }) => ({ title: ui.lang === 'el' ? `${route.params.name} · σεζόν` : `${route.params.name} seasons` })} />
               <Stack.Screen name="Compare" component={CompareScreen} options={{ title: tr('Head to head') }} />
-              <Stack.Screen name="TeamCompare" component={TeamCompareScreen} options={{ title: tr('Team head to head') }} />
-              <Stack.Screen name="Rules" component={RulesScreen} options={{ title: tr('F1 rules') }} />
-              <Stack.Screen name="WhatIf" component={WhatIfScreen} options={{ title: tr('What if') }} />
+              <Stack.Screen name="TeamCompare" getComponent={() => require('./screens/TeamCompareScreen').default} options={{ title: tr('Team head to head') }} />
+              <Stack.Screen name="Rules" getComponent={() => require('./screens/RulesScreen').default} options={{ title: tr('F1 rules') }} />
+              <Stack.Screen name="WhatIf" getComponent={() => require('./screens/WhatIfScreen').default} options={{ title: tr('What if') }} />
               <Stack.Screen name="Predict" component={PredictScreen} options={{ title: tr('Predictions') }} />
-              <Stack.Screen name="Replay" component={ReplayScreen} options={{ title: 'Season replay' }} />
-              <Stack.Screen name="FanZone" component={FanZoneScreen} options={{ title: 'Fan zone' }} />
-              <Stack.Screen name="Teammates" component={TeammatesScreen} options={{ title: 'Team-mate battles' }} />
-              <Stack.Screen name="RaceDay" component={RaceDayScreen} options={{ title: 'Race day' }} />
-              <Stack.Screen name="Dev" component={DevScreen} options={{ title: 'Developer menu' }} />
+              <Stack.Screen name="Search" getComponent={() => require('./screens/SearchScreen').default} options={{ title: 'Search' }} />
+              <Stack.Screen name="TimeMachine" getComponent={() => require('./screens/TimeMachineScreen').default} options={{ title: 'Time machine' }} />
+              <Stack.Screen name="Replay" getComponent={() => require('./screens/ReplayScreen').default} options={{ title: 'Season replay' }} />
+              <Stack.Screen name="FanZone" getComponent={() => require('./screens/FanZoneScreen').default} options={{ title: 'Fan zone' }} />
+              <Stack.Screen name="Teammates" getComponent={() => require('./screens/TeammatesScreen').default} options={{ title: 'Team-mate battles' }} />
+              <Stack.Screen name="RaceDay" getComponent={() => require('./screens/RaceDayScreen').default} options={{ title: 'Race day' }} />
+              <Stack.Screen name="Dev" getComponent={() => require('./screens/DevScreen').default} options={{ title: 'Developer menu' }} />
               <Stack.Screen name="Weekend" component={WeekendScreen} options={{ title: 'Race weekend' }} />
               <Stack.Screen name="Leaderboard" component={LeaderboardScreen} options={{ title: 'Leaderboard' }} />
               <Stack.Screen name="Quiz" component={QuizScreen} options={{ title: 'Quiz' }} />
               <Stack.Screen name="Records" component={RecordsScreen} options={{ title: 'Records & history' }} />
-              <Stack.Screen name="Chart" component={ChartScreen} options={{ title: tr('Season chart') }} />
-              <Stack.Screen name="Grid" component={GridScreen} options={{ title: tr('Next season grid') }} />
+              <Stack.Screen name="Chart" getComponent={() => require('./screens/ChartScreen').default} options={{ title: tr('Season chart') }} />
+              <Stack.Screen name="Grid" getComponent={() => require('./screens/GridScreen').default} options={{ title: tr('Next season grid') }} />
               <Stack.Screen name="FunProfile" component={FunProfile} options={{ title: 'Your driver' }} />
               <Stack.Screen name="FunSettings" component={FunSettings} options={{ title: 'Fantasy settings' }} />
               <Stack.Screen name="FantasyNew" component={FantasyNew} options={{ title: 'New fantasy season' }} />

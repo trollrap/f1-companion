@@ -13,6 +13,7 @@ import { useAsync } from '../hooks/useAsync';
 import { sessionResults } from '../api/jolpica';
 import { YEAR } from '../api/openf1';
 import { dailyQuiz } from '../lib/trivia';
+import { nextPair } from '../lib/higherLower';
 
 const dayKey = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 const yesterday = () => { const d = new Date(); d.setDate(d.getDate() - 1); return dayKey(d); };
@@ -33,6 +34,9 @@ export default function FanZoneScreen() {
   const res = useAsync(() => (round ? sessionResults(YEAR, round, 'results').catch(() => null) : Promise.resolve(null)), [round]);
   const top = (res.v || []).slice(0, 10); const mine = round != null ? votes[round] : null;
   const vote = (r) => { const n = { ...votes, [round]: { id: r.driverId, name: `${r.first || ''} ${r.last || r.name || ''}`.trim(), race: last.meeting_name || '' } }; setVotes(n); save('fanDotd', n); };
+  const [hl, setHl] = useState(null); const [hlPick, setHlPick] = useState(null); const [run, setRun] = useState(0); const [hlBest, setHlBest] = useState(0);
+  useEffect(() => { load('fanHL', 0).then(setHlBest); setHl(nextPair()); }, []);
+  const hlAnswer = (side) => { if (!hl || hlPick) return; setHlPick(side); const right = (hl.a.v > hl.b.v ? 'a' : 'b') === side; const nr = right ? run + 1 : 0; setRun(nr); if (nr > hlBest) { setHlBest(nr); save('fanHL', nr); } setTimeout(() => { setHl(nextPair()); setHlPick(null); }, 1400); };
   if (!st) return <Screen header={false}><Skeleton rows={4} /></Screen>;
   return (
     <Screen header={false}>
@@ -60,6 +64,16 @@ export default function FanZoneScreen() {
             return (<Pressable key={o + k} onPress={() => answer(o)} style={({ pressed }) => [{ padding: 16, borderRadius: 14, borderWidth: 1.5, borderColor: c, backgroundColor: show && (right || chosen) ? alpha(c, 0.18) : colors.surface }, pressed && { opacity: 0.8 }]}><Text style={{ color: colors.fg, fontSize: 18, fontWeight: '600' }}>{o}</Text></Pressable>); })}
         </View>
       ) : null}
+      {hl ? (
+        <Card>
+          <Eyebrow>Higher or lower</Eyebrow>
+          <Text style={{ color: colors.fg, fontSize: 17, fontWeight: '700', marginTop: 6 }}>{`Who has more ${hl.stat}?`}</Text>
+          <View style={{ gap: 8, marginTop: 10 }}>
+            {['a', 'b'].map((k) => { const x = hl[k]; const win = hl.a.v > hl.b.v ? 'a' : 'b'; const shown = hlPick != null; const c = shown ? (k === win ? colors.good : hlPick === k ? colors.red : colors.line) : colors.line;
+              return (<Pressable key={k} accessibilityRole="button" accessibilityLabel={x.name} onPress={() => hlAnswer(k)} style={({ pressed }) => [{ flexDirection: 'row', alignItems: 'center', padding: 14, borderRadius: 14, borderWidth: 1.5, borderColor: c, backgroundColor: shown && k === win ? alpha(colors.good, 0.15) : colors.surface }, pressed && { opacity: 0.85 }]}><Text style={{ flex: 1, color: colors.fg, fontSize: 18, fontWeight: '700' }}>{x.name}</Text>{shown ? <Text style={{ color: colors.fg, fontSize: 18, fontWeight: '800' }}>{Math.round(x.v)}</Text> : null}</Pressable>); })}
+          </View>
+          <Note>{`Streak ${run} · best ${hlBest}. Built from the offline history.`}</Note>
+        </Card>) : null}
       <Card>
         <Eyebrow>Driver of the day</Eyebrow>
         {!last ? <Note>The vote opens after the first race of the season.</Note> : res.loading ? <Skeleton rows={3} /> : !top.length ? <Note>Results are not available yet.</Note> : (
