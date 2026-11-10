@@ -277,3 +277,10 @@ Expo Go (SDK 53+) does not include the `expo-notifications` native module; impor
 - Race Director mode: flag chip in the live race bar (fantasy). Stewards decisions on contacts (penalise A/B or racing incident) and safety-car calls, judged against who was actually at fault in the sim. Record kept in f.steward and shown on the fantasy Stats tab.
 - Paddock rumours (fantasy Home): three rumours about the next race, Believe or Doubt, judged after the race against the real simulated result; score = 4 + 20 x (1 - chance of the side picked). Picks stored in f.rumours (fun/rumours.js, screens/FantasyRumours.js).
 - Route: eas update --branch preview --platform android --message "1.31.0"
+
+## V1.32.0 (JS-only)
+- Fantasy depth: mid-race rain showers (about 1 race in 8, dry races only, not sprints). Half the field gets the intermediate call right, more variance and crashes, wet skill matters. Result flag `shower` on the first race row, news article for it, and a "Rain!" event in the live race view.
+- Offline mode now also covers the friends room (shows the saved list), the update check (skipped) and news (saved feeds only). Forecast card says when it is saved data.
+- Stability: 12 simulated seasons with showers and the news builder run without errors; lint and Android bundle clean.
+- Not built (no answer given on the new-idea question): Pit wall duel, Bet slip league, Season story mode, Silent commentator.
+- Route: eas update --branch preview --platform android --message "1.32.0"

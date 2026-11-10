@@ -268,7 +268,7 @@ export function Fantasy({ route, navigation }) {
     const nm = (x) => surname(g.drivers.find((d) => d.id === x));
     const drivers = res.map((r) => { const d = g.drivers.find((x) => x.id === r.driverId); const t = d && teamOf(g, d.teamId); return { id: r.driverId, name: surname(d), code: codeOf(d), photo: d ? driverPic(d) : null, color: t?.color || colors.muted, mine: !!g.tp && d?.teamId === g.tp.teamId, pos: r.pos, grid: r.grid || r.pos, stops: r.status === 'OK' ? (r.stops || 0) : 0, out: r.status !== 'OK', lap: r.lap || 0, reason: r.reason, crash: !!r.crash, with: r.with, fault: !!r.fault, gap: r.status === 'OK' ? (r.gap ? parseFloat(String(r.gap).replace('+', '')) : 0) : null }; });
     const laps = st0.session === 'Sprint' ? Math.max(10, Math.round((st0.race.laps || 57) / 3)) : (st0.race.laps || 57);
-    setLive({ g, st: st0, drivers, laps, sc: !!res[0]?.sc, wet: !!res[0]?.wet });
+    setLive({ g, st: st0, drivers, laps, sc: !!res[0]?.sc, wet: !!res[0]?.wet, shower: !!res[0]?.shower });
   };
   const endLive = (calls, stew) => {
     const l = live; setLive(null); if (!l) return; let g = l.g;
@@ -287,7 +287,7 @@ export function Fantasy({ route, navigation }) {
     <Screen header={false} scrollRef={sref} revealKey={`${shown}:${sub}`} footer={bar} swipe={{ index: Math.min(5, tabs.indexOf(tab)), count: 6, onIndex: (i) => { setArt(null); setTab(tabs[i]); } }}>
       {seasonList(f).length > 1 ? <Dropdown value={n} options={seasonList(f).map((k) => [k, k === cur ? `Season ${k} · ${off ? 'transfers' : 'current'}` : `Season ${k}`])} onChange={(k) => { setSel(k); setExp(false); }} prefix="Season" /> : null}
       <UndoChip depth={fun.undoDepth(id)} onPress={() => fun.undo(id)} />
-      <LiveRace visible={!!live} race={live?.st.race.name || ''} laps={live?.laps} drivers={live?.drivers} sc={live?.sc} wet={live?.wet} onClose={endLive} />
+      <LiveRace visible={!!live} race={live?.st.race.name || ''} laps={live?.laps} drivers={live?.drivers} sc={live?.sc} wet={live?.wet} shower={live?.shower} onClose={endLive} />
       <SessionShow visible={shw?.type === 'session'} title={(shw?.type === 'session' && f.races.find((r) => r.id === shw.raceId)?.name) || ''} sub={shw?.session} rows={shw?.type === 'session' ? sessRows(f, shw.raceId, shw.session) : []} onClose={() => setShw(null)} />
       <TransferShow visible={shw?.type === 'transfers'} season={shw?.season} items={shw?.items || []} onClose={() => setShw(null)} />
       <ChampionShow visible={shw?.type === 'champ'} season={cur} driver={st.drivers[0]} photo={driverPic(st.drivers[0])} team={teamOf(f, st.drivers[0]?.teamId)} teamLogo={teamPic(teamOf(f, st.drivers[0]?.teamId))} points={st.drivers[0]?.points} wins={st.drivers[0]?.wins}

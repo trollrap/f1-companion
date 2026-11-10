@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { decode } from './predFriends';
+import { ui } from './motion';
 // A free online room without accounts, built on ntfy.sh: a "room" is just a long random topic name. Each player posts one small message
 // (their name and their picks code); everyone who knows the topic reads the latest message of every name. ntfy keeps messages for about
 // 12 hours, so every phone re-posts its own picks when it syncs, and the last list each phone saw is kept on that phone.
@@ -12,6 +13,7 @@ const timeout = (ms) => { const c = new AbortController(); setTimeout(() => c.ab
 const rid = () => { const a = 'abcdefghijklmnopqrstuvwxyz0123456789'; let o = 'f1c-'; for (let i = 0; i < 20; i++) o += a[Math.floor(Math.random() * a.length)]; return o; };
 export const createRoom = async () => rid();
 async function readAll(id) {
+  if (ui.offline) throw new Error('Offline mode is on');
   const r = await fetch(`${BASE}/${id}/json?poll=1&since=all`, { signal: timeout(15000) });
   if (!r.ok) throw new Error(`Server answered ${r.status}`);
   const txt = await r.text(); const out = {};
@@ -25,6 +27,7 @@ async function post(id, name, code) {
 // Reads the room, posts my picks when they changed (or every 6 hours so they never expire), and returns everyone, merged with the list saved on this phone.
 export async function syncRoom(id, name, code) {
   let cached = {}; try { cached = JSON.parse((await AsyncStorage.getItem(`${CACHE}:${id}`)) || '{}'); } catch {}
+  if (ui.offline) return cached;
   const live = await readAll(id); const players = { ...cached };
   Object.keys(live).forEach((k) => { if (!players[k] || (live[k].t || 0) >= (players[k].t || 0)) players[k] = live[k]; });
   if (name && code) { const mine = live[name]; let last = {}; try { last = JSON.parse((await AsyncStorage.getItem(`${LASTPOST}:${id}`)) || '{}'); } catch {}

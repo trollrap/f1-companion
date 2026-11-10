@@ -82,7 +82,7 @@ const quick = (f, d) => { const a = A(d), t = TA(teamFor(f, d)); return t.car * 
 const pace = (f, d, wet) => { const a = A(d), t = TA(teamFor(f, d)); return t.car * 0.6 + (a.pace * 0.55 + a.race * 0.45 + (wet ? (a.wet - 75) * 0.5 : 0)) * 0.4; };
 
 // One weekend's conditions are drawn once and shared by every session of that weekend.
-const conditions = (f, race) => f.results?.[race.id]?._w || { wet: Math.random() < 0.18, sc: Math.random() < 0.38 ? 1 + (Math.random() < 0.3 ? 1 : 0) : 0, od: 0.3 + (hash(race.name) % 50) / 100 }; // od: how hard overtaking is (0.3-0.8)
+const conditions = (f, race) => f.results?.[race.id]?._w || { wet: Math.random() < 0.18, sc: Math.random() < 0.38 ? 1 + (Math.random() < 0.3 ? 1 : 0) : 0, od: 0.3 + (hash(race.name) % 50) / 100, shower: Math.random() < 0.12 }; // od: how hard overtaking is (0.3-0.8)
 
 function qualifying(f, race, session, w) {
   const ds = f.drivers, n = ds.length, lapBase = 68 + (hash(race.name) % 28);
@@ -100,17 +100,19 @@ function qualifying(f, race, session, w) {
 function raceSession(f, race, session, prior, w) {
   const ds = f.drivers, n = ds.length, isSprint = session === 'Sprint', laps = isSprint ? Math.max(10, Math.round(race.laps / 3)) : race.laps;
   const lapBase = 68 + (hash(race.name) % 28), lapT = lapBase * 1.035, grid = {}; (prior?.[isSprint ? 'Sprint Qualifying' : 'Qualifying'] || []).forEach((r) => { grid[r.driverId] = r.pos; });
+  const shower = !isSprint && !w.wet && !!w.shower;
   const gw = 0.16 + 0.3 * w.od; // grid matters more where overtaking is hard (Monaco-like tracks)
   const scale = 1 - 0.3 * (w.sc ? 1 : 0); // safety cars bunch the field
   const rows = ds.map((d) => {
     const a = A(d), t = TA(teamFor(f, d)); const g = grid[d.id] || n;
-    const crashP = (isSprint ? 0.025 : 0.04) + (a.aggr - 50) * 0.0005 + (100 - a.cons) * 0.0004 + (w.wet ? 0.03 : 0);
+    const crashP = (isSprint ? 0.025 : 0.04) + (a.aggr - 50) * 0.0005 + (100 - a.cons) * 0.0004 + (w.wet ? 0.03 : 0) + (shower ? 0.02 : 0);
     const mechP = ((isSprint ? 0.015 : 0.03) + (100 - t.rel) * 0.0011) * (f.rules?.rel ?? 1);
     const r = Math.random(); const out = r < mechP ? 'mech' : r < mechP + crashP ? 'crash' : null;
     const stops = isSprint ? 0 : (Math.random() < 0.12 ? 3 : Math.random() < 0.55 ? 2 : 1) + (w.wet && Math.random() < 0.5 ? 1 : 0);
     const stopLoss = Array.from({ length: stops }, () => 20.5 + (100 - t.pit) * 0.04 + Math.abs(gauss()) * 0.6 + (Math.random() < (100 - t.pit) / 900 ? 3 + Math.random() * 7 : 0)).reduce((x, y) => x + y, 0);
     const pen = !isSprint && Math.random() < 0.07 ? (Math.random() < 0.7 ? 5 : 10) : 0;
-    const s = pace(f, d, w.wet) + (n - g) * gw + (a.race - 78) * 0.06 + (a.aggr - 55) * 0.012 + gauss() * (2.4 + (100 - a.cons) * 0.045 + (w.wet ? 2.4 : 0));
+    const gamble = shower ? (Math.random() < 0.5 ? 2.2 : -1.6) + (a.wet - 75) * 0.05 : 0; // a mid-race shower: half the field gets the tyre call right
+    const s = gamble + pace(f, d, w.wet) + (n - g) * gw + (a.race - 78) * 0.06 + (a.aggr - 55) * 0.012 + gauss() * (2.4 + (100 - a.cons) * 0.045 + (w.wet ? 2.4 : 0) + (shower ? 1.2 : 0));
     return { d, g, s, out, stops, stopLoss, pen, lap: out ? 2 + Math.floor(Math.random() * (laps - 3)) : laps };
   });
   // Contact: a driver who crashes out sometimes takes a neighbour with him (another crasher, or a driver who survives with damage and loses time).
@@ -131,7 +133,7 @@ function raceSession(f, race, session, prior, w) {
   const flPool = fin.slice(0, Math.min(10, fin.length)); const flDriver = flPool.length ? flPool[Math.floor(Math.pow(Math.random(), 1.6) * flPool.length)] : null;
   const res = fin.map((x, i) => {
     const gap = x.t - base, lapped = Math.floor(gap / lapT);
-    return { driverId: x.d.id, pos: i + 1, grid: x.g, time: i === 0 ? raceFmt(winT) : lapped >= 1 ? `+${lapped} lap${lapped > 1 ? 's' : ''}` : `+${gap.toFixed(3)}`, gap: i ? `+${gap.toFixed(3)}` : '', points: pts[i] || 0, status: 'OK', stops: x.stops, pen: x.pen, ...(x.hitBy ? { hitBy: x.hitBy } : {}), ...(i === 0 ? { wet: !!w.wet, sc: !!w.sc } : {}), fl: flDriver === x, flTime: flDriver === x ? lapFmt(lapBase - 0.4 - Math.random() * 0.8) : null, laps };
+    return { driverId: x.d.id, pos: i + 1, grid: x.g, time: i === 0 ? raceFmt(winT) : lapped >= 1 ? `+${lapped} lap${lapped > 1 ? 's' : ''}` : `+${gap.toFixed(3)}`, gap: i ? `+${gap.toFixed(3)}` : '', points: pts[i] || 0, status: 'OK', stops: x.stops, pen: x.pen, ...(x.hitBy ? { hitBy: x.hitBy } : {}), ...(i === 0 ? { wet: !!w.wet, sc: !!w.sc, shower: !!(shower) } : {}), fl: flDriver === x, flTime: flDriver === x ? lapFmt(lapBase - 0.4 - Math.random() * 0.8) : null, laps };
   });
   rows.filter((x) => x.out).sort((a, b) => b.lap - a.lap).forEach((x, i) => {
     const reason = x.out === 'mech' ? MECH[Math.floor(Math.random() * MECH.length)] : CRASH[Math.floor(Math.random() * CRASH.length)];

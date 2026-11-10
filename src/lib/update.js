@@ -2,6 +2,7 @@ import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { UPDATE_REPO } from '../config';
+import { ui } from './motion';
 // Looks at the latest GitHub release of UPDATE_REPO and says whether it is newer than this install.
 // Installing is done by opening the .apk link: Android downloads it and asks to install over the current app.
 export const currentVersion = () => Constants.expoConfig?.version || '0.0.0';
@@ -12,6 +13,7 @@ const KEY = 'updateCheck', EVERY = 12 * 3600e3;
 // Returns { status: 'off' | 'current' | 'available' | 'none' | 'error', version?, url?, notes? }. Without `force` it asks GitHub at most every 12 hours.
 export async function checkUpdate(force = false) {
   if (!UPDATE_REPO) return { status: 'off' };
+  if (ui.offline) return { status: 'none' };
   let saved = null; try { saved = JSON.parse(await AsyncStorage.getItem(KEY)); } catch {}
   if (!force && saved && Date.now() - saved.t < EVERY && saved.v) return saved.v.version && isNewer(saved.v.version, currentVersion()) ? saved.v : { status: 'current' };
   try {

@@ -36,7 +36,7 @@ function plan(drv, laps, seed) {
   return chart;
 }
 
-function eventsOf(drv, chart, laps, sc, wet) {
+function eventsOf(drv, chart, laps, sc, wet, shower) {
   const ev = Array.from({ length: laps + 1 }, () => []); const by = {}; drv.forEach((d) => { by[d.id] = d; });
   ev[0].push({ k: 'flag', t: wet ? 'Lights out in the wet. Everybody starts on intermediates.' : 'Lights out and away we go.' });
   drv.forEach((d) => {
@@ -49,14 +49,15 @@ function eventsOf(drv, chart, laps, sc, wet) {
     if (L > 1 && a && b && a !== b && !(by[a].out && by[a].lap <= L)) ev[L].push({ k: 'lead', id: b, t: `${by[b].name} takes the lead from ${by[a].name}` });
     else if (L > 1 && a && b && a !== b) ev[L].push({ k: 'lead', id: b, t: `${by[b].name} inherits the lead` });
   }
+  if (shower && !wet) { const L = Math.max(2, Math.round(laps * 0.55)); ev[L].push({ k: 'flag', t: 'Rain! A shower hits the circuit. The pit wall calls on the intermediates, and not everyone gets it right.' }); }
   ev[laps].push({ k: 'flag', t: `Chequered flag: ${by[chart[laps][0]?.id]?.name || ''} wins` });
   return ev;
 }
 
-export default function LiveRace({ visible, race, laps, drivers, sc, wet, onClose }) {
+export default function LiveRace({ visible, race, laps, drivers, sc, wet, shower, onClose }) {
   const ins = useSafeAreaInsets();
   const total = Math.max(1, laps || 1);
-  const model = useMemo(() => { if (!visible || !drivers?.length) return null; const drv = drivers.map((d) => ({ ...d })); const chart = plan(drv, total, race); return { drv, chart, ev: eventsOf(drv, chart, total, sc, wet) }; }, [visible, drivers, total, sc, wet, race]);
+  const model = useMemo(() => { if (!visible || !drivers?.length) return null; const drv = drivers.map((d) => ({ ...d })); const chart = plan(drv, total, race); return { drv, chart, ev: eventsOf(drv, chart, total, sc, wet, shower) }; }, [visible, drivers, total, sc, wet, shower, race]);
   const [lap, setLap] = useState(0); const [play, setPlay] = useState(true); const [speed, setSpeed] = useState(1); const [log, setLog] = useState([]);
   const lapRef = useRef(0); const [call, setCall] = useState(null); const [calls, setCalls] = useState([]); const [dir, setDir] = useState(false); const [stew, setStew] = useState([]);
   useEffect(() => { if (visible) { lapRef.current = 0; setLap(0); setPlay(true); setSpeed(1); setLog(model?.ev[0].map((e) => ({ ...e, lap: 0 })) || []); setCall(null); setCalls([]); setStew([]); } }, [visible, model]);

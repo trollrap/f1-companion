@@ -17,6 +17,7 @@ import { SprintBadge, Pill } from '../components/Badge';
 import Schedule from '../components/Schedule';
 import NextSession from '../components/NextSession';
 import Strategy from '../components/Strategy';
+import { ui } from '../lib/motion';
 import RaceStats from '../components/RaceStats';
 import { forecastFor } from '../lib/forecast';
 import { sessionResults, driverStandings } from '../api/jolpica';
@@ -161,7 +162,7 @@ export default function RoundScreen({ route, navigation }) {
               <Text style={{ color: colors.muted, fontSize: 13 }}>{`${w.rain ?? '–'}% rain · ${w.wind} km/h`}</Text>
               <Text style={{ width: 40, textAlign: 'right', color: colors.fg, fontWeight: '800' }}>{`${w.t}°`}</Text>
             </View>); })}</View>
-          <Note>Forecast from Open-Meteo for the town, at the middle of each session. It can change.</Note>
+          <Note>{ui.offline ? 'Offline mode: this is the forecast saved earlier and may be out of date.' : 'Forecast from Open-Meteo for the town, at the middle of each session. It can change.'}</Note>
         </Card>) : null}
       {!done && <Card><Eyebrow>Schedule</Eyebrow>{sessions.length ? <Schedule sessions={sessions} now={now} off={null} /> : <Note>Session times appear here once they are published.</Note>}</Card>}
       <CircuitBox meeting={meeting} />

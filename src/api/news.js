@@ -1,6 +1,7 @@
 // Motorsport news from public RSS/Atom feeds. No account, no key. A feed that is down or has moved is skipped and listed as unavailable.
 // Feed addresses could not be reached from the build sandbox: Settings > Check data sources tests every one from the phone.
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { ui } from '../lib/motion';
 
 export const SOURCES = [
   { id: 'bbc', name: 'BBC Sport', url: 'https://feeds.bbci.co.uk/sport/formula1/rss.xml' },
@@ -44,6 +45,7 @@ export async function fetchFeed(source, { fresh = false } = {}) {
   const key = `news:${source.id}`; let saved = null;
   try { const r = await AsyncStorage.getItem(key); if (r) saved = JSON.parse(r); } catch {}
   if (saved && !fresh && Date.now() - saved.t < TTL) return saved.items;
+  if (ui.offline) { if (saved) return saved.items; throw new Error('Offline mode is on and nothing is saved for this feed'); }
   try {
     const ctrl = new AbortController(); const timer = setTimeout(() => ctrl.abort(), 12000);
     const r = await fetch(source.url, { headers: UA, signal: ctrl.signal }).finally(() => clearTimeout(timer));
@@ -83,7 +85,7 @@ const skipText = /^(read more|related|share|follow us|subscribe|advertisement|si
 // Full text: the feed's own body when it has one, otherwise the article page itself (its <article> element). Falls back to the feed summary.
 export async function fetchArticle(item) {
   let blocks = htmlToBlocks(item.html, item.link);
-  if (blocks.filter((b) => b.t === 'p').length < 3 && item.link) {
+  if (blocks.filter((b) => b.t === 'p').length < 3 && item.link && !ui.offline) {
     try {
       const ctrl = new AbortController(); const timer = setTimeout(() => ctrl.abort(), 12000);
       const r = await fetch(item.link, { headers: UA, signal: ctrl.signal }).finally(() => clearTimeout(timer));
