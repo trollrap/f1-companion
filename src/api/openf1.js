@@ -16,6 +16,11 @@ export async function openf1Season() {
   races.forEach((r) => { r.has_sprint = sprints.has(r.meeting_key); });
   return races;
 }
+// Every session of the season in one request (for the calendar export).
+export async function yearSessions() {
+  const s = await get(`/sessions?year=${YEAR}`, HOUR); if (!Array.isArray(s)) throw new Error('Unexpected OpenF1 response');
+  return s.filter((x) => !x.is_cancelled && !/test/i.test(x.meeting_name || '')).sort((a, b) => Date.parse(a.date_start) - Date.parse(b.date_start));
+}
 export async function fetchSessions(meetingKey) {
   const s = await get(`/sessions?meeting_key=${meetingKey}`, 15 * 60e3);
   if (!Array.isArray(s)) throw new Error('Unexpected OpenF1 response');
@@ -52,7 +57,7 @@ export async function raceStints(sessionKey) {
   if (!Array.isArray(stints)) throw new Error('Unexpected OpenF1 response');
   const laps = Math.max(0, ...stints.map((s) => s.lap_end || 0));
   const by = {}; stints.forEach((s) => { (by[s.driver_number] ||= []).push({ n: s.stint_number, compound: String(s.compound || 'UNKNOWN').toUpperCase(), from: s.lap_start || 1, to: s.lap_end || laps, age: s.tyre_age_at_start || 0 }); });
-  const out = rows.filter((r) => by[r.number]).map((r) => ({ position: r.position, number: r.number, last: r.last, color: r.color, stints: by[r.number].sort((a, b) => a.n - b.n) }));
+  const out = rows.filter((r) => by[r.number]).map((r) => ({ position: r.position, number: r.number, last: r.last, team: r.team, color: r.color, stints: by[r.number].sort((a, b) => a.n - b.n) }));
   return { laps, rows: out };
 }
 // Pit stops of a session, fastest first. OpenF1 reports the stationary time as stop_duration (newer data) or the lane time as pit_duration.
@@ -63,6 +68,32 @@ export async function pitStops(sessionKey) {
   const rows = pits.filter((p) => typeof val(p) === 'number' && val(p) > 0 && val(p) < 90).map((p) => { const d = drv.find((x) => x.driver_number === p.driver_number) || {};
     return { number: p.driver_number, last: d.last_name ? nicePart(d.last_name, true) : `#${p.driver_number}`, team: d.team_name, color: d.team_colour ? `#${d.team_colour}` : null, lap: p.lap_number, dur: Math.round(val(p) * 100) / 100 }; }).sort((a, b) => a.dur - b.dur);
   return { stat, rows, total: pits.length };
+}
+// Race pace: each driver's average and best "clean" lap. Pit-out laps, the first lap and laps more than 7% slower than the driver's own median
+// (safety car, in-laps, heavy traffic) are left out, so the number reflects pace and not the race's incidents.
+export async function racePace(sessionKey) {
+  const [laps, drv] = await Promise.all([get(`/laps?session_key=${sessionKey}`, DAY), get(`/drivers?session_key=${sessionKey}`, DAY)]);
+  if (!Array.isArray(laps)) throw new Error('Unexpected OpenF1 response');
+  const by = {}; laps.forEach((l) => { if (typeof l.lap_duration === 'number' && l.lap_duration > 30 && l.lap_number > 1 && !l.is_pit_out_lap) (by[l.driver_number] = by[l.driver_number] || []).push(l.lap_duration); });
+  const rows = Object.keys(by).map((n) => { const all = by[n].slice().sort((a, b) => a - b); if (all.length < 8) return null; const med = all[Math.floor(all.length / 2)]; const clean = all.filter((x) => x <= med * 1.07);
+    const d = drv.find((x) => String(x.driver_number) === n) || {}; const avg = clean.reduce((a, b) => a + b, 0) / clean.length;
+    return { number: Number(n), last: d.last_name ? nicePart(d.last_name, true) : `#${n}`, team: d.team_name, color: d.team_colour ? `#${d.team_colour}` : null, avg, best: all[0], laps: clean.length }; }).filter(Boolean).sort((a, b) => a.avg - b.avg);
+  if (!rows.length) return { rows: [] }; const ref = rows[0].avg; rows.forEach((r) => { r.gap = r.avg - ref; });
+  return { rows, fastest: rows.reduce((a, b) => (b.best < a.best ? b : a)) };
+}
+// Qualifying gaps. Each driver's gap is measured inside the last segment they reached (Q1, Q2 or Q3), against the quickest car of that segment,
+// so a Q1 exit is not compared with a Q3 pole lap. Team-mate gaps use the deepest segment both drivers reached.
+export async function qualiGaps(sessionKey) {
+  const [res, drv] = await Promise.all([get(`/session_result?session_key=${sessionKey}`, HOUR), get(`/drivers?session_key=${sessionKey}`, DAY)]);
+  if (!Array.isArray(res) || !res.length || !res.some((r) => Array.isArray(r.duration))) return { rows: [], mates: [] };
+  const segs = (r) => (Array.isArray(r.duration) ? r.duration : []); const num = (x) => typeof x === 'number' && x > 0;
+  const fastest = []; res.forEach((r) => segs(r).forEach((t, i) => { if (num(t) && (fastest[i] == null || t < fastest[i])) fastest[i] = t; }));
+  const info = (r) => { const d = drv.find((x) => x.driver_number === r.driver_number) || {}; return { number: r.driver_number, last: d.last_name ? nicePart(d.last_name, true) : `#${r.driver_number}`, team: d.team_name, color: d.team_colour ? `#${d.team_colour}` : null }; };
+  const rows = res.map((r) => { const s = segs(r); let k = -1; s.forEach((t, i) => { if (num(t)) k = i; }); if (k < 0) return null; return { ...info(r), pos: r.position ?? 99, seg: k + 1, time: s[k], gap: s[k] - fastest[k] }; }).filter(Boolean).sort((a, b) => a.pos - b.pos);
+  const mates = []; const teams = {}; res.forEach((r) => { const t = info(r).team; if (t) (teams[t] = teams[t] || []).push(r); });
+  Object.values(teams).forEach((pair) => { if (pair.length !== 2) return; const [a, b] = pair.map(segs); let c = -1; for (let i = 0; i < Math.min(a.length, b.length); i++) if (num(a[i]) && num(b[i])) c = i; if (c < 0) return;
+    const d = a[c] - b[c]; const [fast, slow] = d <= 0 ? pair : [pair[1], pair[0]]; mates.push({ team: info(pair[0]).team, color: info(pair[0]).color, fast: info(fast).last, slow: info(slow).last, gap: Math.abs(d), seg: c + 1 }); });
+  mates.sort((x, y) => y.gap - x.gap); return { rows, mates };
 }
 // Session key of a past session (the schedule rebuilt from Jolpica has none): OpenF1 has sessions from 2023 on.
 export async function findSessionKey(year, name, dateISO) {

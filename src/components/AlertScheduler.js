@@ -3,13 +3,17 @@ import { AppState } from 'react-native';
 import { useSeason } from '../hooks/useSeason';
 import { alertSessions, currentSeason, events as motoEvents } from '../api/motogp';
 import { usePrefs } from '../hooks/usePrefs';
-import { scheduleSessionAlerts } from '../lib/notifications';
+import { scheduleSessionAlerts, scheduleBirthdays } from '../lib/notifications';
+import { useFavs } from '../hooks/useFavs';
+import { bdayItems } from '../lib/bdays';
 import { checkResults, syncResultTask } from '../lib/resultAlerts';
 import { checkNews } from '../lib/newsAlerts';
 // Keeps the device's scheduled alerts in step with the next race and the user's preferences, on every launch.
 export default function AlertScheduler() {
   const season = useSeason(); const { prefs } = usePrefs();
-  const moto = prefs.opts.sport === 'motogp';
+  const moto = prefs.opts.sport === 'motogp'; const favs = useFavs();
+  // Birthdays and first-win anniversaries of favourite drivers (Settings > Notifications). Off by default; turning it off clears them.
+  useEffect(() => { try { scheduleBirthdays(prefs.opts.bdays ? bdayItems(favs.drivers) : []).catch(() => {}); } catch {} }, [!!prefs.opts.bdays, JSON.stringify(favs.drivers || [])]);
   useEffect(() => {
     if (moto || prefs.opts.sport === 'football') return;
     if (season.status !== 'ready' || !season.next) return;

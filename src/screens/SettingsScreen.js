@@ -20,12 +20,13 @@ import Reveal from '../components/Reveal';
 import ColorPicker from '../components/ColorPicker';
 import { restartApp } from '../lib/reload';
 import { homeLayout, HOME_CARDS } from '../lib/homeLayout';
+import { PAGES } from '../lib/pages';
 import { Segmented } from '../components/Shared';
 import { exportBackup, findBackups, restoreFrom } from '../lib/backup';
 import { Alert } from '../lib/dialog';
 import CodePrompt from '../components/CodePrompt';
 import { useNavigation } from '@react-navigation/native';
-import { colors, alpha } from '../theme';
+import { colors, alpha, teamColors } from '../theme';
 
 const Btn = ({ children, onPress, disabled }) => (
   <Pressable onPress={onPress} disabled={disabled} style={({ pressed }) => [s.btn, (pressed || disabled) && { opacity: 0.6 }]}><Text style={s.btnText}>{children}</Text></Pressable>
@@ -52,6 +53,8 @@ function Section({ icon, title, summary, children, start = false }) {
 }
 const SWATCHES = ['#F0141E', '#FF6A00', '#F5C400', '#22C55E', '#14B8A6', '#2D8CFF', '#7C5CFF', '#FF2D87', '#E5E7EB'];
 const GAPS = [['leader', 'To the leader'], ['ahead', 'Interval (to the car ahead)']];
+const HOURS = Array.from({ length: 24 }, (_, h) => { const t = `${String(h).padStart(2, '0')}:00`; return [t, t]; });
+const TEAM_NAMES = { red_bull: 'Red Bull', rb: 'Racing Bulls', aston_martin: 'Aston Martin', alpine: 'Alpine', haas: 'Haas', mclaren: 'McLaren', mercedes: 'Mercedes', ferrari: 'Ferrari', williams: 'Williams', sauber: 'Sauber', audi: 'Audi', cadillac: 'Cadillac' };
 export default function SettingsScreen() {
   const { prefs, toggle, toggleResults, setOpt, setOpts } = usePrefs(); const o = prefs.opts;
   const [results, setResults] = useState([]); const [running, setRunning] = useState(false); const [msg, setMsg] = useState(''); const [upd, setUpd] = useState('');
@@ -90,11 +93,28 @@ export default function SettingsScreen() {
           </View>); })}
         <Btn onPress={() => setOpt('homeLayout', null)}>Reset the order</Btn>
       </Section>
+      <Section icon="pin-outline" title="Pinned pages" summary={`${(o.pins || []).length} pinned`}>
+        <Note>Pinned pages get a shortcut strip at the top of Home. Up to 8.</Note>
+        {PAGES.map(([route, title]) => { const on = (o.pins || []).includes(route); return (
+          <View key={route} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 4 }}>
+            <Switch value={on} onValueChange={(v) => { const cur = o.pins || []; if (v && cur.length >= 8) return; setOpt('pins', v ? [...cur, route] : cur.filter((x) => x !== route)); }} trackColor={{ true: colors.accent }} />
+            <Text style={{ color: on ? colors.fg : colors.muted, fontSize: 16, flex: 1 }}>{title}</Text>
+          </View>); })}
+        {(o.pins || []).length ? <Btn onPress={() => setOpt('pins', [])}>Unpin all</Btn> : null}
+      </Section>
       <Section icon="text-outline" title="Font and text size" summary={`${o.font === 'system' ? 'Phone font' : 'App font'} · ${Math.round((Number(o.textScale) || 1) * 100)}%`}>
         <Segmented value={o.font === 'system' ? 'system' : 'default'} onChange={(v) => setOpt('font', v)} items={[['default', 'App font'], ['system', 'Phone font']]} />
         <Segmented value={String(Number(o.textScale) || 1)} onChange={(v) => setOpt('textScale', Number(v))} items={[['0.9', 'S'], ['1', 'M'], ['1.1', 'L'], ['1.2', 'XL'], ['1.3', 'XXL']]} />
         <Text style={{ color: colors.fg, fontSize: 17 }}>This is how normal text looks with your choice. Lap 52 of 71, P4, +3.2s.</Text>
         <Note>Changes show as screens redraw. Restart the app if something still looks old.</Note>
+      </Section>
+      <Section icon="color-palette-outline" title="Team colours" summary={!o.teamTheme || o.teamTheme === 'off' ? 'Off' : o.teamTheme === 'fav' ? 'My favourite team' : (TEAM_NAMES[o.teamTheme] || o.teamTheme)}>
+        <Note>Tints the whole app with a team's colour instead of your accent colour. Pick a team, or follow your first favourite team (star a team in the Paddock). Change it any time, for example each race weekend. The app restarts to apply it.</Note>
+        <Dropdown value={o.teamTheme || 'off'} options={[['off', 'Off, use my accent colour'], ['fav', 'My first favourite team'], ...Object.keys(teamColors).map((k) => [k, TEAM_NAMES[k] || k])]} onChange={async (v) => { await setOpt('teamTheme', v); setTimeout(() => { restartApp().catch(() => {}); }, 700); }} prefix="Team" />
+      </Section>
+      <Section icon="phone-portrait-outline" title="Haptics" summary={o.haptics === false ? 'Off' : 'On'}>
+        <Sw label="Vibration on key moments" hint="A short buzz at lights out, when a card pack opens, on right and wrong answers in games and on steward calls." value={o.haptics !== false} onChange={(v) => setOpt('haptics', v)} />
+        <Note>Sound effects are not included: custom sounds need a new app build.</Note>
       </Section>
       <Section icon="eye-outline" title="Colour-blind friendly" summary={o.colorblind ? 'On: blue and orange' : 'Off'}>
         <Note>Swaps the red and green used for good and bad news (gains, losses, retirements) for blue and orange, which stay distinct for red-green colour blindness. The app restarts to apply it.</Note>
@@ -141,7 +161,15 @@ export default function SettingsScreen() {
             </Pressable>); })}
         </View>
         <View style={{ marginTop: 10 }}><NotifPrefs title="Remind me before" /></View>
+        <Sw label="Birthdays and win anniversaries" hint="At 9:00 on a favourite driver's birthday and on the anniversary of their first win." value={!!o.bdays} onChange={(v) => setOpt('bdays', v)} />
         <Sw label="Race morning reminder" hint="At 8:00 on the day of a race or sprint, with the start time." value={!!o.raceMorning} onChange={(v) => setOpt('raceMorning', v)} />
+        <Sw label="Quiet hours" hint="No alerts between the times below." value={!!o.quiet?.on} onChange={(v) => setOpt('quiet', { from: '23:00', to: '07:00', raceOk: true, ...(o.quiet || {}), on: v })} />
+        {o.quiet?.on ? (<View style={{ gap: 10 }}>
+          <Dropdown value={o.quiet.from || '23:00'} options={HOURS} onChange={(v) => setOpt('quiet', { ...o.quiet, from: v })} prefix="From" />
+          <Dropdown value={o.quiet.to || '07:00'} options={HOURS} onChange={(v) => setOpt('quiet', { ...o.quiet, to: v })} prefix="Until" />
+          <Sw label="Still alert me for the race" hint="Race start alerts ignore quiet hours." value={o.quiet.raceOk !== false} onChange={(v) => setOpt('quiet', { ...o.quiet, raceOk: v })} />
+          <Note>Alerts already scheduled are updated the next time the app opens. Result and news alerts that arrive during quiet hours are skipped.</Note>
+        </View>) : null}
         <Sw label="Session results" hint="A notification once a qualifying, sprint or race result is published. Android can be minutes late." value={prefs.results} onChange={toggleResults} />
         <Btn onPress={async () => { const n = await checkResults({ force: true }); setMsg(n ? `Sent ${n} result alert${n > 1 ? 's' : ''}.` : 'No new results to send right now.'); }}>Check for results now</Btn>
         <Btn onPress={async () => { const r = await sendTestNotification(); setMsg(r === 'ok' ? 'A test alert arrives in 5 seconds.' : r === 'denied' ? 'Notifications are not allowed for this app. Enable them in system settings.' : 'Alerts only work in the installed app.'); }}>Send a test alert</Btn>

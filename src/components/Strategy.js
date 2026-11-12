@@ -5,6 +5,7 @@ import { Text } from './Text';
 import { Card, Eyebrow, Note } from './Screen';
 import { useAsync } from '../hooks/useAsync';
 import { raceStints } from '../api/openf1';
+import TyreUsage from './TyreUsage';
 import { colors } from '../theme';
 
 export const TYRE = { SOFT: ['#E10600', '#fff', 'S'], MEDIUM: ['#FFD12E', '#14161A', 'M'], HARD: ['#F2F2F2', '#14161A', 'H'], INTERMEDIATE: ['#3DD16C', '#08210F', 'I'], WET: ['#3B82F6', '#fff', 'W'], UNKNOWN: ['#6B7280', '#fff', '?'] };
@@ -13,6 +14,7 @@ export default function Strategy({ sessionKey, onHide }) {
   const st = useAsync(() => raceStints(sessionKey), [sessionKey]);
   const d = st.v;
   return (
+    <>
     <Card>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
         <Eyebrow>Tire strategy</Eyebrow>
@@ -39,5 +41,7 @@ export default function Strategy({ sessionKey, onHide }) {
           </View>
         </View>)}
     </Card>
+    {d && d.rows && d.rows.length ? <TyreUsage data={d} /> : null}
+    </>
   );
 }

@@ -5,6 +5,7 @@ import { View, Pressable, ScrollView, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Skeleton from '../components/Skeleton';
 import DriverDNA from '../components/DriverDNA';
+import DriverTimeline from '../components/DriverTimeline';
 import { Text } from '../components/Text';
 import Screen, { ErrorNote, Card, Eyebrow, Note } from '../components/Screen';
 import { StatGrid, ExpandStats, StarButton, Segmented, TeamBadge } from '../components/Shared';
@@ -168,6 +169,7 @@ export default function DriverScreen({ route, navigation }) {
             {C && <StatGrid cols={3} items={[['Seasons', dash(C.seasons)], ['Races', dash(C.races)], ['Wins', dash(C.wins)], ['Podiums', dash(C.podiums)], ['Poles', dash(C.poles)], ['Fast laps', dash(C.fastest)], ['Titles', titles.loading ? '…' : dash(titles.v)], ['Points', pts.loading ? '…' : dash(pts.v)], ['First year', dash(C.first)]]} />}
           </Card>
         )}
+        {tab === 'career' ? <DriverTimeline driverId={driverId} /> : null}
         {tab === 'career' ? <DriverDNA driverId={driverId} color={color} /> : null}
         {tab === 'career' && (teamsList.v || []).length > 0 && (
           <Card>

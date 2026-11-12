@@ -284,3 +284,74 @@ Expo Go (SDK 53+) does not include the `expo-notifications` native module; impor
 - Stability: 12 simulated seasons with showers and the news builder run without errors; lint and Android bundle clean.
 - Not built (no answer given on the new-idea question): Pit wall duel, Bet slip league, Season story mode, Silent commentator.
 - Route: eas update --branch preview --platform android --message "1.32.0"
+
+## V1.33.0 (JS-only)
+- Fun tab: all games listed in horizontal rows (Daily games, Reflexes, Predict and play, What if) (FunScreens.js GameRows).
+- Lights out reaction game, Guess the circuit (clue based, from circuits.js, works offline), Mystery driver (daily Wordle-style, history data) in screens/GameScreens.js. Shared helpers lib/kv.js.
+- Driver cards (lib/cards.js, screens/CardScreens.js): packs of 3 real drivers, rarity from career (legendary = champion, epic 10+ wins, rare = win or 3 podiums). Packs earned once a day: Mystery solved, circuit score 12+, lights under 0.3 s, quiz 50+ pts, Fan zone daily quiz. Two starter packs. Storage key cards:v1.
+- Driver page, Career tab: Career timeline (team stints + title stars) (components/DriverTimeline.js, history.js driverTimeline).
+- Calendar tab: "Add to my calendar" builds an .ics of upcoming sessions (races, plus qualifying, or every session) with a 30 min reminder and shares it (lib/ics.js, api/openf1.js yearSessions). Needs OpenF1; unverified live.
+- Guess the circuit uses clues, not outlines: outlines are only available online.
+- Route: eas update --branch preview --platform android --message "1.33.0"
+
+## V1.34.0 (JS-only)
+- Race page, Race tab: Race pace card (average clean lap per driver as gap to the quickest; pit-out laps, lap 1 and laps over 7% slower than the driver's median excluded) (api/openf1.js racePace, components/PaceCharts.js).
+- Race page, Qualifying / Sprint Qualifying: Qualifying gaps card (gap inside the last segment each driver reached) and team-mate gaps (deepest shared segment). Logic checked against hand-made data; OpenF1 field names unverified live.
+- Home "Your drivers" tiles show the last race result (Jolpica last results).
+- Route: eas update --branch preview --platform android --message "1.34.0"
+
+## V1.35.0 (JS-only)
+- Reliability report (Home > Explore, Search): retirements per team for any season, split into mechanical / accident / other from the result status text, finish rate, recent-form arrow, tap a team for its list, top mechanical causes. Past seasons use the offline history, the current one Jolpica (api/jolpica.js seasonStatuses, lib/reliability.js, screens/ReliabilityScreen.js). Status classification is keyword based; unusual statuses fall under "other".
+- Team colours (Settings): tint the whole app with a team's colour (any team or "my first favourite team") instead of the accent colour. Applied at start-up in App.js, so changing it restarts the app. Opt: teamTheme.
+- Route: eas update --branch preview --platform android --message "1.35.0"
+
+## V1.36.0 (JS-only)
+- Dominance ranking (Home > Explore, Fun tab, Search): every season scored on race wins share for driver and team, title margin; tabs Most dominant / Closest fights / Best teams (lib/dominance.js, offline).
+- Team family trees: every current team with its predecessors (renames, takeovers), eras, starts, wins and titles (api/history.js teamEras).
+- Rookie report: this season's rookies (no earlier history) with results and gap to their team-mate.
+- Stat of the day: new Home card (can be hidden or moved in Settings > Home layout), one stat per day: on this day, birthdays, career numbers, Grand Prix facts, dominant seasons, live title gap.
+- Year in review (Fun tab): shareable card built from games, predictions, cards, favourites on the phone.
+- Flag quiz (Fun tab): ten flags, four countries each; 9+ earns a card pack.
+- Quiet hours (Settings): no alert notifications between chosen hours, race alerts can stay on.
+- Haptics (Settings): vibration feedback in games, card flips and radio calls (RN Vibration, no new package). Sound effects need a new APK and are not included.
+- Route: eas update --branch preview --platform android --message "1.36.0"
+
+## V1.37.0 (JS-only)
+- Grid penalties tracker (Home > Explore, Search): compares each driver's qualifying position with their race grid slot, by race / driver / team, pit-lane starts marked. Seasons 2023 onwards (race grid set by Qualifying). Online only (api/jolpica.js gridData, lib/gridDrops.js; logic harness-tested, endpoints unverified).
+- Team radio game (Fun tab): who said it, 8 of 10 retold radio moments per round, 7+ earns a card pack. Moments checked against Formula1.com's memorable radio list; lines are paraphrased, not verbatim.
+- Share buttons (components/ShareCard.js): Stat of the day, Dominance list, each Grid penalties race card share as a picture (text fallback).
+- Route: eas update --branch preview --platform android --message "1.37.0"
+
+## V1.38.0 (JS-only)
+- Race recap card (Home, can be hidden in Settings > Home layout): winner, podium, pole conversion, biggest climb, fastest lap, retirements, title gap; shareable picture (lib/recap.js, components/RaceRecap.js). Logic harness-tested.
+- Birthday and win-anniversary alerts (Settings > Notifications, off by default): 9:00 local on a favourite driver's birthday and on the anniversary of their first win, from the offline history. Local one-off notifications with identifiers bday-...; rescheduled on every launch (lib/bdays.js, scheduleBirthdays). Not verified on a device.
+- Pit stop timer (Fun tab): tap four wheels as they light, 0.5 s penalty per wrong tap, under 2.0 s earns a card pack.
+- Driver number quiz (Fun tab): from this season's standings (permanentNumber), needs a connection once; 9/10 earns a pack.
+- Career duel (Fun tab): who has more wins, poles, podiums, starts or titles; streak game, 10 earns a pack. Offline.
+- Build the grid (Fun tab): put drivers into the right teams for a season 2000 to 2025 (regular seats = the two drivers with the most starts); perfect grid earns a pack. Offline.
+- Fun row "Reflexes and quizzes" now holds Lights out, Pit stop, Flags, Team radio, Number quiz, Career duel, Build the grid, Year in review.
+- Route: eas update --branch preview --platform android --message "1.38.0"
+
+## V1.39.0 (JS-only)
+- Tyre usage card (Race page > Race tab, under the Tire strategy chart, shown with it): share of race laps on each compound, stints, average and longest stint (with the driver), most common number of stops, and each team's compound mix with stops per car. Shareable picture. Built from the same OpenF1 stints as the strategy chart (lib/tyres.js, components/TyreUsage.js; raceStints now also returns the team name). Logic harness-tested, OpenF1 data unverified here.
+- Route: eas update --branch preview --platform android --message "1.39.0"
+
+## V1.40.0 (JS-only)
+- Season travel (Home > Explore, Search): great-circle kilometres from each round to the next, total, longest/shortest/average leg, times around the Earth, shareable summary. Uses Jolpica circuit coordinates (needs a connection once per season, then cached). A lower bound, stated in the screen (lib/travel.js).
+- Title picture: standings before and after any race of any season (position arrows, points gained, gap to the leader before/after, new leader flag), shareable. Uses seasonPoints (offline for past seasons without sprint points; online includes sprints). Ties are listed alphabetically with a note, because the official tie-break needs race results (lib/titleSwing.js).
+- Team-mate battles: type a driver, see every team-mate with 3+ shared races, career totals for grid slot, finishing order and points, expandable per season (screens/ExtraStats.js, offline, localTeammates). The Driver page already had per-season team-mate battles; this adds the career view per pair.
+- Route: eas update --branch preview --platform android --message "1.40.0"
+
+## V1.41.0 (JS-only)
+- Pinned pages (Settings > Pinned pages, up to 8): pinned screens appear as a chip strip at the top of Home (new Home card "Pinned pages", can be moved or hidden). The list of parameter-free screens now lives in lib/pages.js and is shared with Search.
+- Overtaking by circuit (Home > Explore, Search): average places finishers moved between grid and flag at every Grand Prix, since 2010 / 2000 / all time, most movement or most processional, with pole win rate and average winner start slot. It measures position change (includes pit-stop and strategy effects), stated on the screen. Offline (api/history.js passingByRace).
+- Compare two seasons: any two seasons side by side (races, different winners, cars per race, finish rate, champion and points, title margin, most wins/poles, top team). Offline (seasonFacts). Shareable.
+- True or false (Fun tab): swipe a statement card right for true, left for false (buttons too). Statements are generated from the offline history (race winners, pole sitters, champions, birth years, winner start slot), so every answer is checked against data (lib/tfFacts.js). Streak game, 10 earns a card pack.
+- Route: eas update --branch preview --platform android --message "1.41.0"
+
+## V1.42.0 (JS-only)
+- Season review (Home > Explore, Search): champion and margin, key numbers, how the title lead changed hands and when the champion took it for good, best comeback win, every winner with grid slot. Offline, seasons up to the newest in the history (api/history.js seasonStory, seasonFacts); shareable.
+- Debuts and farewells: drivers whose first or last season in the history is the chosen year, with debut race result, or last race and career wins. The newest history season has no farewells (nobody can be called finished yet); early seasons include one-off entries (api/history.js debutsOf).
+- Circuit comparison: two circuits side by side using the circuit pages' own data (lap length, turns, laps, distance, first GP, lap record), with bars; shareable.
+- Winner guess (Fun tab): a year and Grand Prix from 1990 to 2025, pick the winner out of four (distractors from the top-10 grid and finishers), optional team clue for half a point, 7+ of 8 earns a pack. Offline.
+- Route: eas update --branch preview --platform android --message "1.42.0"

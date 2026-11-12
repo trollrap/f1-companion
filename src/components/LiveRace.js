@@ -87,6 +87,7 @@ export default function LiveRace({ visible, race, laps, drivers, sc, wet, shower
     return () => clearInterval(h);
   }, [visible, play, done, speed, model, total, prompts, dPrompts, dir]);
   const answer = (v) => {
+    require('../lib/haptics').tap();
     const c = call; if (!c) return; let ok, t;
     if (c.kind === 'dir') { ok = v === c.truth; t = ok ? 'The replay backs the stewards.' : 'The replay tells a different story. Controversial.'; setStew((a) => [...a, ok]); setLog((l) => [{ k: 'flag', lap: c.lap, t: `Stewards: ${c.opts.find((o) => o[1] === v)?.[0]}. ${t}` }, ...l].slice(0, 40)); setCall(null); setPlay(true); return; }
     if (c.opts[0][1] === 'box') { ok = v === 'box' ? c.next - c.lap <= 3 : c.next - c.lap > 3; t = v === 'box' ? (ok ? 'Good call, the stop was due.' : 'Early stop, tyres had life in them.') : (ok ? 'Right to stay out, the window was later.' : 'Stayed out too long, lost time.'); }

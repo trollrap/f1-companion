@@ -39,10 +39,11 @@ export async function ensurePermission() {
 const leadText = (m) => (ui.lang === 'el' ? (m === 0 ? 'τώρα' : m >= 1440 ? `σε ${m / 1440} ημέρα` : m >= 60 ? `σε ${m / 60} ώρ.` : `σε ${m} λεπτά`) : (m === 0 ? 'now' : m >= 1440 ? `in ${m / 1440} day` : m >= 60 ? `in ${m / 60} h` : `in ${m} min`));
 // Every alert the preferences ask for: one per enabled session and per chosen lead time, only in the future.
 export function plannedAlerts(sessions, prefs, now = Date.now()) {
+  const q = require('./quiet');
   const out = [];
   sessions.filter((s) => prefs.types[s.session_name]).forEach((s) => {
     const start = Date.parse(s.date_start);
-    prefs.leads.forEach((lead) => { const at = start - lead * 60000; if (at > now) out.push({ session: s, lead, at, start }); });
+    prefs.leads.forEach((lead) => { const at = start - lead * 60000; if (at > now && !q.inQuiet(at, undefined, s.session_name)) out.push({ session: s, lead, at, start }); });
   });
   return out.sort((a, b) => a.at - b.at);
 }
@@ -50,7 +51,7 @@ export function plannedAlerts(sessions, prefs, now = Date.now()) {
 export async function scheduleSessionAlerts(meeting, sessions, prefs) {
   const n = mod(); if (!n) return 0;
   // clear only session alerts: football kickoff alerts (identifier foot-...) stay
-  try { const all = await n.getAllScheduledNotificationsAsync(); await Promise.all(all.filter((x) => !String(x.identifier).startsWith('foot-')).map((x) => n.cancelScheduledNotificationAsync(x.identifier))); } catch { await n.cancelAllScheduledNotificationsAsync(); }
+  try { const all = await n.getAllScheduledNotificationsAsync(); await Promise.all(all.filter((x) => !/^(foot|bday)-/.test(String(x.identifier))).map((x) => n.cancelScheduledNotificationAsync(x.identifier))); } catch { await n.cancelAllScheduledNotificationsAsync(); }
   const wanted = plannedAlerts(sessions, prefs);
   // "Results" alerts: a local alert shortly after a qualifying, sprint or race ends. It is set up in advance, so it arrives even when the app is closed
   // and Android never gets to run the background check. It says the classification should be up, because it is timed rather than read from a server.
@@ -75,6 +76,7 @@ export async function scheduleSessionAlerts(meeting, sessions, prefs) {
 // Shows a notification straight away (used for session results).
 export async function notifyNow(title, body) {
   const n = mod(); if (!n) return false;
+  if (await require('./quiet').quietNow()) return false;
   if (!(await ensurePermission())) return false;
   // A plain {channelId} trigger has no type, which newer expo-notifications versions can refuse without any visible error. A one-second interval
   // trigger is the same kind the working test button uses.
@@ -99,3 +101,18 @@ export async function scheduleKickoff(id, title, whenMs) {
 }
 export async function cancelKickoff(id) { const n = mod(); if (n) await n.cancelScheduledNotificationAsync(`foot-${id}`).catch(() => {}); }
 export async function hasKickoff(id) { const n = mod(); if (!n) return false; try { return (await n.getAllScheduledNotificationsAsync()).some((x) => x.identifier === `foot-${id}`); } catch { return false; } }
+
+// Birthday and win-anniversary reminders for favourite drivers: each is a one-off alert at 09:00 local time on its next date, identifier bday-...
+// `items` = [{ id, title, body, md: 'MM-DD' }]. Old bday alerts are cleared first, so un-favouriting a driver removes theirs on the next launch.
+export async function scheduleBirthdays(items) {
+  const n = mod(); if (!n) return 0;
+  try { const all = await n.getAllScheduledNotificationsAsync(); await Promise.all(all.filter((x) => String(x.identifier).startsWith('bday-')).map((x) => n.cancelScheduledNotificationAsync(x.identifier))); } catch {}
+  if (!items.length || !(await ensurePermission())) return 0;
+  let k = 0; const now = Date.now();
+  for (const it of items.slice(0, 40)) {
+    const [mo, da] = it.md.split('-').map(Number); let d = new Date(new Date().getFullYear(), mo - 1, da, 9, 0, 0, 0); if (d.getTime() <= now) d = new Date(d.getFullYear() + 1, mo - 1, da, 9, 0, 0, 0);
+    if (d.getMonth() !== mo - 1) continue; // 29 February in a non-leap year
+    try { await n.scheduleNotificationAsync({ identifier: `bday-${it.id}`, content: { title: it.title, body: it.body(d.getFullYear()) }, trigger: { type: n.SchedulableTriggerInputTypes.DATE, date: d, channelId: 'sessions' } }); k++; } catch {}
+  }
+  return k;
+}

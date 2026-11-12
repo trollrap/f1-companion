@@ -6,11 +6,11 @@ import Screen, { Card, Eyebrow, Note } from '../components/Screen';
 import { colors } from '../theme';
 import { norm } from '../lib/names';
 import { localAllDrivers, localAllTeams } from '../api/history';
+import { PAGES } from '../lib/pages';
 import { CIRCUITS } from '../data/circuits';
 import { RULES } from '../data/rules';
 
 // One search box over everything that is stored offline: every driver and team in the history, the 25 circuits, the rules text and the app's own pages.
-const PAGES = [['RaceDay', 'Race day', 'live, weather, order'], ['Replay', 'Season replay', 'what-if seasons'], ['TimeMachine', 'Time machine', 'watch past races'], ['FanZone', 'Fan zone', 'quiz, higher or lower'], ['Weekend', 'Race weekend', 'timeline and forecast'], ['Leaderboard', 'Leaderboard', 'prediction league'], ['Predict', 'Predictions', 'predict the next race'], ['Quiz', 'Quiz', 'test your knowledge'], ['Records', 'Records', 'records and history'], ['Grid', 'Next season grid', 'drivers and teams'], ['WhatIf', 'What if', 'championship what-if'], ['Settings', 'Settings', 'theme, text, backup']];
 const Row = ({ icon, title, sub, onPress }) => (
   <Pressable accessibilityRole="button" onPress={onPress} style={({ pressed }) => [{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10, borderTopWidth: 1, borderTopColor: colors.line }, pressed && { opacity: 0.7 }]}>
     <Ionicons name={icon} size={20} color={colors.accent} />

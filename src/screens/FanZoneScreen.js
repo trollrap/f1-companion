@@ -28,7 +28,7 @@ export default function FanZoneScreen() {
   useEffect(() => { load('fanDaily', { streak: 0, best: 0, last: null, scores: {} }).then(setSt); load('fanDotd', {}).then(setVotes); }, []);
   const done = st && st.last === today && st.scores[today] != null; const q = qs[i];
   const answer = (o) => { if (pick != null || !q) return; setPick(o); const np = pts + (o === q.a ? 1 : 0); setPts(np);
-    setTimeout(() => { if (i + 1 < qs.length) { setI(i + 1); setPick(null); } else { const streak = st.last === yesterday() ? st.streak + 1 : 1; const n = { streak, best: Math.max(st.best, streak), last: today, scores: { ...st.scores, [today]: np } }; setSt(n); save('fanDaily', n); setPick(null); } }, 900); };
+    setTimeout(() => { if (i + 1 < qs.length) { setI(i + 1); setPick(null); } else { const streak = st.last === yesterday() ? st.streak + 1 : 1; const n = { streak, best: Math.max(st.best, streak), last: today, scores: { ...st.scores, [today]: np } }; setSt(n); save('fanDaily', n); setPick(null); require('../lib/cards').awardPack(`fandaily:${today}`); } }, 900); };
   // driver of the day
   const doneRaces = (season.races || []).filter((r) => Date.parse(r.date_end) < Date.now()); const last = doneRaces[doneRaces.length - 1]; const round = last ? Number(last.round) : null;
   const res = useAsync(() => (round ? sessionResults(YEAR, round, 'results').catch(() => null) : Promise.resolve(null)), [round]);

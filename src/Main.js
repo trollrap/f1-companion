@@ -157,6 +157,32 @@ function Shell() {
               <Stack.Screen name="Predict" component={PredictScreen} options={{ title: tr('Predictions') }} />
               <Stack.Screen name="Search" getComponent={() => require('./screens/SearchScreen').default} options={{ title: 'Search' }} />
               <Stack.Screen name="TimeMachine" getComponent={() => require('./screens/TimeMachineScreen').default} options={{ title: 'Time machine' }} />
+              <Stack.Screen name="LightsOut" getComponent={() => require('./screens/GameScreens').LightsOutScreen} options={{ title: 'Lights out' }} />
+              <Stack.Screen name="GuessCircuit" getComponent={() => require('./screens/GameScreens').GuessCircuitScreen} options={{ title: 'Guess the circuit' }} />
+              <Stack.Screen name="MysteryDriver" getComponent={() => require('./screens/GameScreens').MysteryDriverScreen} options={{ title: 'Mystery driver' }} />
+              <Stack.Screen name="Cards" getComponent={() => require('./screens/CardScreens').default} options={{ title: 'Driver cards' }} />
+              <Stack.Screen name="Dominance" getComponent={() => require('./screens/InsightScreens').DominanceScreen} options={{ title: 'Dominance' }} />
+              <Stack.Screen name="TeamTrees" getComponent={() => require('./screens/InsightScreens').TeamTreesScreen} options={{ title: 'Team family trees' }} />
+              <Stack.Screen name="Rookies" getComponent={() => require('./screens/InsightScreens').RookieScreen} options={{ title: 'Rookie report' }} />
+              <Stack.Screen name="FlagQuiz" getComponent={() => require('./screens/ExtraGames').FlagQuizScreen} options={{ title: 'Flag quiz' }} />
+              <Stack.Screen name="YearReview" getComponent={() => require('./screens/ExtraGames').YearReviewScreen} options={{ title: 'Year in review' }} />
+              <Stack.Screen name="GridDrops" getComponent={() => require('./screens/GridDropsScreen').default} options={{ title: 'Grid penalties' }} />
+              <Stack.Screen name="RadioGame" getComponent={() => require('./screens/RadioGame').RadioGameScreen} options={{ title: 'Team radio' }} />
+              <Stack.Screen name="PitStop" getComponent={() => require('./screens/MoreGames').PitStopScreen} options={{ title: 'Pit stop timer' }} />
+              <Stack.Screen name="NumberQuiz" getComponent={() => require('./screens/MoreGames').NumberQuizScreen} options={{ title: 'Number quiz' }} />
+              <Stack.Screen name="CareerDuel" getComponent={() => require('./screens/MoreGames').CareerDuelScreen} options={{ title: 'Career duel' }} />
+              <Stack.Screen name="BuildGrid" getComponent={() => require('./screens/MoreGames').BuildGridScreen} options={{ title: 'Build the grid' }} />
+              <Stack.Screen name="Travel" getComponent={() => require('./screens/ExtraStats').TravelScreen} options={{ title: 'Season travel' }} />
+              <Stack.Screen name="TitleSwing" getComponent={() => require('./screens/ExtraStats').TitleSwingScreen} options={{ title: 'Title picture' }} />
+              <Stack.Screen name="TeamMates" getComponent={() => require('./screens/ExtraStats').TeamMateScreen} options={{ title: 'Team-mate battles' }} />
+              <Stack.Screen name="Passing" getComponent={() => require('./screens/SeasonStats').PassingScreen} options={{ title: 'Overtaking by circuit' }} />
+              <Stack.Screen name="CompareSeasons" getComponent={() => require('./screens/SeasonStats').CompareSeasonsScreen} options={{ title: 'Compare seasons' }} />
+              <Stack.Screen name="TrueFalse" getComponent={() => require('./screens/ExtraGames').TrueFalseScreen} options={{ title: 'True or false' }} />
+              <Stack.Screen name="SeasonReview" getComponent={() => require('./screens/ReviewScreens').SeasonReviewScreen} options={{ title: 'Season review' }} />
+              <Stack.Screen name="Debuts" getComponent={() => require('./screens/ReviewScreens').DebutsScreen} options={{ title: 'Debuts and farewells' }} />
+              <Stack.Screen name="CircuitCompare" getComponent={() => require('./screens/ReviewScreens').CircuitCompareScreen} options={{ title: 'Circuit comparison' }} />
+              <Stack.Screen name="WinnerGuess" getComponent={() => require('./screens/MoreGames').WinnerGuessScreen} options={{ title: 'Winner guess' }} />
+              <Stack.Screen name="Reliability" getComponent={() => require('./screens/ReliabilityScreen').default} options={{ title: 'Reliability' }} />
               <Stack.Screen name="Replay" getComponent={() => require('./screens/ReplayScreen').default} options={{ title: 'Season replay' }} />
               <Stack.Screen name="FanZone" getComponent={() => require('./screens/FanZoneScreen').default} options={{ title: 'Fan zone' }} />
               <Stack.Screen name="Teammates" getComponent={() => require('./screens/TeammatesScreen').default} options={{ title: 'Team-mate battles' }} />

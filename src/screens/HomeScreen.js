@@ -11,10 +11,15 @@ import Grad, { Scrim } from '../components/Grad';
 import { SprintBadge } from '../components/Badge';
 import { useSeason, useNow } from '../hooks/useSeason';
 import { useAsync } from '../hooks/useAsync';
-import { driverStandings, constructorStandings } from '../api/jolpica';
+import { driverStandings, constructorStandings, lastRace } from '../api/jolpica';
 import { usePrefs } from '../hooks/usePrefs';
 import { TeamBadge } from '../components/Shared';
 import { homeOrder } from '../lib/homeLayout';
+import { PAGES } from '../lib/pages';
+import RaceRecap from '../components/RaceRecap';
+import ShareCard from '../components/ShareCard';
+import { statOfDay } from '../lib/statOfDay';
+import { today } from '../lib/kv';
 import LastSession from '../components/LastSession';
 import { YEAR } from '../api/openf1';
 import { colors, alpha } from '../theme';
@@ -35,6 +40,7 @@ export default function HomeScreen({ navigation }) {
   const favs = useFavs(); const tc = useTeamColor();
   const stand = useAsync(() => driverStandings(YEAR), []);
   const tstand = useAsync(() => constructorStandings(YEAR), []);
+  const lastR = useAsync(() => lastRace(YEAR).catch(() => null), []);
   const { prefs, setOpt } = usePrefs(); const [mineView, setMineView] = useState(prefs.opts.homeFirst === 'teams' ? 'teams' : 'drivers');
   const [slow, setSlow] = useState(false);
   useEffect(() => { if (season.status !== 'loading') { setSlow(false); return; } const t = setTimeout(() => setSlow(true), 8000); return () => clearTimeout(t); }, [season.status]);
@@ -50,7 +56,17 @@ export default function HomeScreen({ navigation }) {
   // The card shows the chosen kind; when only one kind has favourites it shows that one. The swap button appears when both exist.
   const both = mine.length > 0 && mineT.length > 0; const showTeams = mineT.length > 0 && (mineView === 'teams' || mine.length === 0);
   const openDriver = (r) => navigation.navigate('Driver', { driverId: r.driverId, name: r.name, first: r.first, last: r.last, teamId: r.teamId, team: r.team });
+  const stat = (() => { try { return statOfDay(today(), rows); } catch { return null; } })();
+  const pins = (prefs.opts.pins || []).map((r) => PAGES.find((x) => x[0] === r)).filter(Boolean);
   const P = {
+    pins: pins.length ? (
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+        {pins.map(([route, title]) => (<Pressable key={route} accessibilityRole="button" onPress={() => navigation.navigate(route)} style={({ pressed }) => [{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 20, backgroundColor: alpha(colors.accent, 0.16), borderWidth: 1, borderColor: alpha(colors.accent, 0.4) }, pressed && { opacity: 0.75 }]}><Ionicons name="pin" size={14} color={colors.accent} /><Text style={{ color: colors.fg, fontWeight: '800', fontSize: 14 }}>{title}</Text></Pressable>))}
+      </ScrollView>
+    ) : null,
+    stat: stat ? (
+      <ShareCard title={`${stat.tag}: ${stat.text}`}><Card><Eyebrow>{`Stat of the day · ${stat.tag}`}</Eyebrow><Text style={{ color: colors.fg, fontSize: 17, lineHeight: 24, marginTop: 6 }}>{stat.text}</Text><Text style={{ color: colors.muted, fontSize: 12, marginTop: 8 }}>{stat.src}</Text></Card></ShareCard>
+    ) : null,
     next: (
       <View>
       {next ? (
@@ -80,7 +96,7 @@ export default function HomeScreen({ navigation }) {
       <View>
         <Eyebrow>Explore</Eyebrow>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingTop: 10 }}>
-          {[['Search', 'Search', 'search', 'Drivers, teams, circuits, rules', colors.accent], ['RaceDay', 'Race day', 'pulse', 'Live session, weather, order', colors.red], ['TimeMachine', 'Time machine', 'time', 'Watch any past race lap by lap', colors.gold], ['Replay', 'Season replay', 'play-back', 'Any past season, your rules', colors.accent], ['FanZone', 'Fan zone', 'happy', 'Daily quiz, driver of the day', colors.gold], ['Weekend', 'Race weekend', 'time', 'Timeline, weather, what to watch', colors.accent], ['Leaderboard', 'Leaderboard', 'podium', 'Predictions vs friends', colors.gold], ['Quiz', 'Quiz', 'help-circle', 'Test your F1 knowledge', colors.purple], ['Records', 'Records', 'stats-chart', 'On this day, records, duels', '#2CB67D'], ['FunProfile', 'Fantasy', 'sparkles', 'Your own seasons', '#4DA3FF']].filter((x) => x[0] !== 'FunProfile').map(([route, title, icon, sub, c], i) => (
+          {[['SeasonReview', 'Season review', 'newspaper', 'A year in numbers', colors.accent], ['Debuts', 'Debuts and farewells', 'person-add', 'Who joined and left', colors.good], ['CircuitCompare', 'Circuit compare', 'git-compare', 'Two tracks side by side', colors.gold], ['Passing', 'Overtaking', 'swap-horizontal', 'Where the order shuffles', colors.red], ['CompareSeasons', 'Compare seasons', 'git-compare', 'Two years side by side', colors.gold], ['TitleSwing', 'Title picture', 'trending-up', 'Standings after each race', colors.gold], ['TeamMates', 'Team-mate battles', 'people', 'Career head-to-head', colors.accent], ['Travel', 'Season travel', 'airplane', 'Kilometres between rounds', colors.good], ['GridDrops', 'Grid penalties', 'arrow-down-circle', 'Who started further back', colors.red], ['Dominance', 'Dominance', 'flame', 'Most dominant seasons', colors.gold], ['TeamTrees', 'Team trees', 'git-branch', 'Every team\'s history', colors.accent], ['Rookies', 'Rookie report', 'school', 'How the rookies are doing', colors.good], ['Reliability', 'Reliability', 'construct', 'Retirements by team', colors.accent], ['Cards', 'Driver cards', 'albums', 'Collect and open packs', colors.gold], ['MysteryDriver', 'Mystery driver', 'help-circle', 'A new driver every day', colors.accent], ['Search', 'Search', 'search', 'Drivers, teams, circuits, rules', colors.accent], ['RaceDay', 'Race day', 'pulse', 'Live session, weather, order', colors.red], ['TimeMachine', 'Time machine', 'time', 'Watch any past race lap by lap', colors.gold], ['Replay', 'Season replay', 'play-back', 'Any past season, your rules', colors.accent], ['FanZone', 'Fan zone', 'happy', 'Daily quiz, driver of the day', colors.gold], ['Weekend', 'Race weekend', 'time', 'Timeline, weather, what to watch', colors.accent], ['Leaderboard', 'Leaderboard', 'podium', 'Predictions vs friends', colors.gold], ['Quiz', 'Quiz', 'help-circle', 'Test your F1 knowledge', colors.purple], ['Records', 'Records', 'stats-chart', 'On this day, records, duels', '#2CB67D'], ['FunProfile', 'Fantasy', 'sparkles', 'Your own seasons', '#4DA3FF']].filter((x) => x[0] !== 'FunProfile').map(([route, title, icon, sub, c], i) => (
             <Pressable key={route} onPress={() => navigation.navigate(route)} style={({ pressed }) => pressed && { opacity: 0.8, transform: [{ scale: 0.98 }] }}>
               <Grad color={c} from={0.5} to={0.06} radius={16} style={{ width: 168, height: 112, padding: 12, justifyContent: 'space-between' }}>
                 <Ionicons name={icon} size={26} color={c} />
@@ -120,7 +136,7 @@ export default function HomeScreen({ navigation }) {
                     {photo ? <Scrim dir="v" from={0} to={0.82} style={{ top: '35%' }} /> : null}
                     <View style={{ flex: 1, padding: 12, justifyContent: 'space-between' }}>
                       <Text style={{ fontFamily: 'display', fontWeight: '800', fontSize: 30, color: colors.fg }}>P{r.position}</Text>
-                      <View><DriverName first={r.first} last={r.last} size={19} /><Text style={{ color: colors.onSoft, fontSize: 14 }}>{r.points} pts</Text></View>
+                      <View><DriverName first={r.first} last={r.last} size={19} /><Text style={{ color: colors.onSoft, fontSize: 14 }}>{r.points} pts</Text>{(() => { const x = lastR.v?.rows?.find((q) => q.driverId === r.driverId); return x ? <Text style={{ color: colors.onSoft, fontSize: 12, opacity: 0.9 }} numberOfLines={1}>{`Last race: ${x.positionText && /^[A-Z]$/.test(x.positionText) ? (x.status || 'Out') : `P${x.position}`}`}</Text> : null; })()}</View>
                     </View>
                   </Grad>
                 </Pressable>); })}
@@ -137,6 +153,7 @@ export default function HomeScreen({ navigation }) {
 
       </View>
     ),
+    recap: lastR.v ? <RaceRecap race={lastR.v} standings={rows} /> : null,
     standings: (
       <Card>
         <Eyebrow>Driver standings</Eyebrow>

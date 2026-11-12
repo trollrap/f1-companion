@@ -246,6 +246,7 @@ export function QuizScreen() {
   const q = qs[i]; const finished = mode !== 'menu' && i >= qs.length;
   const answer = (o) => { if (pick != null || !q) return; setPick(o); LayoutAnimation.configureNext(LayoutAnimation.create(180, 'easeInEaseOut', 'opacity')); if (o === q.a) { const quick = Date.now() - lastRef.current < 6000; setPts((p) => p + 10 + (quick ? 5 : 0) + Math.min(streak, 5)); setStreak((s) => { const n = s + 1; setBest((b) => Math.max(b, n)); return n; }); } else setStreak(0); };
   const nextQ = () => { setPick(null); setI((x) => x + 1); lastRef.current = Date.now(); };
+  useEffect(() => { if (finished && pts >= 50) require('../lib/cards').awardPack(`quiz:${new Date().toDateString()}`); }, [finished]);
   useEffect(() => { if (finished && pts > hi) { setHi(pts); try { require('@react-native-async-storage/async-storage').default.setItem('quizBest', String(pts)); } catch {} } }, [finished]);
   const faces = cur().filter((id) => driverPhoto(id)).length >= 6;
   if (mode === 'menu') return (

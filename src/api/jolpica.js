@@ -294,3 +294,20 @@ export async function allConstructors() {
   const rows = await pageAll('/constructors.json', (d) => d.ConstructorTable.Constructors, 30 * DAY, 6);
   return rows.map((c) => ({ teamId: c.constructorId, name: c.name, nationality: c.nationality }));
 }
+
+// Every result line of a season with its status text (for the reliability report). Past seasons come from the offline history.
+export async function seasonStatuses(year) {
+  if (LH.localYear(year)) { const l = LH.localSeasonStatuses(year); if (l) return l; }
+  const rows = await pageAll(`/${year}/results.json`, resultRows, ttlFor(year, HOUR), 6);
+  return rows.map(({ race, r }) => ({ round: Number(race.round), race: race.raceName, teamId: r.Constructor.constructorId, team: r.Constructor.name, driverId: r.Driver.driverId, last: r.Driver.familyName, status: r.status || '', finished: /^(Finished|\+\d+ Laps?)$/i.test(r.status || '') }));
+}
+
+// Qualifying position and race grid slot for every driver in a season (for the grid-drops tracker). Online only, qualifying is not in the offline history.
+export async function gridData(year) {
+  const qp = pageAll(`/${year}/qualifying.json`, qualiRows, ttlFor(year, HOUR), 6); const rp = pageAll(`/${year}/results.json`, resultRows, ttlFor(year, HOUR), 6);
+  const [qr, rr] = await Promise.all([qp, rp]);
+  return {
+    quali: qr.map(({ race, r }) => ({ round: Number(race.round), driverId: r.Driver.driverId, first: r.Driver.givenName, last: r.Driver.familyName, team: r.Constructor.name, teamId: r.Constructor.constructorId, pos: Number(r.position) })),
+    results: rr.map(({ race, r }) => ({ round: Number(race.round), race: race.raceName, driverId: r.Driver.driverId, grid: Number(r.grid) })),
+  };
+}

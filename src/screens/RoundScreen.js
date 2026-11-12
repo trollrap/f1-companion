@@ -19,6 +19,7 @@ import NextSession from '../components/NextSession';
 import Strategy from '../components/Strategy';
 import { ui } from '../lib/motion';
 import RaceStats from '../components/RaceStats';
+import { RacePace, QualiGaps } from '../components/PaceCharts';
 import { forecastFor } from '../lib/forecast';
 import { sessionResults, driverStandings } from '../api/jolpica';
 import { norm } from '../lib/names';
@@ -152,6 +153,8 @@ export default function RoundScreen({ route, navigation }) {
       {(cur === 'Race' || cur === 'Sprint') && !isGrid && sessions.find((x) => x.session_name === cur && x.session_key) ? (
         showStrat ? <Strategy key={cur} sessionKey={sessions.find((x) => x.session_name === cur).session_key} onHide={() => setShowStrat(false)} />
           : <Press onPress={() => setShowStrat(true)}><View style={{ height: 48, borderRadius: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: colors.accentSoft, borderWidth: 1, borderColor: colors.accent }}><Ionicons name="color-fill-outline" size={18} color={colors.accent} /><Text style={{ color: colors.fg, fontWeight: '700', fontSize: 16 }}>{`Show tire strategy (${cur.toLowerCase()})`}</Text></View></Press>) : null}
+      {cur === 'Race' && !isGrid && sessions.find((x) => x.session_name === 'Race') ? <RacePace sessionKey={sessions.find((x) => x.session_name === 'Race').session_key} /> : null}
+      {/^(Sprint )?Qualifying$|^Sprint Shootout$/.test(cur || '') && !isGrid && sessions.find((x) => x.session_name === cur) ? <QualiGaps key={cur} sessionKey={sessions.find((x) => x.session_name === cur).session_key} /> : null}
       {cur === 'Race' && !isGrid && raceRows && raceRows.length ? <RaceStats rows={raceRows} sessionKey={sessions.find((x) => x.session_name === 'Race')?.session_key} colorOf={tc} /> : null}
       {!done && sessions.length && wx.v?.by && Object.keys(wx.v.by).length ? (
         <Card><Eyebrow>Forecast</Eyebrow>

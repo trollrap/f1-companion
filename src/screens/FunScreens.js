@@ -22,6 +22,30 @@ const realNumbers = (meta) => Object.entries(meta?.drivers || {}).map(([id, d]) 
 const dash = (v) => (v == null ? '—' : String(v));
 export const nameParts = (full) => { const [first, ...rest] = String(full || '').trim().split(/\s+/); return { first: first || '', last: rest.join(' ') }; };
 
+/* ------------------------------------------------------------------ Games, in horizontal rows */
+const GAME_ROWS = [
+  ['Daily games', [['Mystery', 'Mystery driver', 'Guess the driver, daily', 'help-circle', 'MysteryDriver'], ['Circuit', 'Guess the circuit', 'Clues, fewer is better', 'map', 'GuessCircuit'], ['Quiz', 'F1 quiz', 'Ten questions', 'school', 'Quiz'], ['Fan', 'Fan zone', 'Daily quiz and more', 'happy', 'FanZone']]],
+  ['Reflexes and quizzes', [['Lights', 'Lights out', 'Test your reaction', 'speedometer', 'LightsOut'], ['Pit', 'Pit stop timer', 'Four wheels, fast', 'timer', 'PitStop'], ['Flags', 'Flag quiz', 'Guess the country', 'flag', 'FlagQuiz'], ['Radio', 'Team radio', 'Who said it?', 'mic', 'RadioGame'], ['TF', 'True or false', 'Swipe on facts', 'thumbs-up', 'TrueFalse'], ['Win', 'Winner guess', 'Who won this GP?', 'ribbon', 'WinnerGuess'], ['Number', 'Number quiz', 'Driver and number', 'keypad', 'NumberQuiz'], ['Duel', 'Career duel', 'Who has more?', 'flash', 'CareerDuel'], ['Grid', 'Build the grid', 'Right seat, right team', 'grid', 'BuildGrid'], ['Year', 'Year in review', 'Your year in the app', 'stats-chart', 'YearReview']]],
+  ['Predict and play', [['Predict', 'Predictions', 'Call the next race', 'trophy', 'Predict'], ['Board', 'Leaderboard', 'Friends and streaks', 'podium', 'Leaderboard'], ['Cards', 'Driver cards', 'Collect and open packs', 'albums', 'Cards']]],
+  ['What if', [['Replay', 'Season replay', 'Change the points', 'git-compare', 'Replay'], ['Dom', 'Dominance', 'Most dominant seasons', 'flame', 'Dominance'], ['Time', 'Time machine', 'Watch a past race', 'time', 'TimeMachine'], ['WhatIf', 'Title what-if', 'Who can still win?', 'calculator', 'WhatIf']]],
+];
+function GameRows({ navigation }) {
+  return (
+    <View style={{ gap: 14 }}>
+      {GAME_ROWS.map(([title, items]) => (
+        <View key={title} style={{ gap: 8 }}>
+          <Eyebrow>{title}</Eyebrow>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingRight: 8 }}>
+            {items.map(([k, name, sub, icon, route]) => (
+              <Pressable key={k} accessibilityRole="button" accessibilityLabel={`${name}. ${sub}`} onPress={() => navigation.navigate(route)} style={({ pressed }) => [{ width: 150, padding: 14, borderRadius: 18, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.line, gap: 6 }, pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] }]}>
+                <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: alpha(colors.accent, 0.18), alignItems: 'center', justifyContent: 'center' }}><Ionicons name={icon} size={22} color={colors.accent} /></View>
+                <Text style={{ color: colors.fg, fontSize: 16, fontWeight: '800' }} numberOfLines={1}>{name}</Text>
+                <Text style={{ color: colors.muted, fontSize: 12 }} numberOfLines={2}>{sub}</Text>
+              </Pressable>))}
+          </ScrollView>
+        </View>))}
+    </View>);
+}
 /* ------------------------------------------------------------------ Fun home (tab) */
 export function FunHome({ navigation }) {
   const fun = useFun(); const { prefs } = usePrefs(); const p = fun.profile; const stats = profileStats(p, fun.fantasies);
@@ -29,6 +53,7 @@ export function FunHome({ navigation }) {
     <Screen>
       <Text style={{ color: colors.fg, fontSize: 24, fontWeight: '800', fontStyle: 'italic' }}>Fun</Text>
       <Note>Just for fun: nothing here touches the real data.</Note>
+      <GameRows navigation={navigation} />
       <Press onPress={() => navigation.navigate('FunProfile')}>
         <Grad color={p?.color || colors.accent} from={0.6} to={0.08} radius={18} border={0.5} style={{ height: 138 }}>
           {p?.photo ? <View style={{ position: 'absolute', right: -6, bottom: -6 }}><Avatar uri={p.photo} size={150} radius={20} color={p.color} /></View> : null}
