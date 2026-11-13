@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { View, Pressable, ScrollView } from 'react-native';
+import { View, Pressable, Animated, Easing } from 'react-native';
 import { Text } from '../components/Text';
 import Screen, { Card, Eyebrow, Note } from '../components/Screen';
 import { Btn } from '../components/FunBits';
@@ -12,6 +12,7 @@ import { driverStandings } from '../api/jolpica';
 import { YEAR } from '../api/openf1';
 import { seasonGrid, localAllDrivers, localCareer, titlesOf, HISTORY_UPTO, historyYears, roundsOf, raceRowsOf } from '../api/history';
 import * as hap from '../lib/haptics';
+import { CIRCUITS } from '../data/circuits';
 
 const shuffle = (a, r) => { const x = [...a]; for (let k = x.length - 1; k > 0; k--) { const j = Math.floor(r() * (k + 1)); [x[k], x[j]] = [x[j], x[k]]; } return x; };
 const optStyle = (right, wrong) => ({ padding: 16, borderRadius: 14, borderWidth: 1, borderColor: right ? colors.good : wrong ? colors.red : colors.line, backgroundColor: right ? alpha(colors.good, 0.18) : wrong ? alpha(colors.red, 0.18) : colors.card });
@@ -177,5 +178,84 @@ export function WinnerGuessScreen() {
         {hint ? <Text style={{ color: colors.gold, marginTop: 8, fontWeight: '700' }}>{`Clue: the winner drove for ${cur.team}.`}</Text> : !pick ? <Pressable accessibilityRole="button" onPress={() => setHint(true)} style={{ marginTop: 8 }}><Text style={{ color: colors.accent, fontWeight: '800' }}>Show the team clue (half a point)</Text></Pressable> : null}</Card>
       {cur.opts.map((o) => <Pressable key={o} accessibilityRole="button" onPress={() => answer(o)} style={({ pressed }) => [optStyle(pick && o === cur.ans, pick === o && o !== cur.ans), pressed && { opacity: 0.8 }]}><Text style={{ color: colors.fg, fontSize: 17, fontWeight: '700' }}>{o}</Text></Pressable>)}
       {pick ? <Note>{`${cur.ans} won it, starting from P${cur.grid}.`}</Note> : null}
+    </Screen>);
+}
+
+// ---------- Closest number: slide to guess a career total ----------
+const CN = [['races', 'Grand Prix starts', 450], ['wins', 'race wins', 120], ['podiums', 'podium finishes', 220]];
+function makeGuessRounds(r) {
+  const pool = localAllDrivers().filter((d) => d.last_year && d.last_year >= 1990); const out = [];
+  for (let t = 0; t < 300 && out.length < 5; t++) {
+    const d = pool[Math.floor(r() * pool.length)]; const m = CN[Math.floor(r() * CN.length)]; const c = localCareer(d.driverId); if (!c || c.races < 40) continue;
+    const v = c[m[0]]; if (!Number.isFinite(v) || (m[0] !== 'races' && v < 2) || out.some((o) => o.d.driverId === d.driverId)) continue; out.push({ d, key: m[0], label: m[1], max: m[2], ans: v });
+  }
+  return out;
+}
+const pts = (g, a, max) => Math.max(0, Math.round(100 - (100 * Math.abs(g - a)) / Math.max(a * 0.6, 8)));
+export function ClosestNumberScreen() {
+  const [seed, setSeed] = useState(1); const rounds = useMemo(() => { try { return makeGuessRounds(rngOf(seedOf(`cn${seed}${Date.now()}`))); } catch { return []; } }, [seed]);
+  const [i, setI] = useState(0); const [g, setG] = useState(0); const [res, setRes] = useState(null); const [total, setTotal] = useState(0); const [best, setBest] = useState(0); const [got, setGot] = useState(false); const [w, setW] = useState(0);
+  useEffect(() => { kvGet('cn:best', 0).then(setBest); }, []);
+  if (rounds.length < 3) return <Screen header={false}><Note>Not enough career data to make a round.</Note></Screen>;
+  const n = rounds.length; const done = i >= n; const cur = rounds[Math.min(i, n - 1)];
+  const set = (v) => { if (res) return; setG(Math.max(0, Math.min(cur.max, Math.round(v)))); };
+  const lock = () => { if (res) return; const p = pts(g, cur.ans, cur.max); setRes({ p }); p >= 80 ? hap.good() : hap.tap(); setTotal((t) => t + p); };
+  const next = async () => { const nt = total; setRes(null); setG(0); if (i + 1 >= n) { if (nt > best) { setBest(nt); kvSet('cn:best', nt); } if (nt >= 350) setGot(await awardPack('cn:350')); } setI(i + 1); };
+  const again = () => { setSeed((x) => x + 1); setI(0); setTotal(0); setG(0); setRes(null); setGot(false); };
+  if (done) return (<Screen header={false}><Card><Eyebrow>Closest number</Eyebrow><Text style={{ color: colors.fg, fontSize: 44, fontWeight: '900', marginTop: 6 }}>{`${total} / ${n * 100}`}</Text><Text style={{ color: colors.muted, marginTop: 4 }}>{`Best: ${Math.max(best, total)}`}</Text><View style={{ marginTop: 14 }}><Btn onPress={again}>Play again</Btn></View></Card>{got ? <Note>You earned a card pack. Open it in Cards.</Note> : null}<Note>350 points or more earns a card pack.</Note></Screen>);
+  return (
+    <Screen header={false}>
+      <Card><Eyebrow>{`Driver ${i + 1} of ${n}  ·  ${total} points`}</Eyebrow><Text style={{ color: colors.fg, fontSize: 22, fontWeight: '900', marginTop: 10 }}>{cur.d.name}</Text><Text style={{ color: colors.muted, marginTop: 4 }}>{`How many ${cur.label} in his F1 career?`}</Text>
+        <Text style={{ color: colors.fg, fontSize: 48, fontWeight: '900', textAlign: 'center', marginTop: 14 }}>{g}</Text>
+        <View onLayout={(e) => setW(e.nativeEvent.layout.width)} onStartShouldSetResponder={() => !res} onMoveShouldSetResponder={() => !res} onResponderGrant={(e) => w && set((e.nativeEvent.locationX / w) * cur.max)} onResponderMove={(e) => w && set((e.nativeEvent.locationX / w) * cur.max)} accessibilityRole="adjustable" accessibilityLabel="Guess" style={{ height: 44, justifyContent: 'center' }}>
+          <View pointerEvents="none" style={{ height: 8, borderRadius: 4, backgroundColor: alpha(colors.fg, 0.15) }}><View style={{ width: `${(g / cur.max) * 100}%`, height: 8, borderRadius: 4, backgroundColor: colors.accent }} /></View>
+        </View>
+        <View style={{ flexDirection: 'row', gap: 8, justifyContent: 'center' }}>{[-10, -1, 1, 10].map((d) => (<Pressable key={d} accessibilityRole="button" onPress={() => set(g + d)} style={({ pressed }) => [{ paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.card }, pressed && { opacity: 0.7 }]}><Text style={{ color: colors.fg, fontWeight: '800' }}>{d > 0 ? `+${d}` : d}</Text></Pressable>))}</View>
+        {res ? <Text style={{ color: res.p >= 80 ? colors.good : colors.fg, fontWeight: '800', textAlign: 'center', marginTop: 12 }}>{`Answer: ${cur.ans}. You scored ${res.p}.`}</Text> : null}
+      </Card>
+      {res ? <Btn onPress={next}>{i + 1 >= n ? 'Finish' : 'Next driver'}</Btn> : <Btn onPress={lock}>Lock in</Btn>}
+      <Note>Career totals from the offline history up to the last finished season. Drag the bar or use the buttons.</Note>
+    </Screen>);
+}
+
+// ---------- Lap tapper: tap in the apex zone of every corner; your lap is the lap record plus the time you lose ----------
+const secOf = (t) => { const m = String(t || '').match(/^(\d+):(\d+\.\d+)$/); return m ? Number(m[1]) * 60 + Number(m[2]) : null; };
+const fmtLap = (s) => `${Math.floor(s / 60)}:${(s % 60).toFixed(3).padStart(6, '0')}`;
+export function LapTapperScreen() {
+  const circuits = useMemo(() => CIRCUITS.filter((c) => c.lapRecord && secOf(c.lapRecord.time) != null), []);
+  const [key, setKey] = useState(circuits[0] ? circuits[0].key : null); const c = circuits.find((x) => x.key === key) || circuits[0];
+  const turns = c ? Math.min(14, Math.max(5, Number((c.stats.find((s) => s[0] === 'Turns') || [])[1]) || 10)) : 10;
+  const [corner, setCorner] = useState(-1); const [lost, setLost] = useState(0); const [last, setLast] = useState(null); const [bestMap, setBestMap] = useState({}); const [got, setGot] = useState(false);
+  const [w, setW] = useState(0); const anim = useRef(new Animated.Value(0)).current; const t0 = useRef(0); const period = useRef(1100); const center = useRef(0.5); const loop = useRef(null);
+  useEffect(() => { kvGet('lap:best', {}).then(setBestMap); return () => { if (loop.current) loop.current.stop(); }; }, []);
+  const begin = (k) => { const r = Math.random; center.current = 0.2 + r() * 0.6; period.current = 800 + Math.floor(r() * 700); if (loop.current) loop.current.stop(); anim.setValue(0); t0.current = Date.now();
+    loop.current = Animated.loop(Animated.sequence([Animated.timing(anim, { toValue: 1, duration: period.current / 2, easing: Easing.linear, useNativeDriver: true }), Animated.timing(anim, { toValue: 0, duration: period.current / 2, easing: Easing.linear, useNativeDriver: true })])); loop.current.start(); setCorner(k); };
+  const start = () => { setLost(0); setLast(null); setGot(false); begin(0); };
+  const tap = async () => {
+    if (corner < 0 || corner >= turns) return; const ph = ((Date.now() - t0.current) % period.current) / period.current; const pos = ph < 0.5 ? ph * 2 : 2 - ph * 2; const err = Math.abs(pos - center.current);
+    const pen = Math.min(0.45, Math.max(0, err - 0.03) * 1.3); const nl = lost + pen; setLost(nl); setLast({ err, pen }); err < 0.06 ? hap.good() : hap.tap();
+    if (corner + 1 >= turns) { if (loop.current) loop.current.stop(); setCorner(turns); const lap = secOf(c.lapRecord.time) + nl; const bm = { ...bestMap }; if (bm[c.key] == null || lap < bm[c.key]) { bm[c.key] = lap; setBestMap(bm); kvSet('lap:best', bm); } if (nl <= 2.0) setGot(await awardPack('lap:2')); } else begin(corner + 1); };
+  if (!c) return <Screen header={false}><Note>No circuit data.</Note></Screen>;
+  const rec = secOf(c.lapRecord.time); const tx = anim.interpolate({ inputRange: [0, 1], outputRange: [0, Math.max(0, w - 14)] });
+  return (
+    <Screen header={false}>
+      <Card><Eyebrow>Lap tapper</Eyebrow><View style={{ marginTop: 10 }}><Dropdown value={key} options={circuits.map((x) => [x.key, x.name])} onChange={(v) => { setKey(v); setCorner(-1); setLost(0); setLast(null); if (loop.current) loop.current.stop(); }} prefix="Circuit" /></View>
+        <Note>{`${c.name}: ${turns} corners. Tap when the marker is inside the green apex zone. Every miss costs time on top of the lap record (${c.lapRecord.time}, ${c.lapRecord.driver}, ${c.lapRecord.year}).`}</Note></Card>
+      <Card>
+        {corner >= 0 && corner < turns ? (<>
+          <Text style={{ color: colors.fg, fontWeight: '900', fontSize: 18 }}>{`Corner ${corner + 1} of ${turns}`}</Text>
+          <View onLayout={(e) => setW(e.nativeEvent.layout.width)} style={{ height: 40, marginTop: 14, borderRadius: 10, backgroundColor: alpha(colors.fg, 0.1), justifyContent: 'center', overflow: 'hidden' }}>
+            <View style={{ position: 'absolute', left: `${(center.current - 0.06) * 100}%`, width: '12%', top: 0, bottom: 0, backgroundColor: alpha(colors.good, 0.5) }} />
+            <Animated.View style={{ width: 6, height: 40, borderRadius: 3, backgroundColor: colors.fg, transform: [{ translateX: tx }] }} />
+          </View>
+          <Pressable accessibilityRole="button" accessibilityLabel="Tap at the apex" onPressIn={tap} style={({ pressed }) => [{ marginTop: 14, paddingVertical: 26, borderRadius: 16, alignItems: 'center', backgroundColor: alpha(colors.accent, 0.25), borderWidth: 1, borderColor: colors.accent }, pressed && { opacity: 0.7 }]}><Text style={{ color: colors.fg, fontWeight: '900', fontSize: 20 }}>TAP</Text></Pressable>
+          {last ? <Text style={{ color: last.pen < 0.02 ? colors.good : colors.muted, textAlign: 'center', marginTop: 10 }}>{last.pen < 0.02 ? 'Perfect apex.' : `Lost ${last.pen.toFixed(2)} s`}</Text> : null}
+          <Text style={{ color: colors.muted, textAlign: 'center', marginTop: 4 }}>{`Time lost so far: ${lost.toFixed(2)} s`}</Text>
+        </>) : corner >= turns ? (<>
+          <Text style={{ color: colors.muted, fontWeight: '800' }}>YOUR LAP</Text><Text style={{ color: colors.fg, fontSize: 40, fontWeight: '900' }}>{fmtLap(rec + lost)}</Text>
+          <Text style={{ color: colors.muted }}>{`${lost.toFixed(2)} s off the lap record. Best here: ${bestMap[c.key] != null ? fmtLap(bestMap[c.key]) : '-'}`}</Text></>) : <Text style={{ color: colors.muted }}>Ready when you are.</Text>}
+        {corner < 0 || corner >= turns ? <View style={{ marginTop: 14 }}><Btn onPress={start}>{corner >= turns ? 'Another lap' : 'Start lap'}</Btn></View> : null}
+      </Card>
+      {got ? <Note>Within 2 seconds of the record. You earned a card pack. Open it in Cards.</Note> : <Note>Finish within 2.0 s of the lap record to earn a card pack. The record is a qualifying-style benchmark, so this is a game, not a lap simulator.</Note>}
     </Screen>);
 }

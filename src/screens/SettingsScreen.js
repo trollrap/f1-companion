@@ -21,6 +21,7 @@ import ColorPicker from '../components/ColorPicker';
 import { restartApp } from '../lib/reload';
 import { homeLayout, HOME_CARDS } from '../lib/homeLayout';
 import { PAGES } from '../lib/pages';
+import { hideAll } from '../lib/spoiler';
 import { Segmented } from '../components/Shared';
 import { exportBackup, findBackups, restoreFrom } from '../lib/backup';
 import { Alert } from '../lib/dialog';
@@ -92,6 +93,14 @@ export default function SettingsScreen() {
             <Pressable onPress={() => move(1)} hitSlop={8} style={{ padding: 8, opacity: i === arr.length - 1 ? 0.3 : 1 }}><Ionicons name="chevron-down" size={22} color={colors.fg} /></Pressable>
           </View>); })}
         <Btn onPress={() => setOpt('homeLayout', null)}>Reset the order</Btn>
+      </Section>
+      <Section icon="eye-off-outline" title="Spoiler guard" summary={o.spoiler ? 'On' : 'Off'}>
+        <Sw label="Hide results until tapped" hint="For watching races on delay. Hides Home results, the race recap, standings, race results and calendar winners until you tap them. Live timing is not hidden. Taps are forgotten when the app closes." value={!!o.spoiler} onChange={(v) => { setOpt('spoiler', v); hideAll(); }} />
+        {o.spoiler ? <Btn onPress={hideAll}>Hide everything again</Btn> : null}
+      </Section>
+      <Section icon="person-outline" title="Driver names" summary={{ full: 'First and last', surname: 'Surname only', code: 'Three-letter code' }[o.nameStyle || 'full']}>
+        <Segmented value={o.nameStyle || 'full'} onChange={(v) => setOpt('nameStyle', v)} items={[['full', 'Full'], ['surname', 'Surname'], ['code', 'Code']]} />
+        <Note>Applies to the driver rows in standings, results, Home and Paddock lists. Some screens (headings, quizzes, charts) always use full names. Codes come from the history, and fall back to the first three letters of the surname for brand-new drivers.</Note>
       </Section>
       <Section icon="pin-outline" title="Pinned pages" summary={`${(o.pins || []).length} pinned`}>
         <Note>Pinned pages get a shortcut strip at the top of Home. Up to 8.</Note>

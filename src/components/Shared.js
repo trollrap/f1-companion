@@ -7,6 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTint } from '../lib/tint';
 import { colors, alpha } from '../theme';
 import { LEADS, usePrefs } from '../hooks/usePrefs';
+import { codeOf } from '../api/history';
 import { useTeamColor } from '../hooks/useTeams';
 import { Card, Eyebrow } from './Screen';
 import Grad, { Scrim } from './Grad';
@@ -83,6 +84,8 @@ export function Segmented({ items, value, onChange }) {
 }
 // Two-line driver name: small first name over a bold surname.
 export function DriverName({ first, last, size = 18, align }) {
+  const { prefs } = usePrefs(); const mode = prefs.opts.nameStyle || 'full';
+  if (mode !== 'full' && last) return (<Text style={{ color: colors.fg, fontSize: size, fontWeight: '700', lineHeight: size * 1.1 }} numberOfLines={1}>{mode === 'code' ? codeOf(first, last) : last}</Text>);
   return (
     <View style={{ alignItems: align === 'right' ? 'flex-end' : 'flex-start' }}>
       {first ? <Text style={{ color: colors.muted, fontSize: Math.max(11, size * 0.62), lineHeight: Math.max(13, size * 0.72) }} numberOfLines={1}>{first}</Text> : null}

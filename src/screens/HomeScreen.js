@@ -16,6 +16,8 @@ import { usePrefs } from '../hooks/usePrefs';
 import { TeamBadge } from '../components/Shared';
 import { homeOrder } from '../lib/homeLayout';
 import { PAGES } from '../lib/pages';
+import SpoilerGuard from '../components/SpoilerGuard';
+import { useSpoilerHidden } from '../lib/spoiler';
 import RaceRecap from '../components/RaceRecap';
 import ShareCard from '../components/ShareCard';
 import { statOfDay } from '../lib/statOfDay';
@@ -36,6 +38,7 @@ export function targetOf(next, sessions, now) {
     label: cur ? `${cur.session_name} ends in` : up ? `Until ${up.session_name}` : 'Until lights out' };
 }
 export default function HomeScreen({ navigation }) {
+  const spoil = useSpoilerHidden('home');
   const season = useSeason(); const now = useNow();
   const favs = useFavs(); const tc = useTeamColor();
   const stand = useAsync(() => driverStandings(YEAR), []);
@@ -56,7 +59,7 @@ export default function HomeScreen({ navigation }) {
   // The card shows the chosen kind; when only one kind has favourites it shows that one. The swap button appears when both exist.
   const both = mine.length > 0 && mineT.length > 0; const showTeams = mineT.length > 0 && (mineView === 'teams' || mine.length === 0);
   const openDriver = (r) => navigation.navigate('Driver', { driverId: r.driverId, name: r.name, first: r.first, last: r.last, teamId: r.teamId, team: r.team });
-  const stat = (() => { try { return statOfDay(today(), rows); } catch { return null; } })();
+  const stat = (() => { try { return statOfDay(today(), spoil ? null : rows); } catch { return null; } })();
   const pins = (prefs.opts.pins || []).map((r) => PAGES.find((x) => x[0] === r)).filter(Boolean);
   const P = {
     pins: pins.length ? (
@@ -96,7 +99,7 @@ export default function HomeScreen({ navigation }) {
       <View>
         <Eyebrow>Explore</Eyebrow>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingTop: 10 }}>
-          {[['SeasonReview', 'Season review', 'newspaper', 'A year in numbers', colors.accent], ['Debuts', 'Debuts and farewells', 'person-add', 'Who joined and left', colors.good], ['CircuitCompare', 'Circuit compare', 'git-compare', 'Two tracks side by side', colors.gold], ['Passing', 'Overtaking', 'swap-horizontal', 'Where the order shuffles', colors.red], ['CompareSeasons', 'Compare seasons', 'git-compare', 'Two years side by side', colors.gold], ['TitleSwing', 'Title picture', 'trending-up', 'Standings after each race', colors.gold], ['TeamMates', 'Team-mate battles', 'people', 'Career head-to-head', colors.accent], ['Travel', 'Season travel', 'airplane', 'Kilometres between rounds', colors.good], ['GridDrops', 'Grid penalties', 'arrow-down-circle', 'Who started further back', colors.red], ['Dominance', 'Dominance', 'flame', 'Most dominant seasons', colors.gold], ['TeamTrees', 'Team trees', 'git-branch', 'Every team\'s history', colors.accent], ['Rookies', 'Rookie report', 'school', 'How the rookies are doing', colors.good], ['Reliability', 'Reliability', 'construct', 'Retirements by team', colors.accent], ['Cards', 'Driver cards', 'albums', 'Collect and open packs', colors.gold], ['MysteryDriver', 'Mystery driver', 'help-circle', 'A new driver every day', colors.accent], ['Search', 'Search', 'search', 'Drivers, teams, circuits, rules', colors.accent], ['RaceDay', 'Race day', 'pulse', 'Live session, weather, order', colors.red], ['TimeMachine', 'Time machine', 'time', 'Watch any past race lap by lap', colors.gold], ['Replay', 'Season replay', 'play-back', 'Any past season, your rules', colors.accent], ['FanZone', 'Fan zone', 'happy', 'Daily quiz, driver of the day', colors.gold], ['Weekend', 'Race weekend', 'time', 'Timeline, weather, what to watch', colors.accent], ['Leaderboard', 'Leaderboard', 'podium', 'Predictions vs friends', colors.gold], ['Quiz', 'Quiz', 'help-circle', 'Test your F1 knowledge', colors.purple], ['Records', 'Records', 'stats-chart', 'On this day, records, duels', '#2CB67D'], ['FunProfile', 'Fantasy', 'sparkles', 'Your own seasons', '#4DA3FF']].filter((x) => x[0] !== 'FunProfile').map(([route, title, icon, sub, c], i) => (
+          {[['Comebacks', 'Comebacks', 'trending-up', 'Wins from the back', colors.red], ['Milestones', 'Milestones', 'flag', 'Next career records', colors.gold], ['HomeHeroes', 'Home heroes', 'home', 'Who wins at home', colors.good], ['PodiumPairs', 'Podium pairs', 'people', 'Most shared podiums', colors.accent], ['SeasonReview', 'Season review', 'newspaper', 'A year in numbers', colors.accent], ['Debuts', 'Debuts and farewells', 'person-add', 'Who joined and left', colors.good], ['CircuitCompare', 'Circuit compare', 'git-compare', 'Two tracks side by side', colors.gold], ['Passing', 'Overtaking', 'swap-horizontal', 'Where the order shuffles', colors.red], ['CompareSeasons', 'Compare seasons', 'git-compare', 'Two years side by side', colors.gold], ['TitleSwing', 'Title picture', 'trending-up', 'Standings after each race', colors.gold], ['TeamMates', 'Team-mate battles', 'people', 'Career head-to-head', colors.accent], ['Travel', 'Season travel', 'airplane', 'Kilometres between rounds', colors.good], ['GridDrops', 'Grid penalties', 'arrow-down-circle', 'Who started further back', colors.red], ['Dominance', 'Dominance', 'flame', 'Most dominant seasons', colors.gold], ['TeamTrees', 'Team trees', 'git-branch', 'Every team\'s history', colors.accent], ['Rookies', 'Rookie report', 'school', 'How the rookies are doing', colors.good], ['Reliability', 'Reliability', 'construct', 'Retirements by team', colors.accent], ['Cards', 'Driver cards', 'albums', 'Collect and open packs', colors.gold], ['MysteryDriver', 'Mystery driver', 'help-circle', 'A new driver every day', colors.accent], ['Search', 'Search', 'search', 'Drivers, teams, circuits, rules', colors.accent], ['RaceDay', 'Race day', 'pulse', 'Live session, weather, order', colors.red], ['TimeMachine', 'Time machine', 'time', 'Watch any past race lap by lap', colors.gold], ['Replay', 'Season replay', 'play-back', 'Any past season, your rules', colors.accent], ['FanZone', 'Fan zone', 'happy', 'Daily quiz, driver of the day', colors.gold], ['Weekend', 'Race weekend', 'time', 'Timeline, weather, what to watch', colors.accent], ['Leaderboard', 'Leaderboard', 'podium', 'Predictions vs friends', colors.gold], ['Quiz', 'Quiz', 'help-circle', 'Test your F1 knowledge', colors.purple], ['Records', 'Records', 'stats-chart', 'On this day, records, duels', '#2CB67D'], ['FunProfile', 'Fantasy', 'sparkles', 'Your own seasons', '#4DA3FF']].filter((x) => x[0] !== 'FunProfile').map(([route, title, icon, sub, c], i) => (
             <Pressable key={route} onPress={() => navigation.navigate(route)} style={({ pressed }) => pressed && { opacity: 0.8, transform: [{ scale: 0.98 }] }}>
               <Grad color={c} from={0.5} to={0.06} radius={16} style={{ width: 168, height: 112, padding: 12, justifyContent: 'space-between' }}>
                 <Ionicons name={icon} size={26} color={c} />
@@ -168,6 +171,7 @@ export default function HomeScreen({ navigation }) {
       </Card>
     ),
   };
+  ['mine', 'last', 'recap', 'standings'].forEach((k) => { if (P[k]) P[k] = <SpoilerGuard id="home" label="Results hidden">{P[k]}</SpoilerGuard>; });
   const order = homeOrder(prefs.opts.homeLayout);
   return (
     <Screen>

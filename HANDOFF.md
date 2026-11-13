@@ -355,3 +355,20 @@ Expo Go (SDK 53+) does not include the `expo-notifications` native module; impor
 - Circuit comparison: two circuits side by side using the circuit pages' own data (lap length, turns, laps, distance, first GP, lap record), with bars; shareable.
 - Winner guess (Fun tab): a year and Grand Prix from 1990 to 2025, pick the winner out of four (distractors from the top-10 grid and finishers), optional team clue for half a point, 7+ of 8 earns a pack. Offline.
 - Route: eas update --branch preview --platform android --message "1.42.0"
+
+## V1.43.0 (JS-only)
+- Driver milestones (Home > Explore, Search): for every driver on this season's grid, the next round-number career milestone (starts, wins, podiums, poles) with progress bars, plus a "closest milestones" list (within 5) with a Share button. Uses driverCareer (offline history + the live season); sprint races are not counted as starts. Needs a connection; live data unverified here.
+- Home-race heroes: record at Grands Prix held in each driver's own country (most home wins / podiums, or per country). Any GP in the country counts (Monza and Imola for Italians, European GP at the Nürburgring for Germans); the 1950s Indianapolis 500 rounds are excluded. Offline (api/history.js homeRecords).
+- Podium pairs: pairs of drivers with the most shared podiums, 1-2 finishes and front rows, all time / since 2000 / since 2010, with the number of those as team-mates. Offline (podiumPairs).
+- Connections (Fun tab): 12 drivers, 3 hidden groups of 4 (nationality, world champions, teams raced for, decade of first race); each driver fits exactly one group, 4 mistakes, "one away" hint, solving earns a pack (lib/connections.js).
+- Hangman (Fun tab): driver surnames, circuit locations and team names, 7 tyres, 5 solved in a row earns a pack (lib/hangman.js).
+- Route: eas update --branch preview --platform android --message "1.43.0"
+
+## V1.44.0 (JS-only)
+- Spoiler guard (Settings > Spoiler guard, off by default): hides Home last-session/recap/standings/your-drivers cards, the Standings list, race results on the Round screen and calendar winners behind a tap (lib/spoiler.js, components/SpoilerGuard.js). Taps are remembered until the app closes; "Hide everything again" button. Live timing, the race-day dashboard and other detail screens (driver pages, charts, strategy, pace) are not hidden. Stat of the day drops its title-fight line while hidden.
+- Driver names (Settings > Driver names): Full / Surname / Code, applied in the shared DriverName component, so it covers standings, results, Home and Paddock rows (everything built on ResultLine). Headings, quizzes, charts and some detail screens always use full names. Codes come from the history (codeOf), first three letters of the surname for unknown drivers.
+- Biggest comebacks (Explore, Search): wins and podiums ranked by grid slot (pit-lane starts and the 1950s Indianapolis 500 excluded), all time / since 1990 / since 2010. Checked: Watson 1983 P22 to P1, Barrichello 2000 P18, Verstappen 2024 P17, Raikkonen 2005 P17.
+- Closest number (Fun tab): guess a driver's career starts, wins or podiums with a slider; 5 drivers, 100 points each by closeness, 350+ earns a pack. Poles are not used because the history counts grid P1, which can differ by one or two from official poles (e.g. Hamilton shows 105, official 104).
+- Lap tapper (Fun tab): per circuit, tap in the green apex zone of each corner (up to 14); lap time = the circuit's lap record plus time lost; best per circuit kept; within 2.0 s earns a pack.
+- Known data note: poles shown from history (Home-race heroes "from P1", Driver milestones poles) are grid-P1 counts.
+- Route: eas update --branch preview --platform android --message "1.44.0"

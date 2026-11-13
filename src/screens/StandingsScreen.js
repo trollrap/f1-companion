@@ -1,3 +1,4 @@
+import SpoilerGuard from '../components/SpoilerGuard';
 import React, { useEffect, useState } from 'react';
 import { View, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -65,7 +66,7 @@ export default function StandingsScreen({ navigation }) {
         {st.loading && <Skeleton />}
         {st.error && <ErrorNote error={st.error} onRetry={st.reload} />}
         {st.v && !rows.length && <Note>{year > YEAR ? 'Standings start after the first race of the season.' : 'No standings published for this season.'}</Note>}
-        <View style={{ marginTop: 6 }}>
+        <SpoilerGuard id="standings" label="Standings hidden"><View style={{ marginTop: 6 }}>
           {rows.map((r, i) => {
             const champion = won && i === 0;
             return teams
@@ -74,7 +75,7 @@ export default function StandingsScreen({ navigation }) {
               : <ResultLine key={r.driverId} index={i} pos={r.position} first={r.first} last={r.last} color={tc(r.teamId)} right={right(r)} sub={sub(r, i)} fav={favs.isDriver(r.driverId)} champion={champion} photoId={cur ? r.driverId : undefined} logoId={cur ? r.teamId : undefined} slotLogoId={cur ? undefined : r.teamId}
                   onPress={() => navigation.navigate('Driver', { driverId: r.driverId, name: r.name, first: r.first, last: r.last, teamId: r.teamId, team: r.team, year: cur ? undefined : year })} />;
           })}
-        </View>
+        </View></SpoilerGuard>
       </Card>
     </Screen>
   );

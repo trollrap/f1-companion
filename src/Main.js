@@ -182,6 +182,14 @@ function Shell() {
               <Stack.Screen name="Debuts" getComponent={() => require('./screens/ReviewScreens').DebutsScreen} options={{ title: 'Debuts and farewells' }} />
               <Stack.Screen name="CircuitCompare" getComponent={() => require('./screens/ReviewScreens').CircuitCompareScreen} options={{ title: 'Circuit comparison' }} />
               <Stack.Screen name="WinnerGuess" getComponent={() => require('./screens/MoreGames').WinnerGuessScreen} options={{ title: 'Winner guess' }} />
+              <Stack.Screen name="Milestones" getComponent={() => require('./screens/RecordScreens').MilestonesScreen} options={{ title: 'Driver milestones' }} />
+              <Stack.Screen name="HomeHeroes" getComponent={() => require('./screens/RecordScreens').HomeHeroesScreen} options={{ title: 'Home-race heroes' }} />
+              <Stack.Screen name="PodiumPairs" getComponent={() => require('./screens/RecordScreens').PodiumPairsScreen} options={{ title: 'Podium pairs' }} />
+              <Stack.Screen name="Connections" getComponent={() => require('./screens/PuzzleGames').ConnectionsScreen} options={{ title: 'Connections' }} />
+              <Stack.Screen name="Hangman" getComponent={() => require('./screens/PuzzleGames').HangmanScreen} options={{ title: 'Hangman' }} />
+              <Stack.Screen name="Comebacks" getComponent={() => require('./screens/RecordScreens').ComebacksScreen} options={{ title: 'Biggest comebacks' }} />
+              <Stack.Screen name="ClosestNumber" getComponent={() => require('./screens/MoreGames').ClosestNumberScreen} options={{ title: 'Closest number' }} />
+              <Stack.Screen name="LapTapper" getComponent={() => require('./screens/MoreGames').LapTapperScreen} options={{ title: 'Lap tapper' }} />
               <Stack.Screen name="Reliability" getComponent={() => require('./screens/ReliabilityScreen').default} options={{ title: 'Reliability' }} />
               <Stack.Screen name="Replay" getComponent={() => require('./screens/ReplayScreen').default} options={{ title: 'Season replay' }} />
               <Stack.Screen name="FanZone" getComponent={() => require('./screens/FanZoneScreen').default} options={{ title: 'Fan zone' }} />

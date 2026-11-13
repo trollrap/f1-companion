@@ -316,3 +316,61 @@ export function debutsOf(year) {
   deb.sort((a, b) => a.round - b.round || a.name.localeCompare(b.name)); far.sort((a, b) => b.wins - a.wins || b.starts - a.starts);
   return { debuts: deb, farewells: far, upTo: up };
 }
+
+// Home Grand Prix record of every driver whose country hosted a race. The Indianapolis 500 rounds of 1950 to 1960 are not counted as an American home race.
+const HOME = { British: 'UK', American: 'USA', Italian: 'Italy', French: 'France', Belgian: 'Belgium', German: 'Germany', Spanish: 'Spain', Dutch: 'Netherlands', Argentine: 'Argentina', Portuguese: 'Portugal', Moroccan: 'Morocco', 'South African': 'South Africa', Mexican: 'Mexico', Austrian: 'Austria', Canadian: 'Canada', Brazilian: 'Brazil', Swedish: 'Sweden', Japanese: 'Japan', Australian: 'Australia', Hungarian: 'Hungary', Malaysian: 'Malaysia', Chinese: 'China', Swiss: 'Switzerland', 'Monégasque': 'Monaco', Russian: 'Russia' };
+export function homeRecords() {
+  load(); const out = {};
+  Object.keys(H.r).forEach((y) => H.r[y].forEach((rc) => {
+    if (/indianapolis 500/i.test(rc[1])) return;
+    rc[4].forEach((r) => { const d = H.d[r[0]]; if (HOME[d[4]] !== rc[2]) return;
+      const o = (out[r[0]] ||= { id: IX.idOf[r[0]], name: `${d[1]} ${d[2]}`, country: rc[2], starts: 0, wins: 0, podiums: 0, poles: 0, best: 99, bestAt: '', total: 0 });
+      o.starts++; if (r[4] === '1') o.wins++; if (['1', '2', '3'].includes(r[4])) o.podiums++; if (r[2] === 1) o.poles++;
+      const pos = /^\d+$/.test(String(r[4])) ? +r[4] : 99; if (pos < o.best) { o.best = pos; o.bestAt = `${y} ${rc[1]}`; } });
+  }));
+  Object.keys(out).forEach((k) => { const o = out[k]; const tot = driverRows(+k).length; o.total = tot; });
+  return Object.values(out);
+}
+// Pairs of drivers who shared podiums, 1-2 finishes and front rows. `since` limits the years. Team-mate counts say how often both drove for the same team.
+export function podiumPairs(since) {
+  load(); const pod = {}, one2 = {}, front = {};
+  const add = (m, a, b, same) => { const k = a < b ? `${a}|${b}` : `${b}|${a}`; const o = (m[k] ||= { a: Math.min(a, b), b: Math.max(a, b), n: 0, mates: 0 }); o.n++; if (same) o.mates++; };
+  Object.keys(H.r).forEach((y) => { if (+y < since) return; H.r[y].forEach((rc) => {
+    const top = rc[4].filter((r) => ['1', '2', '3'].includes(String(r[4]))).sort((a, b) => +a[4] - +b[4]);
+    for (let i = 0; i < top.length; i++) for (let j = i + 1; j < top.length; j++) add(pod, top[i][0], top[j][0], top[i][1] === top[j][1]);
+    if (top.length >= 2 && top[0][4] === '1' && top[1][4] === '2') add(one2, top[0][0], top[1][0], top[0][1] === top[1][1]);
+    const fr = rc[4].filter((r) => r[2] === 1 || r[2] === 2); if (fr.length === 2) add(front, fr[0][0], fr[1][0], fr[0][1] === fr[1][1]);
+  }); });
+  const nm = (i) => `${H.d[i][1]} ${H.d[i][2]}`;
+  const fin = (m) => Object.values(m).sort((x, y) => y.n - x.n || x.mates - y.mates).slice(0, 15).map((o) => ({ a: nm(o.a), b: nm(o.b), n: o.n, mates: o.mates }));
+  return { podium: fin(pod), onetwo: fin(one2), front: fin(front) };
+}
+// Everything the Connections puzzle needs about a driver, built once.
+let META = null;
+export function driversMeta() {
+  if (META) return META; load();
+  META = H.d.map((d, i) => { const rows = driverRows(i); if (rows.length < 20) return null; const teams = new Set(rows.map((r) => H.t[r.row[1]][0])); const champs = titlesOf(IX.idOf[i]);
+    return { id: IX.idOf[i], name: `${d[1]} ${d[2]}`, last: d[2], nat: d[4], races: rows.length, first: IX.firstYear[i], lastYear: IX.lastYear[i], teams, champ: champs > 0 }; }).filter(Boolean);
+  return META;
+}
+export function teamNameOf(teamId) { load(); const t = H.t.find((x) => x[0] === teamId); return t ? t[1] : teamId; }
+
+// Three-letter timing code for a driver, from the history when the name is known, otherwise the first three letters of the surname.
+let CODES = null;
+export function codeOf(first, last) {
+  if (!CODES) { load(); CODES = {}; H.d.forEach((d, i) => { if (d[6]) CODES[IX.norm(`${d[1]} ${d[2]}`)] = d[6]; }); }
+  const k = IX.norm(`${first || ''} ${last || ''}`); if (CODES[k]) return CODES[k];
+  return IX.norm(String(last || '').split(' ').pop()).replace(/[^a-z]/g, '').slice(0, 3).toUpperCase();
+}
+
+// Biggest comebacks: classified finishers who won or stood on the podium from far back on the grid. Pit-lane starts (grid 0) are left out because the slot is not a position.
+export function comebacks(since) {
+  load(); const wins = [], pods = [];
+  Object.keys(H.r).forEach((y) => { if (+y < since) return; H.r[y].forEach((rc) => /indianapolis 500/i.test(rc[1]) ? null : rc[4].forEach((r) => {
+    if (!(r[2] > 0) || !['1', '2', '3'].includes(String(r[4]))) return;
+    const o = { year: +y, race: rc[1], name: `${H.d[r[0]][1]} ${H.d[r[0]][2]}`, team: H.t[r[1]][1], grid: r[2], pos: +r[4], gain: r[2] - +r[4], cars: rc[4].length };
+    pods.push(o); if (r[4] === '1') wins.push(o);
+  })); });
+  const top = (a) => a.sort((x, y) => y.grid - x.grid || y.gain - x.gain || y.year - x.year).slice(0, 25);
+  return { wins: top(wins), podiums: top(pods) };
+}

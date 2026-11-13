@@ -1,3 +1,4 @@
+import SpoilerGuard from '../components/SpoilerGuard';
 import React, { useEffect, useRef, useState } from 'react';
 import { View, StyleSheet, findNodeHandle } from 'react-native';
 import Skeleton from '../components/Skeleton';
@@ -140,14 +141,14 @@ export default function RoundScreen({ route, navigation }) {
             </Pressable>) : null}
           {res.loading && <Skeleton />}
           {res.error && <Note>Results unavailable: {res.error}</Note>}{res.note && <Note>{res.note}</Note>}
-          <View style={{ marginTop: 6 }}>
+          <SpoilerGuard id="results" label="Results hidden"><View style={{ marginTop: 6 }}>
             {timingShown && (timingShown.length ? timingShown.map((r, i) => <ResultLine index={i} key={r.position + r.driver} pos={r.position} first={r.first} last={r.last} color={r.color || colors.muted} right={r.time} sub={r.team ? (r.gap ? `${r.gap}` : r.team) : r.gap} logoId={matchTiming(r)?.teamId} photoId={matchTiming(r)?.driverId} fav={!!matchTiming(r) && favs.isDriver(matchTiming(r).driverId)} onPress={() => openTiming(r)} />) : <Note>No classification published for this session.</Note>)}
             {isGrid && cur === 'Race' && res.v && <Note>{pens.some((p) => ['grid', 'back', 'pit'].includes(p.kind)) ? 'Starting grid: qualifying order with the stewards\u2019 grid penalties applied.' : 'Starting grid: qualifying order. Grid penalties, if any, appear here once the stewards announce them.'}</Note>}
             {gridRows && gridRows.map((r, i) => <ResultLine index={i} key={r.driverId || r.slot} pos={r.slot} first={r.first} last={r.last} color={tc(r.teamId)} fav={favs.isDriver(r.driverId)} right={r.pit ? 'Pit lane' : r.q3 || r.q2 || r.q1 || '—'} sub={r.quali !== r.slot ? `Qualified P${r.quali}` : r.q3 ? 'Q3' : r.q2 ? 'Q2' : 'Q1'} tags={tagsOf(r.driverId, true)} logoId={r.teamId} photoId={r.driverId} onPress={() => navigation.navigate('Driver', driverParams({ ...r, name: r.driver }, year))} />)}
             {res.v && !gridRows && !res.grid && (cur === 'Qualifying'
               ? (qualiRows || []).map((r, i) => <ResultLine index={i} key={r.position} pos={r.position} first={r.first} last={r.last} color={tc(r.teamId)} fav={favs.isDriver(r.driverId)} right={r.q3 || r.q2 || r.q1 || '—'} sub={r.gap ? `${r.stg} · ${r.gap}` : r.stg} logoId={r.teamId} photoId={r.driverId} onPress={() => navigation.navigate('Driver', driverParams({ ...r, name: r.driver }, year))} />)
               : (raceShown || []).map((r, i) => <ResultRow key={r.position} r={r} year={year} index={i} tags={tagsOf(r.driverId, false)} flash={flashId === r.driverId} rowRef={focusId === r.driverId ? focusRow : undefined} />))}
-          </View>
+          </View></SpoilerGuard>
         </Card>
       )}
       {(cur === 'Race' || cur === 'Sprint') && !isGrid && sessions.find((x) => x.session_name === cur && x.session_key) ? (
