@@ -8,6 +8,7 @@ import { colors, alpha } from '../theme';
 import { norm } from '../lib/names';
 import { kvGet, kvSet, today, seedOf, rngOf } from '../lib/kv';
 import { awardPack } from '../lib/cards';
+import { useRun, useLeaveGuard, useTimers } from '../lib/gameSave';
 import * as hap from '../lib/haptics';
 import { CIRCUITS } from '../data/circuits';
 import { localAllDrivers, localCareer, lastTeamOf } from '../api/history';
@@ -53,12 +54,14 @@ const CLUES = (c) => { const g = (k) => (c.stats.find((s) => s[0] === k) || [])[
   return [`Lap length ${g('Lap length') || '?'} with ${g('Turns') || '?'} turns.`, `Race distance ${g('Race distance') || '?'} over ${g('Race laps') || '?'} laps.`, `First Grand Prix here: ${g('First Grand Prix') || 'unknown'}.`, c.lapRecord ? `Lap record ${c.lapRecord.time} by ${c.lapRecord.driver} (${c.lapRecord.team}, ${c.lapRecord.year}).` : 'No lap record is listed.', `It is in ${parts[parts.length - 1]}${parts.length > 1 ? `, near ${parts[0]}` : ''}.`]; };
 const ROUNDS = 5;
 export function GuessCircuitScreen() {
-  const [round, setRound] = useState(0); const [score, setScore] = useState(0); const [clues, setClues] = useState(1); const [pick, setPick] = useState(null); const [best, setBest] = useState(0); const [done, setDone] = useState(false); const [got, setGot] = useState(false); const [seed, setSeed] = useState(0);
+  const run = useRun('circuit'); const later = useTimers(); const { seed, i: round, score } = run; const [clues, setClues] = useState(1); const [pick, setPick] = useState(null); const [best, setBest] = useState(0); const [got, setGot] = useState(false); const [fin, setFin] = useState(false); const done = fin || round >= ROUNDS;
   useEffect(() => { kvGet('circuit:best', 0).then(setBest); }, []);
-  const rounds = useMemo(() => { const r = rngOf(seedOf(`circuit${seed}${Date.now()}`)); const shuf = (a) => { const x = [...a]; for (let i = x.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [x[i], x[j]] = [x[j], x[i]]; } return x; }; return shuf(CIRCUITS).slice(0, ROUNDS).map((c) => ({ c, opts: shuf([c, ...shuf(CIRCUITS.filter((x) => x.key !== c.key)).slice(0, 3)]) })); }, [seed]);
+  const rounds = useMemo(() => { const r = rngOf(seedOf(`circuit${seed}`)); const shuf = (a) => { const x = [...a]; for (let i = x.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [x[i], x[j]] = [x[j], x[i]]; } return x; }; return shuf(CIRCUITS).slice(0, ROUNDS).map((c) => ({ c, opts: shuf([c, ...shuf(CIRCUITS.filter((x) => x.key !== c.key)).slice(0, 3)]) })); }, [seed]);
+  useLeaveGuard(run.ready && round > 0 && !done);
   const cur = rounds[Math.min(round, ROUNDS - 1)]; const list = useMemo(() => CLUES(cur.c), [cur]);
-  const answer = (o) => { if (pick) return; setPick(o.key); const ok = o.key === cur.c.key; ok ? hap.good() : hap.bad(); if (ok) setScore((s) => s + (6 - clues)); setTimeout(async () => { if (round + 1 >= ROUNDS) { const fin = score + (ok ? 6 - clues : 0); setDone(true); if (fin > best) { setBest(fin); kvSet('circuit:best', fin); } if (fin >= 12) awardPack(`circuit:${today()}`).then(setGot); } else { setRound(round + 1); setClues(1); setPick(null); } }, 1500); };
-  const again = () => { setSeed((s) => s + 1); setRound(0); setScore(0); setClues(1); setPick(null); setDone(false); setGot(false); };
+  const answer = (o) => { if (pick) return; setPick(o.key); const ok = o.key === cur.c.key; ok ? hap.good() : hap.bad(); if (ok) run.setScore((s) => s + (6 - clues)); later(async () => { if (round + 1 >= ROUNDS) { const fin = score + (ok ? 6 - clues : 0); setFin(true); run.finish(); if (fin > best) { setBest(fin); kvSet('circuit:best', fin); } if (fin >= 12) awardPack(`circuit:${today()}`).then(setGot); } else { run.setI(round + 1); setClues(1); setPick(null); } }, 1500); };
+  const again = () => { setClues(1); setPick(null); setFin(false); setGot(false); run.again(); };
+  if (!run.ready) return <Screen header={false}><Note>Loading…</Note></Screen>;
   if (done) return (<Screen header={false}><Card><Eyebrow>Guess the circuit</Eyebrow><Big>{`${score} / ${ROUNDS * 5}`}</Big><Text style={{ color: colors.muted, textAlign: 'center' }}>{`Best: ${Math.max(best, score)}. Fewer clues means more points.`}</Text><View style={{ marginTop: 14 }}><Btn icon="refresh" tone="solid" onPress={again}>Play again</Btn></View></Card>{bonus(got)}<Note>Score 12 or more to earn a card pack once a day.</Note></Screen>);
   return (
     <Screen header={false}>
@@ -88,6 +91,7 @@ export function MysteryDriverScreen() {
   const add = (d) => { const g = [...guesses, d.driverId]; setGuesses(g); setQ(''); kvSet(`mystery:${day}`, g); if (d.driverId === secret.id) { hap.big(); awardPack(`mystery:${day}`).then(setGot); } };
   const Chip = ({ label, state, arrow }) => (<View style={{ flex: 1, minHeight: 44, borderRadius: 8, alignItems: 'center', justifyContent: 'center', padding: 2, backgroundColor: state === 'hit' ? alpha(colors.good, 0.35) : state === 'near' ? alpha(colors.gold, 0.35) : alpha(colors.muted, 0.15) }}><Text style={{ color: colors.fg, fontSize: 12, fontWeight: '700', textAlign: 'center' }} numberOfLines={2}>{label}</Text>{arrow ? <Text style={{ color: colors.fg, fontSize: 11 }}>{arrow}</Text> : null}</View>);
   const ar = (g, k) => (g[k] === secret[k] ? '' : secret[k] > g[k] ? '▲ higher' : '▼ lower');
+  useLeaveGuard(ready && !over && rows.length > 0);
   if (!ready) return <Screen header={false}><Note>Loading…</Note></Screen>;
   return (
     <Screen header={false}>

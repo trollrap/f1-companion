@@ -6,6 +6,7 @@ import Skeleton from '../components/Skeleton';
 import Dropdown from '../components/Dropdown';
 import ShareCard from '../components/ShareCard';
 import { Segmented } from '../components/Shared';
+import { kvGet, kvSet } from '../lib/kv';
 import { useAsync } from '../hooks/useAsync';
 import { driverStandings, driverCareer } from '../api/jolpica';
 import { YEAR } from '../api/openf1';
@@ -19,12 +20,18 @@ const STEPS = { races: [50, 100, 150, 200, 250, 300, 350, 400, 450, 500], wins: 
 const LABEL = { races: 'Grand Prix starts', wins: 'wins', podiums: 'podiums', poles: 'pole positions' };
 const nextStep = (k, v) => { const s = STEPS[k].find((x) => x > v); return s ? { target: s, togo: s - v, prev: [0, ...STEPS[k]].filter((x) => x <= v).pop() } : null; };
 export function MilestonesScreen() {
-  const q = useAsync(async () => { const st = await driverStandings(YEAR); const rows = await Promise.all(st.map(async (d) => { try { return { d, c: await driverCareer(d.driverId) }; } catch { return null; } })); return rows.filter(Boolean); }, []);
+  const [cached, setCached] = useState(false);
+  const q = useAsync(async () => {
+    try {
+      const st = await driverStandings(YEAR); const rows = (await Promise.all(st.map(async (d) => { try { return { d, c: await driverCareer(d.driverId) }; } catch { return null; } }))).filter(Boolean);
+      if (!rows.length) throw new Error('empty'); kvSet('milestones:last', { t: Date.now(), rows }); setCached(false); return rows;
+    } catch (e) { const c = await kvGet('milestones:last', null); if (c && c.rows && c.rows.length) { setCached(c.t); return c.rows; } throw e; }
+  }, []);
   const items = useMemo(() => (q.v || []).map(({ d, c }) => ({ d, ms: ['races', 'wins', 'podiums', 'poles'].map((k) => (c && Number.isFinite(c[k]) ? { k, v: c[k], ...(nextStep(k, c[k]) || {}) } : null)).filter((m) => m && m.target) })), [q.v]);
   const closest = useMemo(() => items.flatMap((x) => x.ms.filter((m) => m.togo <= 5 && !(m.k !== 'races' && m.target === 1 && m.v > 0)).map((m) => ({ ...m, d: x.d }))).sort((a, b) => a.togo - b.togo || b.target - a.target).slice(0, 10), [items]);
   return (
     <Screen header={false}>
-      <Card><Eyebrow>Driver milestones</Eyebrow><Note>The next round-number career milestone for each driver on this season's grid. Counts come from the built-in history plus this season's races; sprint races are not counted as starts. Needs a connection.</Note></Card>
+      <Card><Eyebrow>Driver milestones</Eyebrow><Note>The next round-number career milestone for each driver on this season's grid. Counts come from the built-in history plus this season's races; sprint races are not counted as starts. Needs a connection the first time, then the last result is kept for offline use.</Note>{cached ? <Note>{`Showing saved numbers from ${new Date(cached).toLocaleDateString()}, because the live data could not be loaded.`}</Note> : null}</Card>
       {q.loading ? <Skeleton rows={6} /> : null}
       {q.error ? <ErrorNote error={q.error} onRetry={q.reload} /> : null}
       {closest.length ? (

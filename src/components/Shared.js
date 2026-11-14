@@ -218,12 +218,12 @@ export const DriverBox = React.memo(function DriverBox({ d, fav, onPress, onStar
       <Grad color={color} from={0.6} to={0.08} radius={18} border={fav ? 0.9 : 0.4} style={[{ height }, fav && { borderColor: colors.gold }]}>
         {photo && center ? <Image source={photo} resizeMode="cover" resizeMethod="resize" fadeDuration={0} style={{ position: 'absolute', alignSelf: 'center', width: height * 1.0, height: height * 1.0, bottom: -height * 0.02, opacity: 1 }} />
           : photo ? <Image source={photo} resizeMode="cover" resizeMethod="resize" fadeDuration={0} style={{ position: 'absolute', right: -big * 0.08, bottom: -big * 0.07, width: big, height: big }} />
-          : d.number != null ? <Text style={{ position: 'absolute', right: 6, bottom: -14, fontFamily: 'display', fontWeight: '800', fontSize: height * 0.6, color: colors.onSoft }}>{d.number}</Text> : null}
+          : d.number != null ? <Text style={{ position: 'absolute', right: 6, bottom: -14, opacity: 0.55, fontFamily: 'display', fontWeight: '800', fontSize: height * 0.6, color: colors.onSoft }}>{d.number}</Text> : null}
         {photo ? <Scrim dir="v" from={0} to={0.82} style={{ top: '38%' }} /> : null}
         {photo && !center ? <Scrim dir="h" from={0.45} to={0} style={{ right: '35%' }} /> : null}
         <View style={{ flex: 1, padding: 12, justifyContent: 'space-between' }}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            {numImg ? <Image source={numImg} resizeMode="contain" resizeMethod="resize" fadeDuration={0} style={{ width: 52, height: 28 }} /> : <Text style={{ fontFamily: 'display', fontWeight: '800', fontSize: 26, color: colors.fg }}>{photo ? d.number ?? '' : ''}</Text>}
+            {numImg ? <Image source={numImg} resizeMode="contain" resizeMethod="resize" fadeDuration={0} style={{ width: 52, height: 28, opacity: 0.65 }} /> : <Text style={{ opacity: 0.65, fontFamily: 'display', fontWeight: '800', fontSize: 26, color: colors.fg }}>{photo ? d.number ?? '' : ''}</Text>}
             {onStar ? <StarButton small on={fav} onPress={onStar} label={`Favourite ${d.first} ${d.last}`} /> : null}
           </View>
           <DriverName first={d.first} last={d.last} size={20} />
@@ -253,7 +253,7 @@ export const TeamRow = React.memo(function TeamRow({ t, lineup = [], fav, onPres
         <View style={{ gap: 6, marginRight: boss ? 92 : 0 }}>
           {lineup.map((d) => (
             <View key={d.driverId} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <Text style={{ width: 32, textAlign: 'right', fontFamily: 'display', fontWeight: '800', fontSize: 18, color: colors.fg, fontStyle: 'italic' }}>{d.number ?? ''}</Text>
+              <Text style={{ width: 32, textAlign: 'right', opacity: 0.55, fontFamily: 'display', fontWeight: '800', fontSize: 18, color: colors.fg, fontStyle: 'italic' }}>{d.number ?? ''}</Text>
               <View style={{ width: 2, height: 20, borderRadius: 1, backgroundColor: alpha('#FFFFFF', 0.55) }} />
               <Text style={{ color: colors.fg, fontSize: 14, fontWeight: '700', letterSpacing: 0.3, flexShrink: 1 }} numberOfLines={1}>{`${d.first || ''} ${String(d.last || '').toUpperCase()}`.trim()}</Text>
               {showStats && d.pos ? <View style={{ backgroundColor: 'rgba(0,0,0,0.28)', borderRadius: 7, paddingHorizontal: 6, paddingVertical: 2 }}><Text style={{ color: colors.fg, fontSize: 11, fontWeight: '700' }}>{`P${d.pos} · ${d.pts}`}</Text></View> : null}

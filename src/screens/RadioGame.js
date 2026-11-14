@@ -5,6 +5,7 @@ import Screen, { Card, Eyebrow, Note } from '../components/Screen';
 import { Btn } from '../components/FunBits';
 import { colors, alpha } from '../theme';
 import { kvGet, kvSet, seedOf, rngOf } from '../lib/kv';
+import { useRun, useLeaveGuard, useTimers } from '../lib/gameSave';
 import { awardPack } from '../lib/cards';
 import * as hap from '../lib/haptics';
 
@@ -24,14 +25,14 @@ const Q = [
 const EXTRA = ['Lewis Hamilton', 'Max Verstappen', 'Sebastian Vettel', 'Carlos Sainz', 'Nico Rosberg', 'Jenson Button', 'Felipe Massa', 'Oscar Piastri', 'Pierre Gasly', 'Sergio Pérez'];
 const N = 8;
 export function RadioGameScreen() {
-  const [seed, setSeed] = useState(1); const [i, setI] = useState(0); const [score, setScore] = useState(0); const [pick, setPick] = useState(null); const [best, setBest] = useState(0); const [got, setGot] = useState(false);
+  const run = useRun('radio'); const { seed, i, score } = run; const later = useTimers(); const [pick, setPick] = useState(null); const [best, setBest] = useState(0); const [got, setGot] = useState(false);
   useEffect(() => { kvGet('radio:best', 0).then(setBest); }, []);
-  const rounds = useMemo(() => { const r = rngOf(seedOf(`radio${seed}${Date.now()}`)); const shuf = (a) => { const x = [...a]; for (let k = x.length - 1; k > 0; k--) { const j = Math.floor(r() * (k + 1)); [x[k], x[j]] = [x[j], x[k]]; } return x; };
+  const rounds = useMemo(() => { if (!seed) return []; const r = rngOf(seedOf(`radio${seed}`)); const shuf = (a) => { const x = [...a]; for (let k = x.length - 1; k > 0; k--) { const j = Math.floor(r() * (k + 1)); [x[k], x[j]] = [x[j], x[k]]; } return x; };
     return shuf(Q).slice(0, N).map((q) => { const pool = [...Q.map((x) => x[1]), ...EXTRA].filter((n) => n !== q[1] && !(q[1] === 'Rob Smedley' ? false : n === 'Rob Smedley')); return { q, opts: shuf([q[1], ...shuf([...new Set(pool)]).slice(0, 3)]) }; }); }, [seed]);
-  const done = i >= N; const cur = rounds[Math.min(i, N - 1)];
-  const answer = (o) => { if (pick || done) return; setPick(o); const ok = o === cur.q[1]; ok ? hap.good() : hap.bad(); const sc = score + (ok ? 1 : 0); if (ok) setScore(sc);
-    setTimeout(async () => { setPick(null); setI((x) => x + 1); if (i + 1 >= N) { if (sc > best) { setBest(sc); kvSet('radio:best', sc); } if (sc >= 7) setGot(await awardPack('radio:7')); } }, 1700); };
-  const again = () => { setSeed((s) => s + 1); setI(0); setScore(0); setPick(null); setGot(false); };
+  const done = i >= N; useLeaveGuard(run.ready && i > 0 && !done); if (!run.ready || !rounds.length) return <Screen header={false}><Note>Loading…</Note></Screen>; const cur = rounds[Math.min(i, N - 1)];
+  const answer = (o) => { if (pick || done) return; setPick(o); const ok = o === cur.q[1]; ok ? hap.good() : hap.bad(); const sc = score + (ok ? 1 : 0); if (ok) run.setScore(sc);
+    later(async () => { setPick(null); run.setI((x) => x + 1); if (i + 1 >= N) { run.finish(); if (sc > best) { setBest(sc); kvSet('radio:best', sc); } if (sc >= 7) setGot(await awardPack('radio:7')); } }, 1700); };
+  const again = () => { setPick(null); setGot(false); run.again(); };
   if (done) return (
     <Screen header={false}>
       <Card><Eyebrow>Team radio</Eyebrow><Text style={{ color: colors.fg, fontSize: 44, fontWeight: '900', marginTop: 6 }}>{score} / {N}</Text>

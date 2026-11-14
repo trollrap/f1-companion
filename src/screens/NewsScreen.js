@@ -9,6 +9,8 @@ import Grad from '../components/Grad';
 import { useAsync } from '../hooks/useAsync';
 import { usePrefs } from '../hooks/usePrefs';
 import { SOURCES, fetchNews, fetchArticle } from '../api/news';
+import { useFavs } from '../hooks/useFavs';
+import { termsFor, matchesFav } from '../lib/favNews';
 import { colors, alpha } from '../theme';
 
 export const ago = (ms) => { if (!ms) return ''; const m = Math.max(0, Math.round((Date.now() - ms) / 60000)); if (m < 1) return 'just now'; if (m < 60) return `${m} min ago`; const h = Math.round(m / 60); if (h < 24) return `${h} h ago`; const d = Math.round(h / 24); return d < 7 ? `${d} d ago` : new Date(ms).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }); };
@@ -18,13 +20,15 @@ export default function NewsScreen({ navigation }) {
   const [n, setN] = useState(0); const [shown, setShown] = useState(10);
   const d = useAsync(() => fetchNews(sel, n ? { fresh: true } : undefined), [sel.join(','), n]);
   const toggle = (id) => { const next = sel.includes(id) ? sel.filter((x) => x !== id) : [...sel, id]; if (next.length) setOpt('newsSel', next); };
-  const items = d.v?.items || [];
+  const favs = useFavs(); const terms = useMemo(() => termsFor(favs), [JSON.stringify(favs.drivers), JSON.stringify(favs.teams)]); const only = !!prefs.opts.newsFav;
+  const all = d.v?.items || []; const items = only ? all.filter((x) => matchesFav(x, terms)) : all;
   return (
     <Screen>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
         <Text style={{ color: colors.fg, fontSize: 24, fontWeight: '800', fontStyle: 'italic' }}>News</Text>
         <Pressable onPress={() => setN(n + 1)} hitSlop={10} accessibilityLabel="Reload news" style={({ pressed }) => [{ flexDirection: 'row', alignItems: 'center', gap: 6 }, pressed && { opacity: 0.6 }]}><Ionicons name="refresh" size={18} color={colors.accent} /><Text style={{ color: colors.accent, fontWeight: '700', fontSize: 15 }}>Reload</Text></Pressable>
       </View>
+      <Pressable accessibilityRole="switch" accessibilityState={{ checked: only }} onPress={() => setOpt('newsFav', !only)} style={({ pressed }) => [{ flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-start', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 99, borderWidth: 1, borderColor: only ? colors.gold : colors.line, backgroundColor: only ? alpha(colors.gold, 0.18) : 'transparent' }, pressed && { opacity: 0.7 }]}><Ionicons name={only ? 'star' : 'star-outline'} size={16} color={only ? colors.gold : colors.muted} /><Text style={{ color: only ? colors.fg : colors.muted, fontWeight: '700', fontSize: 14 }}>My favourites only</Text></Pressable>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
         {SOURCES.map((s) => { const on = sel.includes(s.id); return (
           <Pressable key={s.id} onPress={() => toggle(s.id)} style={({ pressed }) => [{ paddingHorizontal: 12, paddingVertical: 7, borderRadius: 99, borderWidth: 1, borderColor: on ? colors.accent : colors.line, backgroundColor: on ? colors.accentSoft : colors.surface2 }, pressed && { opacity: 0.7 }]}>
@@ -32,7 +36,7 @@ export default function NewsScreen({ navigation }) {
       </View>
       {d.loading && <Skeleton rows={4} />}
       {d.error && <Note>News could not be loaded: {d.error}</Note>}
-      {d.v && !items.length && <Note>No stories right now. Check your connection, or pick more sources.</Note>}
+      {d.v && !items.length && <Note>{only ? (terms.length ? 'No stories about your favourites in these sources right now. Switch the filter off to see everything.' : 'You have no favourite drivers or teams yet. Star some in the Paddock tab, or switch the filter off.') : 'No stories right now. Check your connection, or pick more sources.'}</Note>}
       {d.v?.failed?.length ? <Note>{`Not reachable right now: ${d.v.failed.join(', ')}.`}</Note> : null}
       {items.slice(0, shown).map((x, i) => (
         <Story key={x.id} x={x} i={i} />))}

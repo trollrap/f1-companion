@@ -175,7 +175,7 @@ export function MotoRider({ route, navigation }) {
             <Text style={s.title} numberOfLines={2}>{rider.name}</Text>
             <Text style={s.sub}>{[rider.team, rider.bike].filter(Boolean).join(' · ')}</Text>
           </View>
-          {rider.number != null ? <Text style={{ fontFamily: 'display', fontWeight: '800', fontSize: 56, color: colors.onSoft }}>{rider.number}</Text> : null}
+          {rider.number != null ? <Text style={{ opacity: 0.55, fontFamily: 'display', fontWeight: '800', fontSize: 56, color: colors.onSoft }}>{rider.number}</Text> : null}
         </View>
       </Grad>
       <Card>
@@ -217,9 +217,9 @@ export function MotoPaddock({ navigation }) {
   const box = (r) => (
     <View key={r.riderId || r.name} style={{ width: '48.5%' }}><Press onPress={() => open(r)}>
       <Grad color={bikeColor(r.bike, r.team, teamColor(r.team))} from={0.6} to={0.08} radius={18} border={mf.has(r.riderId) ? 0.9 : 0.4} style={[{ height: 130 }, mf.has(r.riderId) && { borderColor: colors.gold }]}>
-        {r.number != null ? <Text style={{ position: 'absolute', right: 6, bottom: -10, fontFamily: 'display', fontWeight: '800', fontSize: 78, color: colors.onSoft }}>{r.number}</Text> : null}
+        {r.number != null ? <Text style={{ position: 'absolute', right: 6, bottom: -10, opacity: 0.55, fontFamily: 'display', fontWeight: '800', fontSize: 78, color: colors.onSoft }}>{r.number}</Text> : null}
         <View style={{ flex: 1, padding: 12, justifyContent: 'space-between' }}>
-          <Text style={{ fontFamily: 'display', fontWeight: '800', fontSize: 24, color: colors.fg }}>{r.number ?? ''}</Text>
+          <Text style={{ opacity: 0.55, fontFamily: 'display', fontWeight: '800', fontSize: 24, color: colors.fg }}>{r.number ?? ''}</Text>
           <View><Text style={s.sub} numberOfLines={1}>{r.name.split(' ')[0]}</Text><Text style={{ color: colors.fg, fontSize: 19, fontWeight: '700' }} numberOfLines={1}>{r.name.split(' ').slice(1).join(' ')}</Text></View>
         </View>
       </Grad>

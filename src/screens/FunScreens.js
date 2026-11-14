@@ -6,6 +6,7 @@ import { Text } from '../components/Text';
 import Screen, { Card, Eyebrow, Note } from '../components/Screen';
 import Grad, { Scrim } from '../components/Grad';
 import Press from '../components/Press';
+import Reveal from '../components/Reveal';
 import Dropdown from '../components/Dropdown';
 import { Segmented, StatGrid } from '../components/Shared';
 import ExportBar from '../components/ExportBar';
@@ -29,7 +30,7 @@ const GAME_ROWS = [
   ['Predict and play', [['Predict', 'Predictions', 'Call the next race', 'trophy', 'Predict'], ['Board', 'Leaderboard', 'Friends and streaks', 'podium', 'Leaderboard'], ['Cards', 'Driver cards', 'Collect and open packs', 'albums', 'Cards']]],
   ['What if', [['Replay', 'Season replay', 'Change the points', 'git-compare', 'Replay'], ['Dom', 'Dominance', 'Most dominant seasons', 'flame', 'Dominance'], ['Time', 'Time machine', 'Watch a past race', 'time', 'TimeMachine'], ['WhatIf', 'Title what-if', 'Who can still win?', 'calculator', 'WhatIf']]],
 ];
-function GameRows({ navigation }) {
+export function GameRows({ navigation }) {
   return (
     <View style={{ gap: 14 }}>
       {GAME_ROWS.map(([title, items]) => (
@@ -47,45 +48,42 @@ function GameRows({ navigation }) {
     </View>);
 }
 /* ------------------------------------------------------------------ Fun home (tab) */
-export function FunHome({ navigation }) {
-  const fun = useFun(); const { prefs } = usePrefs(); const p = fun.profile; const stats = profileStats(p, fun.fantasies);
+const nGames = GAME_ROWS.reduce((n, r) => n + r[1].length, 0);
+function Hero({ i, color, icon, kicker, title, info, onPress, height = 128, children }) {
   return (
-    <Screen>
-      <Text style={{ color: colors.fg, fontSize: 24, fontWeight: '800', fontStyle: 'italic' }}>Fun</Text>
-      <Note>Just for fun: nothing here touches the real data.</Note>
-      <GameRows navigation={navigation} />
-      <Press onPress={() => navigation.navigate('FunProfile')}>
-        <Grad color={p?.color || colors.accent} from={0.6} to={0.08} radius={18} border={0.5} style={{ height: 138 }}>
-          {p?.photo ? <View style={{ position: 'absolute', right: -6, bottom: -6 }}><Avatar uri={p.photo} size={150} radius={20} color={p.color} /></View> : null}
-          {p?.photo ? <Scrim dir="h" from={0.6} to={0} style={{ right: '35%' }} /> : null}
+    <Reveal index={i}>
+      <Press onPress={onPress} accessibilityLabel={`${title}. ${info}`}>
+        <Grad color={color} from={0.55} to={0.08} radius={18} border={0.5} style={{ height }}>
+          {children}
+          <Ionicons name={icon} size={92} color={alpha(colors.fg, 0.07)} style={{ position: 'absolute', right: 10, bottom: -14 }} />
           <View style={{ flex: 1, padding: 14, justifyContent: 'space-between' }}>
-            <Text style={{ color: colors.onSoft, fontFamily: 'label', fontSize: 11, letterSpacing: 2 }}>YOUR DRIVER</Text>
-            {p ? (<View><Text style={{ color: colors.fg, fontSize: 28, fontWeight: '800', fontStyle: 'italic' }} numberOfLines={1}>{p.name || 'Unnamed'}</Text><Text style={{ color: colors.onSoft, fontSize: 16 }}>{`#${p.number || '–'} · ${p.team || 'No team'} · ${stats.races} races · ${stats.wins} wins`}</Text></View>)
-              : (<View><Text style={{ color: colors.fg, fontSize: 24, fontWeight: '800' }}>Create your driver</Text><Text style={{ color: colors.onSoft, fontSize: 16 }}>Photo, number, team, seasons and results</Text></View>)}
+            <Text style={{ color: colors.onSoft, fontFamily: 'label', fontSize: 11, letterSpacing: 2 }}>{kicker}</Text>
+            <View>
+              <Text style={{ color: colors.fg, fontSize: 26, fontWeight: '800', fontStyle: 'italic' }} numberOfLines={1}>{title}</Text>
+              <Text style={{ color: colors.onSoft, fontSize: 15 }} numberOfLines={2}>{info}</Text>
+            </View>
           </View>
+          <View style={{ position: 'absolute', right: 12, top: 12 }}><Ionicons name="chevron-forward" size={20} color={colors.onSoft} /></View>
         </Grad>
       </Press>
-      <View><Eyebrow>Fantasy seasons</Eyebrow></View>
-      {fun.loaded && !fun.fantasies.length && <Note>No fantasy season yet. Make one: pick how many teams there are, choose the races and simulate.</Note>}
-      {fun.fantasies.filter((f) => !f.archived).map((f) => {
-        const done = f.races.filter((r) => sessionsOf(r).every((s) => f.results?.[r.id]?.[s])).length; const lead = done ? standings(f).drivers[0] : null;
-        return (
-          <Press key={f.id} onPress={() => navigation.navigate('Fantasy', { id: f.id })}>
-            <Card>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ color: colors.fg, fontSize: 20, fontWeight: '700' }} numberOfLines={1}>{f.name}</Text>
-                  <Text style={{ color: colors.muted, fontSize: 15 }}>{`Season ${f.season || 1} · ${f.teams.length} teams · ${done}/${f.races.length} races${lead ? ` · leader ${lead.last}` : ''}`}</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={18} color={colors.muted} />
-              </View>
-            </Card>
-          </Press>);
-      })}
-      {fun.fantasies.some((f) => f.archived) ? (<View style={{ gap: 10 }}><Eyebrow>Archived</Eyebrow>{fun.fantasies.filter((f) => f.archived).map((f) => (<Press key={f.id} onPress={() => navigation.navigate('Fantasy', { id: f.id })}><Card><View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}><Ionicons name="archive-outline" size={20} color={colors.muted} /><View style={{ flex: 1 }}><Text style={{ color: colors.fg, fontSize: 18, fontWeight: '700' }} numberOfLines={1}>{f.name}</Text><Text style={{ color: colors.muted, fontSize: 14 }}>{`Season ${f.season || 1} · tap to open or restore`}</Text></View><Ionicons name="chevron-forward" size={18} color={colors.muted} /></View></Card></Press>))}</View>) : null}
-      <Btn icon="add-circle-outline" tone="solid" onPress={() => navigation.navigate('FantasyNew')}>New fantasy season</Btn>
-      <Btn icon="bookmarks-outline" onPress={() => navigation.navigate('FantasyPresets')}>Presets: drivers, races and grids</Btn>
-      <Btn icon="settings-outline" onPress={() => navigation.navigate('FunSettings')}>Fantasy settings</Btn>
+    </Reveal>);
+}
+export function FunHome({ navigation }) {
+  const fun = useFun(); const p = fun.profile;
+  const live = fun.fantasies.filter((f) => !f.archived); const cur = live[0];
+  let fInfo = fun.loaded ? 'Build your own season. Pick teams and races, then simulate.' : 'Loading your seasons…';
+  if (cur) { const done = cur.races.filter((r) => sessionsOf(r).every((s) => cur.results?.[r.id]?.[s])).length; fInfo = `${live.length} saved season${live.length === 1 ? '' : 's'} · ${cur.name}: ${done}/${cur.races.length} races`; }
+  return (
+    <Screen>
+      <Reveal index={0}><Text style={{ color: colors.fg, fontSize: 24, fontWeight: '800', fontStyle: 'italic' }}>Fun</Text></Reveal>
+      <Hero i={1} color={colors.accent} icon="flag" kicker="FANTASY" title="Fantasy seasons" info={fInfo} onPress={() => navigation.navigate('FantasyHub')} />
+      <Hero i={2} color={colors.gold} icon="game-controller" kicker="GAMES" title="Games and quizzes" info={`${nGames} games: daily puzzles, reflexes, predictions and what-ifs`} onPress={() => navigation.navigate('FunGames')} />
+      <Hero i={3} color={p?.color || colors.good} icon="person" kicker="YOUR DRIVER" title={p ? (p.name || 'Unnamed') : 'Create your driver'} info={p ? `#${p.number || '-'} · ${profileStats(p, fun.fantasies).seasons ?? 0} seasons` : 'Photo, number, team, seasons and results'} height={138} onPress={() => navigation.navigate('FunProfile')}>
+        {p?.photo ? <View style={{ position: 'absolute', right: -6, bottom: -6 }}><Avatar uri={p.photo} size={150} radius={20} color={p.color} /></View> : null}
+        {p?.photo ? <Scrim dir="h" from={0.6} to={0} style={{ right: '35%' }} /> : null}
+      </Hero>
+      <Hero i={4} color={colors.red} icon="albums" kicker="COLLECT" title="Driver cards" info="Open packs and build your collection" onPress={() => navigation.navigate('Cards')} height={110} />
+      <Reveal index={5}><Note>Just for fun: nothing here touches the real data.</Note></Reveal>
     </Screen>
   );
 }

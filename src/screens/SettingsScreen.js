@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { View, Switch, Pressable, StyleSheet, Linking, LayoutAnimation, Animated, Easing } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -11,7 +11,7 @@ import { runDiagnostics } from '../lib/diagnostics';
 import { sendTestNotification, notificationsAvailable } from '../lib/notifications';
 import { checkResults } from '../lib/resultAlerts';
 import { SOURCES } from '../api/news';
-import { checkNews } from '../lib/newsAlerts';
+import { checkNews, readNewsLog, readBgRuns } from '../lib/newsAlerts';
 import { ensurePermission } from '../lib/notifications';
 import { checkOta, applyOta } from '../lib/ota';
 import { checkUpdate, currentVersion, updatesConfigured, installUpdate, canInstallInApp } from '../lib/update';
@@ -28,6 +28,8 @@ import { Alert } from '../lib/dialog';
 import CodePrompt from '../components/CodePrompt';
 import { useNavigation } from '@react-navigation/native';
 import { colors, alpha, teamColors } from '../theme';
+import { CHANGELOG, LATEST } from '../data/changelog';
+import { kvGet, kvSet } from '../lib/kv';
 
 const Btn = ({ children, onPress, disabled }) => (
   <Pressable onPress={onPress} disabled={disabled} style={({ pressed }) => [s.btn, (pressed || disabled) && { opacity: 0.6 }]}><Text style={s.btnText}>{children}</Text></Pressable>
@@ -37,6 +39,17 @@ const Sw = ({ label, hint, value, onChange }) => (
     <Switch value={!!value} onValueChange={onChange} trackColor={{ true: colors.accent, false: colors.surface2 }} thumbColor="#fff" /></View>
 );
 // One collapsed row per group of options; tap to unfold.
+const ago = (t) => { const m = Math.round((Date.now() - t) / 60000); return m < 1 ? 'just now' : m < 60 ? `${m} min ago` : m < 1440 ? `${Math.round(m / 60)} h ago` : `${Math.round(m / 1440)} d ago`; };
+function NewsStatus({ tick }) {
+  const [log, setLog] = useState(null); const [runs, setRuns] = useState([]);
+  useEffect(() => { readNewsLog().then(setLog); readBgRuns().then(setRuns); }, [tick]);
+  return (
+    <View style={{ gap: 4, paddingVertical: 4 }}>
+      <Text style={s.hint}>{runs.length ? `Background checks seen: ${runs.length}, last ${ago(runs[runs.length - 1])}.` : 'No background check has run yet. Android may take hours to start the first one.'}</Text>
+      {log ? <Text style={s.hint}>{`Last check ${ago(log.t)}${log.force ? ' (manual)' : ''}: ${log.sent} alert${log.sent === 1 ? '' : 's'} sent.`}</Text> : <Text style={s.hint}>No check recorded yet. Tap "Check news now".</Text>}
+      {(log?.src || []).map((x) => <Text key={x.name} style={s.hint}>{`${x.ok ? '✓' : '✗'} ${x.name}: ${x.ok ? `${x.count} stories, ${x.fresh} new${x.baseline ? ' (first look, no alert)' : ''}` : x.err || 'failed'}`}</Text>)}
+    </View>);
+}
 function Section({ icon, title, summary, children, start = false }) {
   const [open, setOpen] = useState(start); const rot = React.useRef(new Animated.Value(start ? 1 : 0)).current;
   const flip = () => { LayoutAnimation.configureNext(LayoutAnimation.create(220, 'easeInEaseOut', 'opacity')); Animated.timing(rot, { toValue: open ? 0 : 1, duration: 200, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start(); setOpen(!open); };
@@ -188,6 +201,10 @@ export default function SettingsScreen() {
         <Note>Get a notification when a source you pick publishes a new story. Android decides the exact timing, so it can be a few minutes late. Off by default.</Note>
         {SOURCES.map((x) => <Sw key={x.id} label={x.name} value={(o.newsAlerts || {})[x.id]} onChange={async (v) => { if (v) await ensurePermission(); setOpt('newsAlerts', { ...(o.newsAlerts || {}), [x.id]: v }); }} />)}
         <Btn onPress={async () => { const n = await checkNews({ force: true }); setMsg(n ? `Sent ${n} news alert${n > 1 ? 's' : ''}.` : 'No new stories from your sources right now.'); }}>Check news now</Btn>
+        <Sw label="Only my favourite drivers and teams" value={o.newsFavOnly} onChange={(v) => setOpt('newsFavOnly', v)} />
+        <NewsStatus tick={msg} />
+        <Note>If checks never run in the background, Android is limiting the app. Set Battery to Unrestricted for this app, then leave it a few hours.</Note>
+        <Btn icon="battery-charging-outline" onPress={() => Linking.openSettings()}>Open app settings</Btn>
         {msg ? <Note>{msg}</Note> : null}
       </Section>
       <Section icon="options-outline" title="Display" summary={`${o.clock24 ? '24-hour' : '12-hour'} clock · gaps ${GAPS.find(([k]) => k === o.gap)[1].toLowerCase()}`}>
@@ -223,6 +240,7 @@ export default function SettingsScreen() {
         <Btn onPress={() => { setOpts(Object.fromEntries(Object.entries(OPTS).filter(([k]) => !['lang', 'name', 'welcomed', 'accent', 'sport'].includes(k)))); setMsg('Display and performance settings were reset.'); }}>Reset display settings</Btn>
         {msg ? <Note>{msg}</Note> : null}
       </Section>
+      <Changelog />
       <Card>
         <Btn icon="compass-outline" onPress={() => setOpt('tourDone', false)}>Show the app tour again</Btn>
         <Pressable onPress={aboutTap} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
@@ -235,6 +253,18 @@ export default function SettingsScreen() {
       <CodePrompt visible={codeOpen} title="Enter the code" onClose={() => setCodeOpen(false)} onSubmit={(c) => { if (c.toLowerCase() !== 'op81') return false; setCodeOpen(false); nav.navigate('Dev'); return true; }} />
     </Screen>
   );
+}
+function Changelog() {
+  const [seen, setSeen] = useState(LATEST);
+  useEffect(() => { kvGet('changelogSeen', null).then((v) => setSeen(v)); }, []);
+  return (
+    <Section icon="gift-outline" title="Changelog" summary={seen !== LATEST ? `New in ${LATEST}` : `v${LATEST}`}>
+      {CHANGELOG.map((c, i) => (
+        <View key={c.v} style={{ gap: 3, paddingVertical: 6 }} onLayout={() => { if (seen !== LATEST) { kvSet('changelogSeen', LATEST); } }}>
+          <Text style={{ color: i === 0 ? colors.accent : colors.fg, fontWeight: '800', fontSize: 16 }}>{`v${c.v}`}</Text>
+          {c.items.map((t) => <Text key={t} style={s.hint}>{`· ${t}`}</Text>)}
+        </View>))}
+    </Section>);
 }
 const s = StyleSheet.create({
   sec: { borderRadius: 18, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.surface, overflow: 'hidden' },

@@ -372,3 +372,12 @@ Expo Go (SDK 53+) does not include the `expo-notifications` native module; impor
 - Lap tapper (Fun tab): per circuit, tap in the green apex zone of each corner (up to 14); lap time = the circuit's lap record plus time lost; best per circuit kept; within 2.0 s earns a pack.
 - Known data note: poles shown from history (Home-race heroes "from P1", Driver milestones poles) are grid-P1 counts.
 - Route: eas update --branch preview --platform android --message "1.44.0"
+
+## V1.45.0 (JS-only)
+- `lib/gameSave.js`: `useGameSave(key, make)` (whole state at kv `game:<key>`, resumes unless `over`), `useRun(key)` (round games: seed, i, score; rounds are rebuilt from the saved seed), `useLeaveGuard(active)` (beforeRemove -> "Leave the game?" via lib/dialog Alert), `useTimers()` (timeouts cleared on unmount). Applied to True/False, Flag, Team radio, Number quiz, Career duel, Build grid, Winner guess, Closest number, Connections, Hangman, Guess the circuit; Mystery driver (already saved daily) has the guard. Pit stop and Lap tapper are not covered (they are single-attempt timing games).
+- True/False: the verdict stays on the card for 1.7 s, then it slides away.
+- Fun home: big hero boxes (Fantasy, Games, Your driver, Cards). New `screens/FunHubs.js`: `FantasyHub` (saves, archived, new, presets, settings) and `FunGames` (rows). Routes `FantasyHub`, `FunGames`.
+- Driver numbers dimmed (opacity 0.55 to 0.65) in driver cards/rows, Grid, MotoGP.
+- News: favourites filter (News screen + `newsFavOnly` alerts), `newsLog`/`bgRuns` diagnostics shown in Settings > News alerts, battery guidance.
+- Career curves (`screens/CareerCurves.js`), Changelog section above About (`data/changelog.js`, add an entry per release), title swing countback (`finishCountsAt` in api/history.js), Milestones keeps last result (kv `milestones:last`).
+- Unverified on device: everything above; news background delivery depends on Android battery settings.

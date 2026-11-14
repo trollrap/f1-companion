@@ -10,6 +10,7 @@ import { awardPack, loadCards } from '../lib/cards';
 import { shareImage, canShareImage } from '../lib/exportImage';
 import * as hap from '../lib/haptics';
 import { makeFact } from '../lib/tfFacts';
+import { useGameSave, useLeaveGuard, useTimers } from '../lib/gameSave';
 
 // ---------- Flag and country quiz: a flag, four countries ----------
 const toFlag = (cc) => String.fromCodePoint(...[...cc].map((ch) => 127397 + ch.charCodeAt(0)));
@@ -17,14 +18,18 @@ const toFlag = (cc) => String.fromCodePoint(...[...cc].map((ch) => 127397 + ch.c
 const COUNTRIES = [['Australia', 'AU'], ['Austria', 'AT'], ['Azerbaijan', 'AZ'], ['Bahrain', 'BH'], ['Belgium', 'BE'], ['Brazil', 'BR'], ['Canada', 'CA'], ['China', 'CN'], ['Denmark', 'DK'], ['Finland', 'FI'], ['France', 'FR'], ['Germany', 'DE'], ['Hungary', 'HU'], ['India', 'IN'], ['Italy', 'IT'], ['Japan', 'JP'], ['Mexico', 'MX'], ['Monaco', 'MC'], ['Netherlands', 'NL'], ['New Zealand', 'NZ'], ['Portugal', 'PT'], ['Qatar', 'QA'], ['Russia', 'RU'], ['Saudi Arabia', 'SA'], ['Singapore', 'SG'], ['South Africa', 'ZA'], ['Spain', 'ES'], ['Sweden', 'SE'], ['Switzerland', 'CH'], ['Thailand', 'TH'], ['Turkey', 'TR'], ['United Arab Emirates', 'AE'], ['United Kingdom', 'GB'], ['United States', 'US'], ['Argentina', 'AR'], ['Poland', 'PL'], ['Venezuela', 'VE'], ['Colombia', 'CO'], ['Chile', 'CL'], ['Indonesia', 'ID'], ['Malaysia', 'MY'], ['Morocco', 'MA'], ['Ireland', 'IE'], ['Czech Republic', 'CZ'], ['Uruguay', 'UY'], ['Rhodesia', null]].filter((x) => x[1]);
 const N = 10;
 export function FlagQuizScreen() {
-  const [seed, setSeed] = useState(1); const [i, setI] = useState(0); const [score, setScore] = useState(0); const [pick, setPick] = useState(null); const [best, setBest] = useState(0); const [got, setGot] = useState(false);
+  const [g, upd, restart] = useGameSave('flag', () => ({ seed: Date.now(), i: 0, score: 0 }));
+  const later = useTimers(); const [pick, setPick] = useState(null); const [best, setBest] = useState(0); const [got, setGot] = useState(false);
   useEffect(() => { kvGet('flag:best', 0).then(setBest); }, []);
-  const rounds = useMemo(() => { const r = rngOf(seedOf(`flag${seed}${Date.now()}`)); const shuf = (a) => { const x = [...a]; for (let k = x.length - 1; k > 0; k--) { const j = Math.floor(r() * (k + 1)); [x[k], x[j]] = [x[j], x[k]]; } return x; };
+  const seed = g?.seed; const i = g?.i || 0; const score = g?.score || 0;
+  const rounds = useMemo(() => { if (!seed) return []; const r = rngOf(seedOf(`flag${seed}`)); const shuf = (a) => { const x = [...a]; for (let k = x.length - 1; k > 0; k--) { const j = Math.floor(r() * (k + 1)); [x[k], x[j]] = [x[j], x[k]]; } return x; };
     return shuf(COUNTRIES).slice(0, N).map((c) => ({ c, opts: shuf([c, ...shuf(COUNTRIES.filter((x) => x !== c)).slice(0, 3)]) })); }, [seed]);
-  const done = i >= N; const cur = rounds[Math.min(i, N - 1)];
-  const answer = (o) => { if (pick || done) return; setPick(o[0]); const ok = o === cur.c; ok ? hap.good() : hap.bad(); const sc = score + (ok ? 1 : 0); if (ok) setScore(sc);
-    setTimeout(async () => { setPick(null); setI((x) => x + 1); if (i + 1 >= N) { if (sc > best) { setBest(sc); kvSet('flag:best', sc); } if (sc >= 9) setGot(await awardPack('flag:9')); } }, 900); };
-  const again = () => { setSeed((s) => s + 1); setI(0); setScore(0); setPick(null); setGot(false); };
+  const done = i >= N; useLeaveGuard(!!g && !done && (i > 0 || !!pick));
+  const answer = (o) => { if (pick || done || !g) return; setPick(o[0]); const ok = o === rounds[i].c; ok ? hap.good() : hap.bad(); const sc = score + (ok ? 1 : 0);
+    later(async () => { setPick(null); upd({ i: i + 1, score: sc, over: i + 1 >= N }); if (i + 1 >= N) { if (sc > best) { setBest(sc); kvSet('flag:best', sc); } if (sc >= 9) setGot(await awardPack('flag:9')); } }, 900); };
+  const again = () => { setPick(null); setGot(false); restart(); };
+  if (!g || !rounds.length) return <Screen header={false}><Note>Loading…</Note></Screen>;
+  const cur = rounds[Math.min(i, N - 1)];
   if (done) return (
     <Screen header={false}>
       <Card><Eyebrow>Flag quiz</Eyebrow><Text style={{ color: colors.fg, fontSize: 44, fontWeight: '900', marginTop: 6 }}>{score} / {N}</Text>
@@ -83,16 +88,23 @@ export function YearReviewScreen() {
 
 // ---------- True or false: statements written from the offline race history, so every answer is checked against data ----------
 export function TrueFalseScreen() {
-  const rr = useRef(rngOf(seedOf(`tf${Date.now()}`))).current; const [fact, setFact] = useState(() => { try { return makeFact(rr); } catch { return null; } });
-  const [streak, setStreak] = useState(0); const [best, setBest] = useState(0); const [res, setRes] = useState(null); const [over, setOver] = useState(false); const [got, setGot] = useState(false);
-  const x = useRef(new Animated.Value(0)).current; const live = useRef({}); live.current = { fact, res, streak, best };
+  const rr = useRef(rngOf(seedOf(`tf${Date.now()}`))).current;
+  const [g, upd, restart, gref] = useGameSave('tf', () => ({ fact: makeFact(rr), streak: 0, over: false }));
+  const later = useTimers(); const [best, setBest] = useState(0); const [res, setRes] = useState(null); const [got, setGot] = useState(false);
+  const x = useRef(new Animated.Value(0)).current; const live = useRef({}); live.current = { res, best };
+  const fact = g?.fact; const streak = g?.streak || 0; const over = !!g?.over;
+  useLeaveGuard(!!fact && !over);
   useEffect(() => { kvGet('tf:best', 0).then(setBest); }, []);
-  const answer = (v) => { const L = live.current; if (!L.fact || L.res) return; const ok = v === L.fact.truth; ok ? hap.good() : hap.bad(); setRes({ ok, v });
-    Animated.timing(x, { toValue: v ? 400 : -400, duration: 220, useNativeDriver: true }).start();
-    setTimeout(async () => { if (ok) { const n = L.streak + 1; setStreak(n); if (n > L.best) { setBest(n); kvSet('tf:best', n); } if (n >= 10) setGot(await awardPack('tf:10')); setRes(null); x.setValue(0); try { setFact(makeFact(rr)); } catch { setFact(null); } } else setOver(true); }, 1500); };
+  const answer = (v) => { const G = gref.current; if (!G?.fact || live.current.res || G.over) return; const ok = v === G.fact.truth; ok ? hap.good() : hap.bad(); setRes({ ok, v });
+    // the card stays put while the verdict shows; it only slides away afterwards
+    later(async () => { Animated.timing(x, { toValue: v ? 400 : -400, duration: 220, useNativeDriver: true }).start();
+      if (ok) { const n = G.streak + 1; if (n > live.current.best) { setBest(n); kvSet('tf:best', n); } if (n >= 10) setGot(await awardPack('tf:10'));
+        later(() => { setRes(null); x.setValue(0); let f = null; try { f = makeFact(rr); } catch { f = null; } upd({ fact: f, streak: n }); }, 230); }
+      else later(() => { upd({ over: true }); }, 230); }, 1700); };
   const pan = useRef(PanResponder.create({ onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dx) > 8, onPanResponderMove: (_, g) => { if (!live.current.res) x.setValue(g.dx); }, onPanResponderRelease: (_, g) => { if (g.dx > 90) answer(true); else if (g.dx < -90) answer(false); else Animated.spring(x, { toValue: 0, useNativeDriver: true }).start(); } })).current;
-  const again = () => { setStreak(0); setOver(false); setRes(null); setGot(false); x.setValue(0); try { setFact(makeFact(rr)); } catch { setFact(null); } };
-  if (!fact) return <Screen header={false}><Note>Could not make a statement from the history.</Note></Screen>;
+  const again = () => { setRes(null); setGot(false); x.setValue(0); restart(); };
+  if (!g) return <Screen header={false}><Note>Loading…</Note></Screen>;
+  if (!fact) return <Screen header={false}><Note>Could not make a statement from the history.</Note><Btn onPress={again}>Try again</Btn></Screen>;
   if (over) return (<Screen header={false}><Card><Eyebrow>True or false</Eyebrow><Text style={{ color: colors.fg, fontSize: 44, fontWeight: '900', marginTop: 6 }}>{`Streak ${streak}`}</Text><Text style={{ color: colors.muted, marginTop: 4 }}>{`Best streak: ${best}`}</Text><Text style={{ color: colors.fg, marginTop: 10 }}>{fact.text}</Text><Text style={{ color: colors.muted, marginTop: 4 }}>{`${fact.truth ? 'True' : 'False'}. ${fact.why}`}</Text><View style={{ marginTop: 14 }}><Btn onPress={again}>Play again</Btn></View></Card><Note>A streak of 10 earns a card pack.</Note></Screen>);
   const tilt = x.interpolate({ inputRange: [-200, 0, 200], outputRange: ['-8deg', '0deg', '8deg'] });
   return (

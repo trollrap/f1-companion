@@ -9,7 +9,7 @@ import ShareCard from '../components/ShareCard';
 import { useAsync } from '../hooks/useAsync';
 import { jolpicaSchedule, seasonPoints } from '../api/jolpica';
 import { YEAR } from '../api/openf1';
-import { historyYears, localAllDrivers, localTeammates } from '../api/history';
+import { historyYears, localAllDrivers, localTeammates, finishCountsAt } from '../api/history';
 import { travel } from '../lib/travel';
 import { swing } from '../lib/titleSwing';
 import { norm } from '../lib/names';
@@ -47,7 +47,7 @@ export function TravelScreen() {
 export function TitleSwingScreen() {
   const years = useMemo(yearsList, []); const [year, setYear] = useState(YEAR); const [rd, setRd] = useState(null);
   const q = useAsync(() => seasonPoints(year), [year]); const sp = q.v;
-  const idx = sp && sp.rounds.length ? (rd != null && rd < sp.rounds.length ? rd : sp.rounds.length - 1) : -1; const S = useMemo(() => (sp ? swing(sp, idx) : null), [sp, idx]);
+  const idx = sp && sp.rounds.length ? (rd != null && rd < sp.rounds.length ? rd : sp.rounds.length - 1) : -1; const S = useMemo(() => (sp ? swing(sp, idx, (n) => { try { return finishCountsAt(year, n + 1); } catch { return null; } }) : null), [sp, idx]);
   const arrow = (r) => (r.posBefore == null ? '' : r.posAfter < r.posBefore ? `▲${r.posBefore - r.posAfter}` : r.posAfter > r.posBefore ? `▼${r.posAfter - r.posBefore}` : '–');
   return (
     <Screen header={false}>
@@ -70,7 +70,7 @@ export function TitleSwingScreen() {
                 <Text style={{ width: 34, textAlign: 'right', color: arrow(r).startsWith('▲') ? colors.good : arrow(r).startsWith('▼') ? colors.red : colors.muted, fontWeight: '800', fontSize: 13 }}>{arrow(r)}</Text>
               </Line>))}
           </Card></ShareCard>) : null}
-      {S && S.rows.some((r, i) => i > 0 && r.after === S.rows[i - 1].after) ? <Note>Drivers level on points are listed alphabetically here. The official order breaks ties on race results.</Note> : null}
+      {S && S.rows.some((r, i) => i > 0 && r.after === S.rows[i - 1].after) ? <Note>Drivers level on points are split by most wins, then most second places and so on (from the built-in history; races after the history ends fall back to alphabetical).</Note> : null}
     </Screen>);
 }
 

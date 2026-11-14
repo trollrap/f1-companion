@@ -5,6 +5,7 @@ import Screen, { Card, Eyebrow, Note } from '../components/Screen';
 import { Btn } from '../components/FunBits';
 import { colors, alpha } from '../theme';
 import { kvGet, kvSet, seedOf, rngOf } from '../lib/kv';
+import { useGameSave, useLeaveGuard } from '../lib/gameSave';
 import { awardPack } from '../lib/cards';
 import { makeConnections } from '../lib/connections';
 import { hangmanWord } from '../lib/hangman';
@@ -13,11 +14,14 @@ import * as hap from '../lib/haptics';
 // ---------- Connections: sort 12 drivers into 3 hidden groups ----------
 const TINTS = ['#3B9CFF', '#FFD12E', '#3DD16C'];
 export function ConnectionsScreen() {
-  const [seed, setSeed] = useState(1); const puz = useMemo(() => { try { return makeConnections(rngOf(seedOf(`cx${seed}${Date.now()}`))); } catch { return null; } }, [seed]);
-  const [sel, setSel] = useState([]); const [solved, setSolved] = useState([]); const [lives, setLives] = useState(4); const [msg, setMsg] = useState(''); const [wins, setWins] = useState(0); const [got, setGot] = useState(false);
+  const [sv, supd, srestart] = useGameSave('cx', () => ({ seed: Date.now(), solved: [], lives: 4 })); const seed = sv?.seed || 0; const puz = useMemo(() => { if (!seed) return null; try { return makeConnections(rngOf(seedOf(`cx${seed}`))); } catch { return null; } }, [seed]);
+  const [sel, setSel] = useState([]); const solved = useMemo(() => (puz ? (sv?.solved || []).map((l) => puz.groups.find((g) => g.label === l)).filter(Boolean) : []), [puz, sv]); const lives = sv?.lives ?? 4; const setSolved = (ns) => supd({ solved: ns.map((g) => g.label), over: ns.length === 3 }); const setLives = (n) => supd({ lives: n, over: n <= 0 });
+  const [msg, setMsg] = useState(''); const [wins, setWins] = useState(0); const [got, setGot] = useState(false);
   useEffect(() => { kvGet('cx:wins', 0).then(setWins); }, []);
-  useEffect(() => { setSel([]); setSolved([]); setLives(4); setMsg(''); setGot(false); }, [seed]);
-  if (!puz) return <Screen header={false}><Note>Could not make a puzzle from the history.</Note></Screen>;
+  useEffect(() => { setSel([]); setMsg(''); setGot(false); }, [seed]);
+  useLeaveGuard(!!puz && solved.length < 3 && lives > 0 && (solved.length > 0 || lives < 4));
+  if (!sv) return <Screen header={false}><Note>Loading…</Note></Screen>;
+  if (!puz) return <Screen header={false}><Note>Could not make a puzzle from the history.</Note><Btn onPress={srestart}>Try again</Btn></Screen>;
   const left = puz.tiles.filter((n) => !solved.some((g) => g.items.includes(n)));
   const over = lives <= 0; const won = solved.length === 3;
   const toggle = (n) => { if (over || won) return; hap.tap(); setSel((s) => (s.includes(n) ? s.filter((x) => x !== n) : s.length < 4 ? [...s, n] : s)); };
@@ -33,7 +37,7 @@ export function ConnectionsScreen() {
         {left.filter(() => !over).map((n) => { const on = sel.includes(n); return (<Pressable key={n} accessibilityRole="button" accessibilityState={{ selected: on }} onPress={() => toggle(n)} style={({ pressed }) => [{ width: '31.5%', minHeight: 56, borderRadius: 12, alignItems: 'center', justifyContent: 'center', padding: 6, borderWidth: 1, borderColor: on ? colors.accent : colors.line, backgroundColor: on ? alpha(colors.accent, 0.22) : colors.card }, pressed && { opacity: 0.75 }]}><Text style={{ color: colors.fg, fontWeight: '800', fontSize: 13, textAlign: 'center' }}>{n}</Text></Pressable>); })}
       </View>
       {msg && !won && !over ? <Text style={{ color: colors.gold, fontWeight: '800', textAlign: 'center' }}>{msg}</Text> : null}
-      {!over && !won ? <Btn onPress={submit} disabled={sel.length !== 4}>Submit group</Btn> : <Btn onPress={() => setSeed((s) => s + 1)}>{won ? 'Next puzzle' : 'Try another'}</Btn>}
+      {!over && !won ? <Btn onPress={submit} disabled={sel.length !== 4}>Submit group</Btn> : <Btn onPress={srestart}>{won ? 'Next puzzle' : 'Try another'}</Btn>}
       {won && got ? <Note>Solved. You earned a card pack. Open it in Cards.</Note> : null}
       <Note>Groups come from the offline history: nationality, world champions, teams a driver raced for, and the decade of their first race.</Note>
     </Screen>);
@@ -42,9 +46,12 @@ export function ConnectionsScreen() {
 // ---------- Hangman: drivers, circuits and teams ----------
 const KEYS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split(''); const LIVES = 7;
 export function HangmanScreen() {
-  const rr = useRef(rngOf(seedOf(`hm${Date.now()}`))).current; const [w, setW] = useState(() => { try { return hangmanWord(rr); } catch { return null; } });
-  const [got, setGot] = useState([]); const [streak, setStreak] = useState(0); const [best, setBest] = useState(0); const [pack, setPack] = useState(false);
+  const rr = useRef(rngOf(seedOf(`hm${Date.now()}`))).current; const [sv, supd] = useGameSave('hm', () => ({ w: hangmanWord(rr), got: [], streak: 0 }));
+  const w = sv?.w; const got = sv?.got || []; const streak = sv?.streak || 0; const setGot = (a) => supd({ got: a }); const setStreak = (n) => supd({ streak: n }); const setW = (x) => supd({ w: x, got: [] });
+  const [best, setBest] = useState(0); const [pack, setPack] = useState(false);
   useEffect(() => { kvGet('hm:best', 0).then(setBest); }, []);
+  const _need = w ? [...new Set(w.letters.replace(/[^A-Z]/g, '').split(''))] : []; useLeaveGuard(!!w && got.length > 0 && !_need.every((l) => got.includes(l)) && got.filter((l) => !_need.includes(l)).length < LIVES);
+  if (!sv) return <Screen header={false}><Note>Loading…</Note></Screen>;
   if (!w) return <Screen header={false}><Note>Could not pick a word.</Note></Screen>;
   const need = [...new Set(w.letters.replace(/[^A-Z]/g, '').split(''))]; const wrong = got.filter((l) => !need.includes(l)).length; const won = need.every((l) => got.includes(l)); const lost = wrong >= LIVES;
   const guess = async (l) => { if (won || lost || got.includes(l)) return; const next = [...got, l]; setGot(next); const ok = need.includes(l); ok ? hap.tap() : hap.bad();

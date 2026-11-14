@@ -374,3 +374,11 @@ export function comebacks(since) {
   const top = (a) => a.sort((x, y) => y.grid - x.grid || y.gain - x.gain || y.year - x.year).slice(0, 25);
   return { wins: top(wins), podiums: top(pods) };
 }
+
+// Finishing-position counts per driver over the first `upto` races of a season, by driverId: [wins, 2nds, 3rds, ...].
+// Used for the official championship tie-break (most wins, then most second places, and so on).
+export function finishCountsAt(year, upto) {
+  load(); const rl = H.r[String(year)]; if (!rl) return null; const out = {};
+  rl.slice(0, upto).forEach((rc) => rc[4].forEach((r) => { const p = /^\d+$/.test(String(r[4])) ? +r[4] : 0; if (!p) return; const id = IX.idOf[r[0]]; if (!id) return; const a = (out[id] ||= []); a[p - 1] = (a[p - 1] || 0) + 1; }));
+  return out;
+}

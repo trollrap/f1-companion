@@ -30,7 +30,7 @@ export default function GridScreen() {
               const moved = was[d.driverId] && was[d.driverId] !== t.teamId, fresh = now.v && !was[d.driverId];
               return (
                 <View key={d.driverId} style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                  <Text style={{ width: 44, textAlign: 'right', fontFamily: 'display', fontWeight: '800', fontSize: 22, color: colors.fg, fontStyle: 'italic' }}>{d.number ?? ''}</Text>
+                  <Text style={{ width: 44, textAlign: 'right', opacity: 0.55, fontFamily: 'display', fontWeight: '800', fontSize: 22, color: colors.fg, fontStyle: 'italic' }}>{d.number ?? ''}</Text>
                   <View style={{ width: 2, height: 28, borderRadius: 1, backgroundColor: alpha('#FFFFFF', 0.55) }} />
                   <Text style={{ color: colors.fg, fontSize: 19, fontWeight: '700', flexShrink: 1 }} numberOfLines={1}>{`${d.first} ${String(d.last).toUpperCase()}`}</Text>
                   {moved || fresh ? <View style={{ backgroundColor: alpha(colors.gold, 0.2), borderRadius: 7, paddingHorizontal: 6, paddingVertical: 2 }}><Text style={{ color: colors.gold, fontSize: 10, fontWeight: '800', letterSpacing: 1 }}>{moved ? 'NEW TEAM' : 'NEW'}</Text></View> : null}

@@ -73,7 +73,7 @@ function load() {
 }
 // Defined at import time (App.js imports this file) so Android can start it while the app is closed.
 if (load()) {
-  try { TM.defineTask(TASK, async () => { try { await checkResults(); await checkNews(); return BT.BackgroundTaskResult.Success; } catch { return BT.BackgroundTaskResult.Failed; } }); } catch {}
+  try { TM.defineTask(TASK, async () => { try { try { const r = JSON.parse((await AsyncStorage.getItem('bgRuns')) || '[]'); AsyncStorage.setItem('bgRuns', JSON.stringify([Date.now(), ...(Array.isArray(r) ? r : [])].slice(0, 10))).catch(() => {}); } catch {} await checkResults(); await checkNews(); return BT.BackgroundTaskResult.Success; } catch { return BT.BackgroundTaskResult.Failed; } }); } catch {}
 }
 // Turns the background check on or off to match the switch.
 export async function syncResultTask(on) {

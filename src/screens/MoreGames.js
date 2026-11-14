@@ -7,6 +7,7 @@ import Dropdown from '../components/Dropdown';
 import { colors, alpha } from '../theme';
 import { kvGet, kvSet, seedOf, rngOf } from '../lib/kv';
 import { awardPack } from '../lib/cards';
+import { useRun, useGameSave, useLeaveGuard, useTimers } from '../lib/gameSave';
 import { useAsync } from '../hooks/useAsync';
 import { driverStandings } from '../api/jolpica';
 import { YEAR } from '../api/openf1';
@@ -59,18 +60,18 @@ export function PitStopScreen() {
 const NQ = 10;
 export function NumberQuizScreen() {
   const q = useAsync(() => driverStandings(YEAR), []);
-  const [seed, setSeed] = useState(1); const [i, setI] = useState(0); const [score, setScore] = useState(0); const [pick, setPick] = useState(null); const [best, setBest] = useState(0); const [got, setGot] = useState(false);
+  const run = useRun('num'); const { seed, i, score } = run; const later = useTimers(); const [pick, setPick] = useState(null); const [best, setBest] = useState(0); const [got, setGot] = useState(false);
   useEffect(() => { kvGet('num:best', 0).then(setBest); }, []);
   const pool = useMemo(() => (q.v || []).filter((d) => d.permNumber && /^\d+$/.test(String(d.permNumber))), [q.v]);
-  const rounds = useMemo(() => { if (pool.length < 6) return []; const r = rngOf(seedOf(`num${seed}${Date.now()}`)); const n = Math.min(NQ, pool.length);
+  const rounds = useMemo(() => { if (pool.length < 6 || !seed) return []; const r = rngOf(seedOf(`num${seed}`)); const n = Math.min(NQ, pool.length);
     return shuffle(pool, r).slice(0, n).map((d, k) => { const others = shuffle(pool.filter((x) => x !== d), r).slice(0, 3); const byNum = k % 2 === 0; return byNum ? { d, byNum, ask: `Which driver races with #${d.permNumber}?`, ans: d.name, opts: shuffle([d, ...others], r).map((x) => x.name) } : { d, byNum, ask: `Which number does ${d.name} race with?`, ans: String(d.permNumber), opts: shuffle([d, ...others], r).map((x) => String(x.permNumber)) }; }); }, [pool, seed]);
-  const total = rounds.length;
+  const total = rounds.length; useLeaveGuard(run.ready && i > 0 && i < total);
   if (q.loading) return <Screen header={false}><Note>Loading this season's drivers…</Note></Screen>;
   if (total < 3) return <Screen header={false}><Note>This quiz needs this season's driver list, which could not be loaded. Connect once and try again.</Note></Screen>;
   const done = i >= total; const cur = rounds[Math.min(i, total - 1)];
-  const answer = (o) => { if (pick || done) return; setPick(o); const ok = o === cur.ans; ok ? hap.good() : hap.bad(); const sc = score + (ok ? 1 : 0); if (ok) setScore(sc);
-    setTimeout(async () => { setPick(null); setI((x) => x + 1); if (i + 1 >= total) { if (sc > best) { setBest(sc); kvSet('num:best', sc); } if (sc >= total - 1) setGot(await awardPack('num:9')); } }, 900); };
-  const again = () => { setSeed((s) => s + 1); setI(0); setScore(0); setPick(null); setGot(false); };
+  const answer = (o) => { if (pick || done) return; setPick(o); const ok = o === cur.ans; ok ? hap.good() : hap.bad(); const sc = score + (ok ? 1 : 0); if (ok) run.setScore(sc);
+    later(async () => { setPick(null); run.setI((x) => x + 1); if (i + 1 >= total) { run.finish(); if (sc > best) { setBest(sc); kvSet('num:best', sc); } if (sc >= total - 1) setGot(await awardPack('num:9')); } }, 900); };
+  const again = () => { setPick(null); setGot(false); run.again(); };
   if (done) return (<Screen header={false}><Card><Eyebrow>Number quiz</Eyebrow><Text style={{ color: colors.fg, fontSize: 44, fontWeight: '900', marginTop: 6 }}>{score} / {total}</Text><Text style={{ color: colors.muted, marginTop: 4 }}>Best: {Math.max(best, score)}</Text><View style={{ marginTop: 14 }}><Btn onPress={again}>Play again</Btn></View></Card>{got ? <Note>You earned a card pack. Open it in Cards.</Note> : null}<Note>Miss at most one to earn a card pack.</Note></Screen>);
   return (
     <Screen header={false}>
@@ -95,12 +96,16 @@ function makeDuel(r) {
 }
 export function CareerDuelScreen() {
   const rr = useRef(rngOf(seedOf(`duel${Date.now()}`))).current;
-  const [duel, setDuel] = useState(() => makeDuel(rr)); const [streak, setStreak] = useState(0); const [best, setBest] = useState(0); const [pick, setPick] = useState(null); const [over, setOver] = useState(false); const [got, setGot] = useState(false);
+  const [g, upd, restart, gref] = useGameSave('duel', () => ({ duel: makeDuel(rr), streak: 0, over: false })); const later = useTimers();
+  const duel = g?.duel; const streak = g?.streak || 0; const over = !!g?.over;
+  const [best, setBest] = useState(0); const [pick, setPick] = useState(null); const [got, setGot] = useState(false);
+  useLeaveGuard(!!duel && !over);
   useEffect(() => { kvGet('duel:best', 0).then(setBest); }, []);
+  if (!g) return <Screen header={false}><Note>Loading…</Note></Screen>;
   if (!duel) return <Screen header={false}><Note>Not enough career data to make a duel.</Note></Screen>;
-  const choose = (k) => { if (pick) return; setPick(k); const ok = k === duel.win; ok ? hap.good() : hap.bad();
-    setTimeout(async () => { if (ok) { const n = streak + 1; setStreak(n); if (n > best) { setBest(n); kvSet('duel:best', n); } if (n >= 10) setGot(await awardPack('duel:10')); setPick(null); setDuel(makeDuel(rr)); } else setOver(true); }, 1300); };
-  const again = () => { setStreak(0); setPick(null); setOver(false); setGot(false); setDuel(makeDuel(rr)); };
+  const choose = (k) => { if (pick || over) return; setPick(k); const ok = k === duel.win; ok ? hap.good() : hap.bad();
+    later(async () => { if (ok) { const n = gref.current.streak + 1; if (n > best) { setBest(n); kvSet('duel:best', n); } if (n >= 10) setGot(await awardPack('duel:10')); setPick(null); upd({ streak: n, duel: makeDuel(rr) }); } else upd({ over: true }); }, 1300); };
+  const again = () => { setPick(null); setGot(false); restart(); };
   if (over) return (<Screen header={false}><Card><Eyebrow>Career duel</Eyebrow><Text style={{ color: colors.fg, fontSize: 44, fontWeight: '900', marginTop: 6 }}>{`Streak ${streak}`}</Text><Text style={{ color: colors.muted, marginTop: 4 }}>{`Best streak: ${best}`}</Text><View style={{ marginTop: 14 }}><Btn onPress={again}>Play again</Btn></View></Card><Note>A streak of 10 earns a card pack.</Note></Screen>);
   const side = (k) => { const d = duel[k]; const shown = pick; const right = shown && duel.win === k; const wrong = shown === k && duel.win !== k;
     return (<Pressable key={k} accessibilityRole="button" onPress={() => choose(k)} style={({ pressed }) => [optStyle(right, wrong), { alignItems: 'center', paddingVertical: 24 }, pressed && { opacity: 0.8 }]}><Text style={{ color: colors.fg, fontSize: 21, fontWeight: '900' }}>{d.name}</Text><Text style={{ color: colors.muted, fontSize: 13 }}>{`${d.first_year} to ${d.last_year}`}</Text>{shown ? <Text style={{ color: colors.fg, fontSize: 32, fontWeight: '900', marginTop: 8 }}>{d.v}</Text> : null}</Pressable>); };
@@ -115,11 +120,13 @@ export function CareerDuelScreen() {
 // ---------- Build the grid: put the drivers into the right teams for a season ----------
 const GRID_YEARS = (() => { const a = []; const up = Math.min(2025, (() => { try { return HISTORY_UPTO(); } catch { return 2025; } })()); for (let y = up; y >= 2000; y--) a.push(y); return a; })();
 export function BuildGridScreen() {
-  const [year, setYear] = useState(() => GRID_YEARS[Math.floor(Math.random() * GRID_YEARS.length)]); const [seed, setSeed] = useState(1);
+  const [sv, supd] = useGameSave('grid', () => ({ year: GRID_YEARS[Math.floor(Math.random() * GRID_YEARS.length)], seed: 1, placed: {} })); const year = sv?.year || GRID_YEARS[0]; const seed = sv?.seed || 1;
+  const setYear = (y) => supd({ year: y, placed: {} }); const setSeed = (f) => supd((c) => ({ seed: f(c.seed || 1), placed: {} }));
   const teams = useMemo(() => { try { const seen = new Set(); return seasonGrid(year).map((t) => ({ ...t, drivers: t.drivers.filter((d) => { if (seen.has(d.driverId)) return false; seen.add(d.driverId); return true; }) })).filter((t) => t.drivers.length === 2); } catch { return []; } }, [year]);
   const pool = useMemo(() => shuffle(teams.flatMap((t) => t.drivers), rngOf(seedOf(`bg${year}${seed}`))), [teams, year, seed]);
-  const [placed, setPlaced] = useState({}); const [sel, setSel] = useState(null); const [checked, setChecked] = useState(false); const [got, setGot] = useState(false);
-  useEffect(() => { setPlaced({}); setSel(null); setChecked(false); setGot(false); }, [year, seed]);
+  const placed = sv?.placed || {}; const setPlaced = (n) => supd({ placed: n }); const [sel, setSel] = useState(null); const [checked, setChecked] = useState(false); const [got, setGot] = useState(false);
+  useEffect(() => { setSel(null); setChecked(false); setGot(false); }, [year, seed]);
+  useLeaveGuard(!!sv && !checked && Object.keys(placed).length > 0);
   const used = new Set(Object.values(placed)); const free = pool.filter((d) => !used.has(d.driverId));
   const slotKey = (t, n) => `${t.teamId}:${n}`;
   const tapSlot = (k) => { if (checked) return; if (placed[k]) { const n = { ...placed }; delete n[k]; setPlaced(n); return; } if (sel) { setPlaced({ ...placed, [k]: sel }); setSel(null); hap.tap(); } };
@@ -163,14 +170,14 @@ function makeWinnerRounds(r) {
   return out;
 }
 export function WinnerGuessScreen() {
-  const [seed, setSeed] = useState(1); const rounds = useMemo(() => { try { return makeWinnerRounds(rngOf(seedOf(`wg${seed}${Date.now()}`))); } catch { return []; } }, [seed]);
-  const [i, setI] = useState(0); const [score, setScore] = useState(0); const [pick, setPick] = useState(null); const [hint, setHint] = useState(false); const [best, setBest] = useState(0); const [got, setGot] = useState(false);
+  const run = useRun('wg'); const { seed, i, score } = run; const later = useTimers(); const rounds = useMemo(() => { if (!seed) return []; try { return makeWinnerRounds(rngOf(seedOf(`wg${seed}`))); } catch { return []; } }, [seed]);
+  const [pick, setPick] = useState(null); const [hint, setHint] = useState(false); const [best, setBest] = useState(0); const [got, setGot] = useState(false);
   useEffect(() => { kvGet('wg:best', 0).then(setBest); }, []);
-  const total = rounds.length; if (total < 3) return <Screen header={false}><Note>Not enough history to make a round.</Note></Screen>;
+  const total = rounds.length; useLeaveGuard(run.ready && i > 0 && i < total); if (!run.ready) return <Screen header={false}><Note>Loading…</Note></Screen>; if (total < 3) return <Screen header={false}><Note>Not enough history to make a round.</Note></Screen>;
   const done = i >= total; const cur = rounds[Math.min(i, total - 1)];
-  const answer = (o) => { if (pick || done) return; setPick(o); const ok = o === cur.ans; ok ? hap.good() : hap.bad(); const sc = score + (ok ? (hint ? 0.5 : 1) : 0); if (ok) setScore(sc);
-    setTimeout(async () => { setPick(null); setHint(false); setI((x) => x + 1); if (i + 1 >= total) { if (sc > best) { setBest(sc); kvSet('wg:best', sc); } if (sc >= 7) setGot(await awardPack('wg:7')); } }, 1500); };
-  const again = () => { setSeed((s) => s + 1); setI(0); setScore(0); setPick(null); setHint(false); setGot(false); };
+  const answer = (o) => { if (pick || done) return; setPick(o); const ok = o === cur.ans; ok ? hap.good() : hap.bad(); const sc = score + (ok ? (hint ? 0.5 : 1) : 0); if (ok) run.setScore(sc);
+    later(async () => { setPick(null); setHint(false); run.setI((x) => x + 1); if (i + 1 >= total) { run.finish(); if (sc > best) { setBest(sc); kvSet('wg:best', sc); } if (sc >= 7) setGot(await awardPack('wg:7')); } }, 1500); };
+  const again = () => { setPick(null); setHint(false); setGot(false); run.again(); };
   if (done) return (<Screen header={false}><Card><Eyebrow>Winner guess</Eyebrow><Text style={{ color: colors.fg, fontSize: 44, fontWeight: '900', marginTop: 6 }}>{score} / {total}</Text><Text style={{ color: colors.muted, marginTop: 4 }}>Best: {Math.max(best, score)}</Text><View style={{ marginTop: 14 }}><Btn onPress={again}>Play again</Btn></View></Card>{got ? <Note>You earned a card pack. Open it in Cards.</Note> : null}<Note>Score 7 or more once to earn a card pack. Using the team clue halves a point.</Note></Screen>);
   return (
     <Screen header={false}>
@@ -193,15 +200,17 @@ function makeGuessRounds(r) {
 }
 const pts = (g, a, max) => Math.max(0, Math.round(100 - (100 * Math.abs(g - a)) / Math.max(a * 0.6, 8)));
 export function ClosestNumberScreen() {
-  const [seed, setSeed] = useState(1); const rounds = useMemo(() => { try { return makeGuessRounds(rngOf(seedOf(`cn${seed}${Date.now()}`))); } catch { return []; } }, [seed]);
-  const [i, setI] = useState(0); const [g, setG] = useState(0); const [res, setRes] = useState(null); const [total, setTotal] = useState(0); const [best, setBest] = useState(0); const [got, setGot] = useState(false); const [w, setW] = useState(0);
+  const run = useRun('cn'); const { seed, i, score: total } = run; const rounds = useMemo(() => { if (!seed) return []; try { return makeGuessRounds(rngOf(seedOf(`cn${seed}`))); } catch { return []; } }, [seed]);
+  const [g, setG] = useState(0); const [res, setRes] = useState(null); const [best, setBest] = useState(0); const [got, setGot] = useState(false); const [w, setW] = useState(0);
   useEffect(() => { kvGet('cn:best', 0).then(setBest); }, []);
+  useLeaveGuard(run.ready && i > 0 && i < rounds.length);
+  if (!run.ready) return <Screen header={false}><Note>Loading…</Note></Screen>;
   if (rounds.length < 3) return <Screen header={false}><Note>Not enough career data to make a round.</Note></Screen>;
   const n = rounds.length; const done = i >= n; const cur = rounds[Math.min(i, n - 1)];
   const set = (v) => { if (res) return; setG(Math.max(0, Math.min(cur.max, Math.round(v)))); };
-  const lock = () => { if (res) return; const p = pts(g, cur.ans, cur.max); setRes({ p }); p >= 80 ? hap.good() : hap.tap(); setTotal((t) => t + p); };
-  const next = async () => { const nt = total; setRes(null); setG(0); if (i + 1 >= n) { if (nt > best) { setBest(nt); kvSet('cn:best', nt); } if (nt >= 350) setGot(await awardPack('cn:350')); } setI(i + 1); };
-  const again = () => { setSeed((x) => x + 1); setI(0); setTotal(0); setG(0); setRes(null); setGot(false); };
+  const lock = () => { if (res) return; const p = pts(g, cur.ans, cur.max); setRes({ p }); p >= 80 ? hap.good() : hap.tap(); run.setScore((t) => t + p); };
+  const next = async () => { const nt = total; setRes(null); setG(0); if (i + 1 >= n) { if (nt > best) { setBest(nt); kvSet('cn:best', nt); } if (nt >= 350) setGot(await awardPack('cn:350')); run.finish(); } run.setI(i + 1); };
+  const again = () => { setG(0); setRes(null); setGot(false); run.again(); };
   if (done) return (<Screen header={false}><Card><Eyebrow>Closest number</Eyebrow><Text style={{ color: colors.fg, fontSize: 44, fontWeight: '900', marginTop: 6 }}>{`${total} / ${n * 100}`}</Text><Text style={{ color: colors.muted, marginTop: 4 }}>{`Best: ${Math.max(best, total)}`}</Text><View style={{ marginTop: 14 }}><Btn onPress={again}>Play again</Btn></View></Card>{got ? <Note>You earned a card pack. Open it in Cards.</Note> : null}<Note>350 points or more earns a card pack.</Note></Screen>);
   return (
     <Screen header={false}>

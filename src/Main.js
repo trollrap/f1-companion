@@ -43,6 +43,7 @@ import { FootScores, FootTable, FootMatch, FootTeam } from './screens/FootScreen
 import { FunHome, FunProfile } from './screens/FunScreens';
 import { FantasyNew, Fantasy, FantasyRace, FantasyDriver, FantasyTransfers, FunSettings, PresetNew, PresetGrid } from './screens/FantasyScreens';
 import { FantasyPresets } from './screens/PresetScreens';
+import { FantasyHub, FunGames } from './screens/FunHubs';
 import SettingsScreen from './screens/SettingsScreen';
 import AlertScheduler from './components/AlertScheduler';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -176,6 +177,7 @@ function Shell() {
               <Stack.Screen name="TitleSwing" getComponent={() => require('./screens/ExtraStats').TitleSwingScreen} options={{ title: 'Title picture' }} />
               <Stack.Screen name="TeamMates" getComponent={() => require('./screens/ExtraStats').TeamMateScreen} options={{ title: 'Team-mate battles' }} />
               <Stack.Screen name="Passing" getComponent={() => require('./screens/SeasonStats').PassingScreen} options={{ title: 'Overtaking by circuit' }} />
+              <Stack.Screen name="CareerCurves" getComponent={() => require('./screens/CareerCurves').default} options={{ title: 'Career curves' }} />
               <Stack.Screen name="CompareSeasons" getComponent={() => require('./screens/SeasonStats').CompareSeasonsScreen} options={{ title: 'Compare seasons' }} />
               <Stack.Screen name="TrueFalse" getComponent={() => require('./screens/ExtraGames').TrueFalseScreen} options={{ title: 'True or false' }} />
               <Stack.Screen name="SeasonReview" getComponent={() => require('./screens/ReviewScreens').SeasonReviewScreen} options={{ title: 'Season review' }} />
@@ -202,6 +204,8 @@ function Shell() {
               <Stack.Screen name="Records" component={RecordsScreen} options={{ title: 'Records & history' }} />
               <Stack.Screen name="Chart" getComponent={() => require('./screens/ChartScreen').default} options={{ title: tr('Season chart') }} />
               <Stack.Screen name="Grid" getComponent={() => require('./screens/GridScreen').default} options={{ title: tr('Next season grid') }} />
+              <Stack.Screen name="FantasyHub" component={FantasyHub} options={{ title: 'Fantasy' }} />
+              <Stack.Screen name="FunGames" component={FunGames} options={{ title: 'Games' }} />
               <Stack.Screen name="FunProfile" component={FunProfile} options={{ title: 'Your driver' }} />
               <Stack.Screen name="FunSettings" component={FunSettings} options={{ title: 'Fantasy settings' }} />
               <Stack.Screen name="FantasyNew" component={FantasyNew} options={{ title: 'New fantasy season' }} />
