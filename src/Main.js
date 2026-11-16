@@ -37,13 +37,7 @@ import CompareScreen from './screens/CompareScreen';
 import DriverSeasonsScreen from './screens/DriverSeasonsScreen';
 import PredictScreen from './screens/PredictScreen';
 import { warmCaches } from './lib/warm';
-import { WeekendScreen, LeaderboardScreen, QuizScreen, RecordsScreen } from './screens/ExploreScreens';
-import { MotoHome, MotoCalendar, MotoStandings, MotoEvent, MotoRider, MotoPaddock, MotoTeam } from './screens/MotoScreens';
-import { FootScores, FootTable, FootMatch, FootTeam } from './screens/FootScreens';
 import { FunHome, FunProfile } from './screens/FunScreens';
-import { FantasyNew, Fantasy, FantasyRace, FantasyDriver, FantasyTransfers, FunSettings, PresetNew, PresetGrid } from './screens/FantasyScreens';
-import { FantasyPresets } from './screens/PresetScreens';
-import { FantasyHub, FunGames } from './screens/FunHubs';
 import SettingsScreen from './screens/SettingsScreen';
 import AlertScheduler from './components/AlertScheduler';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -67,10 +61,10 @@ function MotoTabs() {
       tabBarLabelStyle: { fontFamily: ui.lang === 'el' ? 'RobotoCondensed_600SemiBold' : 'Rajdhani_600SemiBold', fontSize: 13 },
       tabBarLabel: tr(route.name), tabBarIcon: ({ color, size }) => <Ionicons name={MICONS[route.name]} size={size} color={color} />,
     })}>
-      <MTab.Screen name="Home" component={MotoHome} />
-      <MTab.Screen name="Calendar" component={MotoCalendar} />
-      <MTab.Screen name="Standings" component={MotoStandings} />
-      <MTab.Screen name="Paddock" component={MotoPaddock} />
+      <MTab.Screen name="Home" getComponent={() => require('./screens/MotoScreens').MotoHome} />
+      <MTab.Screen name="Calendar" getComponent={() => require('./screens/MotoScreens').MotoCalendar} />
+      <MTab.Screen name="Standings" getComponent={() => require('./screens/MotoScreens').MotoStandings} />
+      <MTab.Screen name="Paddock" getComponent={() => require('./screens/MotoScreens').MotoPaddock} />
     </MTab.Navigator>
   );
 }
@@ -83,8 +77,8 @@ function FootTabs() {
       tabBarLabelStyle: { fontFamily: ui.lang === 'el' ? 'RobotoCondensed_600SemiBold' : 'Rajdhani_600SemiBold', fontSize: 13 },
       tabBarLabel: tr(route.name), tabBarIcon: ({ color, size }) => <Ionicons name={route.name === 'Scores' ? 'football' : 'list'} size={size} color={color} />,
     })}>
-      <FTab.Screen name="Scores" component={FootScores} />
-      <FTab.Screen name="Tables" component={FootTable} />
+      <FTab.Screen name="Scores" getComponent={() => require('./screens/FootScreens').FootScores} />
+      <FTab.Screen name="Tables" getComponent={() => require('./screens/FootScreens').FootTable} />
     </FTab.Navigator>
   );
 }
@@ -130,16 +124,16 @@ function Shell() {
             {prefs.opts.sport === 'football' ? (
               <Stack.Navigator screenOptions={detail}>
                 <Stack.Screen name="Tabs" component={FootTabs} options={{ headerShown: false }} />
-                <Stack.Screen name="FootMatch" component={FootMatch} options={{ title: tr('Match') }} />
-                <Stack.Screen name="FootTeam" component={FootTeam} options={({ route }) => ({ title: route.params.name })} />
+                <Stack.Screen name="FootMatch" getComponent={() => require('./screens/FootScreens').FootMatch} options={{ title: tr('Match') }} />
+                <Stack.Screen name="FootTeam" getComponent={() => require('./screens/FootScreens').FootTeam} options={({ route }) => ({ title: route.params.name })} />
                 <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: tr('Settings') }} />
               </Stack.Navigator>
             ) : prefs.opts.sport === 'motogp' ? (
               <Stack.Navigator screenOptions={detail}>
                 <Stack.Screen name="Tabs" component={MotoTabs} options={{ headerShown: false }} />
-                <Stack.Screen name="MotoEvent" component={MotoEvent} options={({ route }) => ({ title: route.params.event.short || route.params.event.name })} />
-                <Stack.Screen name="MotoTeam" component={MotoTeam} options={({ route }) => ({ title: route.params.name })} />
-                <Stack.Screen name="MotoRider" component={MotoRider} options={({ route }) => ({ title: route.params.rider.name })} />
+                <Stack.Screen name="MotoEvent" getComponent={() => require('./screens/MotoScreens').MotoEvent} options={({ route }) => ({ title: route.params.event.short || route.params.event.name })} />
+                <Stack.Screen name="MotoTeam" getComponent={() => require('./screens/MotoScreens').MotoTeam} options={({ route }) => ({ title: route.params.name })} />
+                <Stack.Screen name="MotoRider" getComponent={() => require('./screens/MotoScreens').MotoRider} options={({ route }) => ({ title: route.params.rider.name })} />
                 <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: tr('Settings') }} />
               </Stack.Navigator>
             ) : (
@@ -177,6 +171,47 @@ function Shell() {
               <Stack.Screen name="TitleSwing" getComponent={() => require('./screens/ExtraStats').TitleSwingScreen} options={{ title: 'Title picture' }} />
               <Stack.Screen name="TeamMates" getComponent={() => require('./screens/ExtraStats').TeamMateScreen} options={{ title: 'Team-mate battles' }} />
               <Stack.Screen name="Passing" getComponent={() => require('./screens/SeasonStats').PassingScreen} options={{ title: 'Overtaking by circuit' }} />
+              <Stack.Screen name="AlertsInbox" getComponent={() => require('./screens/AlertsInbox').default} options={{ title: 'Alerts inbox' }} />
+              <Stack.Screen name="Storage" getComponent={() => require('./screens/StorageScreen').default} options={{ title: 'Storage' }} />
+              <Stack.Screen name="GuessDriver" getComponent={() => require('./screens/GuessDriver').default} options={{ title: 'Driver wordle' }} />
+              <Stack.Screen name="TimelineSorter" getComponent={() => require('./screens/TimelineSorter').default} options={{ title: 'Timeline sorter' }} />
+              <Stack.Screen name="EngineHistory" getComponent={() => require('./screens/EngineHistory').default} options={{ title: 'Engine suppliers' }} />
+              <Stack.Screen name="TrophyRoom" getComponent={() => require('./screens/TrophyRoom').default} options={{ title: 'Trophy room' }} />
+              <Stack.Screen name="PoleConversion" getComponent={() => require('./screens/PoleConversion').default} options={{ title: 'Pole to win' }} />
+              <Stack.Screen name="FavDigest" getComponent={() => require('./screens/FavDigest').default} options={{ title: 'Favourites digest' }} />
+              <Stack.Screen name="RaceBingo" getComponent={() => require('./screens/RaceBingo').default} options={{ title: 'Race bingo' }} />
+              <Stack.Screen name="OddOneOut" getComponent={() => require('./screens/OddOneOut').default} options={{ title: 'Odd one out' }} />
+              <Stack.Screen name="Droughts" getComponent={() => require('./screens/RankLists').DroughtsScreen} options={{ title: 'Win droughts' }} />
+              <Stack.Screen name="Winless" getComponent={() => require('./screens/RankLists').WinlessScreen} options={{ title: 'Best without a win' }} />
+              <Stack.Screen name="PlacesGained" getComponent={() => require('./screens/RankLists').PlacesGainedScreen} options={{ title: 'Places gained' }} />
+              <Stack.Screen name="SeasonStrip" getComponent={() => require('./screens/SeasonStrip').default} options={{ title: 'Season progress' }} />
+              <Stack.Screen name="NameSeason" getComponent={() => require('./screens/QuizPack').NameSeasonScreen} options={{ title: 'Name that season' }} />
+              <Stack.Screen name="CareerPath" getComponent={() => require('./screens/QuizPack').CareerPathScreen} options={{ title: 'Career path' }} />
+              <Stack.Screen name="Showdown" getComponent={() => require('./screens/QuizPack').ShowdownScreen} options={{ title: 'Stat showdown' }} />
+              <Stack.Screen name="MatchPairs" getComponent={() => require('./screens/QuizPack').MatchPairsScreen} options={{ title: 'Match pairs' }} />
+              <Stack.Screen name="GridOdds" getComponent={() => require('./screens/TitleStats').GridOddsScreen} options={{ title: 'Grid slot odds' }} />
+              <Stack.Screen name="Lineups" getComponent={() => require('./screens/TitleStats').LineupScreen} options={{ title: 'Line-up strength' }} />
+              <Stack.Screen name="TitleHistory" getComponent={() => require('./screens/TitleStats').TitleHistoryScreen} options={{ title: 'Title history' }} />
+              <Stack.Screen name="Rivalry" getComponent={() => require('./screens/Rivalry').default} options={{ title: 'Rivalry' }} />
+              <Stack.Screen name="Ladder" getComponent={() => require('./screens/TriviaGames').TriviaLadderScreen} options={{ title: 'Trivia ladder' }} />
+              <Stack.Screen name="DailyPuzzle" getComponent={() => require('./screens/TriviaGames').DailyPuzzleScreen} options={{ title: 'Daily puzzle' }} />
+              <Stack.Screen name="WordSearch" getComponent={() => require('./screens/TriviaGames').WordSearchScreen} options={{ title: 'Word search' }} />
+              <Stack.Screen name="AgeRecords" getComponent={() => require('./screens/AgeStats').AgeRecordsScreen} options={{ title: 'Age records' }} />
+              <Stack.Screen name="HatTricks" getComponent={() => require('./screens/AgeStats').HatTricksScreen} options={{ title: 'Hat-tricks' }} />
+              <Stack.Screen name="BestDebuts" getComponent={() => require('./screens/AgeStats').BestDebutsScreen} options={{ title: 'Best debut seasons' }} />
+              <Stack.Screen name="DnfRates" getComponent={() => require('./screens/AgeStats').DnfRatesScreen} options={{ title: 'DNF rates' }} />
+              <Stack.Screen name="ComparePicks" getComponent={() => require('./screens/ComparePicks').default} options={{ title: 'My picks vs real' }} />
+              <Stack.Screen name="HigherLower" getComponent={() => require('./screens/NewGames').HigherLowerScreen} options={{ title: 'Higher or lower' }} />
+              <Stack.Screen name="Bracket" getComponent={() => require('./screens/NewGames').BracketScreen} options={{ title: 'Tournament bracket' }} />
+              <Stack.Screen name="Scramble" getComponent={() => require('./screens/NewGames').ScrambleScreen} options={{ title: 'Season scramble' }} />
+              <Stack.Screen name="TeamCurves" getComponent={() => require('./screens/TeamStats').TeamCurvesScreen} options={{ title: 'Team curves' }} />
+              <Stack.Screen name="Rematch" getComponent={() => require('./screens/TeamStats').RematchScreen} options={{ title: 'Same-race rematches' }} />
+              <Stack.Screen name="Poster" getComponent={() => require('./screens/Extras151').PosterScreen} options={{ title: 'Poster maker' }} />
+              <Stack.Screen name="FavCircuits" getComponent={() => require('./screens/Extras151').FavCircuitsScreen} options={{ title: 'My circuits' }} />
+              <Stack.Screen name="Freshness" getComponent={() => require('./screens/Extras151').FreshnessScreen} options={{ title: 'Data freshness' }} />
+              <Stack.Screen name="Livery" getComponent={() => require('./screens/ColourGames').LiveryScreen} options={{ title: 'Team colours' }} />
+              <Stack.Screen name="SpeedRound" getComponent={() => require('./screens/ColourGames').SpeedRoundScreen} options={{ title: 'Speed round' }} />
+              <Stack.Screen name="Streaks" getComponent={() => require('./screens/Streaks').default} options={{ title: 'Streaks' }} />
               <Stack.Screen name="CareerCurves" getComponent={() => require('./screens/CareerCurves').default} options={{ title: 'Career curves' }} />
               <Stack.Screen name="CompareSeasons" getComponent={() => require('./screens/SeasonStats').CompareSeasonsScreen} options={{ title: 'Compare seasons' }} />
               <Stack.Screen name="TrueFalse" getComponent={() => require('./screens/ExtraGames').TrueFalseScreen} options={{ title: 'True or false' }} />
@@ -198,24 +233,25 @@ function Shell() {
               <Stack.Screen name="Teammates" getComponent={() => require('./screens/TeammatesScreen').default} options={{ title: 'Team-mate battles' }} />
               <Stack.Screen name="RaceDay" getComponent={() => require('./screens/RaceDayScreen').default} options={{ title: 'Race day' }} />
               <Stack.Screen name="Dev" getComponent={() => require('./screens/DevScreen').default} options={{ title: 'Developer menu' }} />
-              <Stack.Screen name="Weekend" component={WeekendScreen} options={{ title: 'Race weekend' }} />
-              <Stack.Screen name="Leaderboard" component={LeaderboardScreen} options={{ title: 'Leaderboard' }} />
-              <Stack.Screen name="Quiz" component={QuizScreen} options={{ title: 'Quiz' }} />
-              <Stack.Screen name="Records" component={RecordsScreen} options={{ title: 'Records & history' }} />
+              <Stack.Screen name="Weekend" getComponent={() => require('./screens/ExploreScreens').WeekendScreen} options={{ title: 'Race weekend' }} />
+              <Stack.Screen name="Leaderboard" getComponent={() => require('./screens/ExploreScreens').LeaderboardScreen} options={{ title: 'Leaderboard' }} />
+              <Stack.Screen name="Quiz" getComponent={() => require('./screens/ExploreScreens').QuizScreen} options={{ title: 'Quiz' }} />
+              <Stack.Screen name="Records" getComponent={() => require('./screens/ExploreScreens').RecordsScreen} options={{ title: 'Records & history' }} />
               <Stack.Screen name="Chart" getComponent={() => require('./screens/ChartScreen').default} options={{ title: tr('Season chart') }} />
               <Stack.Screen name="Grid" getComponent={() => require('./screens/GridScreen').default} options={{ title: tr('Next season grid') }} />
-              <Stack.Screen name="FantasyHub" component={FantasyHub} options={{ title: 'Fantasy' }} />
-              <Stack.Screen name="FunGames" component={FunGames} options={{ title: 'Games' }} />
+              <Stack.Screen name="FantasyHub" getComponent={() => require('./screens/FunHubs').FantasyHub} options={{ title: 'Fantasy' }} />
+              <Stack.Screen name="FunGames" getComponent={() => require('./screens/FunHubs').FunGames} options={{ title: 'Games' }} />
               <Stack.Screen name="FunProfile" component={FunProfile} options={{ title: 'Your driver' }} />
-              <Stack.Screen name="FunSettings" component={FunSettings} options={{ title: 'Fantasy settings' }} />
-              <Stack.Screen name="FantasyNew" component={FantasyNew} options={{ title: 'New fantasy season' }} />
-              <Stack.Screen name="FantasyPresets" component={FantasyPresets} options={{ title: 'Presets' }} />
-              <Stack.Screen name="PresetNew" component={PresetNew} options={{ title: 'New grid preset' }} />
-              <Stack.Screen name="PresetGrid" component={PresetGrid} options={{ title: 'Grid preset' }} />
-              <Stack.Screen name="Fantasy" component={Fantasy} options={{ title: 'Fantasy' }} />
-              <Stack.Screen name="FantasyRace" component={FantasyRace} options={({ route }) => ({ title: 'Race result' })} />
-              <Stack.Screen name="FantasyDriver" component={FantasyDriver} options={{ title: 'Driver' }} />
-              <Stack.Screen name="FantasyTransfers" component={FantasyTransfers} options={{ title: 'Transfers' }} />
+              <Stack.Screen name="FunSettings" getComponent={() => require('./screens/FantasyScreens').FunSettings} options={{ title: 'Fantasy settings' }} />
+              <Stack.Screen name="FantasyNew" getComponent={() => require('./screens/FantasyScreens').FantasyNew} options={{ title: 'New fantasy season' }} />
+              <Stack.Screen name="FantasyPresets" getComponent={() => require('./screens/PresetScreens').FantasyPresets} options={{ title: 'Presets' }} />
+              <Stack.Screen name="PresetNew" getComponent={() => require('./screens/FantasyScreens').PresetNew} options={{ title: 'New grid preset' }} />
+              <Stack.Screen name="PresetGrid" getComponent={() => require('./screens/FantasyScreens').PresetGrid} options={{ title: 'Grid preset' }} />
+              <Stack.Screen name="Fantasy" getComponent={() => require('./screens/FantasyScreens').Fantasy} options={{ title: 'Fantasy' }} />
+              <Stack.Screen name="FantasyRace" getComponent={() => require('./screens/FantasyScreens').FantasyRace} options={({ route }) => ({ title: 'Race result' })} />
+              <Stack.Screen name="FantasyDriver" getComponent={() => require('./screens/FantasyScreens').FantasyDriver} options={{ title: 'Driver' }} />
+              <Stack.Screen name="FantasyTransfers" getComponent={() => require('./screens/FantasyScreens').FantasyTransfers} options={{ title: 'Transfers' }} />
+              <Stack.Screen name="SavedNews" getComponent={() => require('./screens/NewsScreen').SavedNewsScreen} options={{ title: tr('Saved articles') }} />
               <Stack.Screen name="Article" component={ArticleScreen} options={{ title: tr('News') }} />
               <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: tr('Settings') }} />
               </Stack.Navigator>

@@ -1,10 +1,11 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { View, TextInput, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Text } from '../components/Text';
 import Screen, { Card, Eyebrow, Note } from '../components/Screen';
 import { colors } from '../theme';
 import { norm } from '../lib/names';
+import { kvGet, kvSet } from '../lib/kv';
 import { localAllDrivers, localAllTeams } from '../api/history';
 import { PAGES } from '../lib/pages';
 import { CIRCUITS } from '../data/circuits';
@@ -18,7 +19,10 @@ const Row = ({ icon, title, sub, onPress }) => (
     <Ionicons name="chevron-forward" size={16} color={colors.muted} />
   </Pressable>);
 export default function SearchScreen({ navigation }) {
-  const [q, setQ] = useState(''); const n = norm(q);
+  const [q, setQ] = useState(''); const n = norm(q); const [recent, setRecent] = useState([]);
+  useEffect(() => { kvGet('recentSearch', []).then((v) => setRecent(Array.isArray(v) ? v : [])); }, []);
+  // Remembered when a result is opened, so half-typed words do not fill the list.
+  const go = (...a) => { const t = q.trim(); if (t.length >= 2) { const next = [t, ...recent.filter((x) => norm(x) !== norm(t))].slice(0, 8); setRecent(next); kvSet('recentSearch', next); } navigation.navigate(...a); };
   const data = useMemo(() => { try { return { d: localAllDrivers(), t: localAllTeams() }; } catch { return { d: [], t: [] }; } }, []);
   const r = useMemo(() => {
     if (n.length < 2) return null; const has = (x) => norm(x).includes(n);
@@ -39,12 +43,13 @@ export default function SearchScreen({ navigation }) {
           {q ? <Pressable onPress={() => setQ('')} hitSlop={10} accessibilityLabel="Clear"><Ionicons name="close-circle" size={20} color={colors.muted} /></Pressable> : null}
         </View>
       </Card>
+      {!r && recent.length ? (<Card><View style={{ flexDirection: 'row', justifyContent: 'space-between' }}><Eyebrow>Recent</Eyebrow><Pressable accessibilityRole="button" onPress={() => { setRecent([]); kvSet('recentSearch', []); }}><Text style={{ color: colors.muted, fontSize: 13 }}>Clear</Text></Pressable></View><View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>{recent.map((t) => (<Pressable key={t} accessibilityRole="button" onPress={() => setQ(t)} style={{ paddingHorizontal: 12, paddingVertical: 8, borderRadius: 16, borderWidth: 1, borderColor: colors.line }}><Text style={{ color: colors.fg }}>{t}</Text></Pressable>))}</View></Card>) : null}
       {!r ? <Note>Type at least two letters. Searches every driver and team in the history, all circuits, the rules and the app's pages.</Note> : null}
       {none ? <Note>{`Nothing found for "${q}".`}</Note> : null}
-      {r && r.d.length > 0 && <Card><Eyebrow>Drivers</Eyebrow>{r.d.map((x) => <Row key={x.driverId} icon="person" title={x.name} sub={[x.nationality, x.first_year && x.last_year ? `${x.first_year}${x.last_year !== x.first_year ? ` to ${x.last_year}` : ''}` : ''].filter(Boolean).join(' · ')} onPress={() => navigation.navigate('Driver', { driverId: x.driverId, name: x.name, first: x.first, last: x.last })} />)}</Card>}
-      {r && r.t.length > 0 && <Card><Eyebrow>Teams</Eyebrow>{r.t.map((x) => <Row key={x.teamId} icon="car-sport" title={x.name} sub={x.nationality} onPress={() => navigation.navigate('Team', { teamId: x.teamId, name: x.name })} />)}</Card>}
-      {r && r.c.length > 0 && <Card><Eyebrow>Circuits</Eyebrow>{r.c.map((x) => <Row key={x.key} icon="flag" title={x.name} sub={x.place} onPress={() => navigation.navigate('Circuit', { meeting: { circuit_short_name: x.name, location: x.place, country_name: '', meeting_name: '', circuit_key: null } })} />)}</Card>}
-      {r && r.rules.length > 0 && <Card><Eyebrow>Rules</Eyebrow>{r.rules.map((x) => <Row key={x.g + x.k} icon="book" title={x.k} sub={`${x.g}: ${x.v.slice(0, 80)}${x.v.length > 80 ? '…' : ''}`} onPress={() => navigation.navigate('Rules')} />)}</Card>}
-      {r && r.pg.length > 0 && <Card><Eyebrow>Pages</Eyebrow>{r.pg.map((x) => <Row key={x[0]} icon="apps" title={x[1]} sub={x[2]} onPress={() => navigation.navigate(x[0])} />)}</Card>}
+      {r && r.d.length > 0 && <Card><Eyebrow>Drivers</Eyebrow>{r.d.map((x) => <Row key={x.driverId} icon="person" title={x.name} sub={[x.nationality, x.first_year && x.last_year ? `${x.first_year}${x.last_year !== x.first_year ? ` to ${x.last_year}` : ''}` : ''].filter(Boolean).join(' · ')} onPress={() => go('Driver', { driverId: x.driverId, name: x.name, first: x.first, last: x.last })} />)}</Card>}
+      {r && r.t.length > 0 && <Card><Eyebrow>Teams</Eyebrow>{r.t.map((x) => <Row key={x.teamId} icon="car-sport" title={x.name} sub={x.nationality} onPress={() => go('Team', { teamId: x.teamId, name: x.name })} />)}</Card>}
+      {r && r.c.length > 0 && <Card><Eyebrow>Circuits</Eyebrow>{r.c.map((x) => <Row key={x.key} icon="flag" title={x.name} sub={x.place} onPress={() => go('Circuit', { meeting: { circuit_short_name: x.name, location: x.place, country_name: '', meeting_name: '', circuit_key: null } })} />)}</Card>}
+      {r && r.rules.length > 0 && <Card><Eyebrow>Rules</Eyebrow>{r.rules.map((x) => <Row key={x.g + x.k} icon="book" title={x.k} sub={`${x.g}: ${x.v.slice(0, 80)}${x.v.length > 80 ? '…' : ''}`} onPress={() => go('Rules')} />)}</Card>}
+      {r && r.pg.length > 0 && <Card><Eyebrow>Pages</Eyebrow>{r.pg.map((x) => <Row key={x[0]} icon="apps" title={x[1]} sub={x[2]} onPress={() => go(x[0])} />)}</Card>}
     </Screen>);
 }

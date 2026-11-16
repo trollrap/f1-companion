@@ -30,6 +30,8 @@ import { useNavigation } from '@react-navigation/native';
 import { colors, alpha, teamColors } from '../theme';
 import { CHANGELOG, LATEST } from '../data/changelog';
 import { kvGet, kvSet } from '../lib/kv';
+import { useFavs } from '../hooks/useFavs';
+import { localDriverInfo } from '../api/history';
 
 const Btn = ({ children, onPress, disabled }) => (
   <Pressable onPress={onPress} disabled={disabled} style={({ pressed }) => [s.btn, (pressed || disabled) && { opacity: 0.6 }]}><Text style={s.btnText}>{children}</Text></Pressable>
@@ -40,6 +42,14 @@ const Sw = ({ label, hint, value, onChange }) => (
 );
 // One collapsed row per group of options; tap to unfold.
 const ago = (t) => { const m = Math.round((Date.now() - t) / 60000); return m < 1 ? 'just now' : m < 60 ? `${m} min ago` : m < 1440 ? `${Math.round(m / 60)} h ago` : `${Math.round(m / 1440)} d ago`; };
+// Which favourite drivers the result alerts watch. Empty selection = all favourites.
+function FavAlertChips({ o, setOpt }) {
+  const favs = useFavs(); const ids = favs && Array.isArray(favs.drivers) ? favs.drivers : []; const sel = Array.isArray(o.alertDrivers) ? o.alertDrivers : ids;
+  if (!ids.length) return <Text style={s.hint}>Favourite drivers in the Paddock to choose whose results you get alerts for.</Text>;
+  const flip = (id) => { const cur = sel.includes(id) ? sel.filter((x) => x !== id) : [...sel, id]; setOpt('alertDrivers', cur); };
+  return (<View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingVertical: 6 }}>{ids.map((id) => { const on = sel.includes(id); let n = id; try { n = localDriverInfo(id)?.name || id; } catch {}
+    return (<Pressable key={id} accessibilityRole="switch" accessibilityState={{ checked: on }} onPress={() => flip(id)} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 18, borderWidth: 1, borderColor: on ? colors.accent : colors.line, backgroundColor: on ? alpha(colors.accent, 0.15) : 'transparent' }}><Ionicons name={on ? 'notifications' : 'notifications-off-outline'} size={14} color={on ? colors.accent : colors.muted} /><Text style={{ color: on ? colors.fg : colors.muted, fontWeight: on ? '700' : '500' }}>{n}</Text></Pressable>); })}</View>);
+}
 function NewsStatus({ tick }) {
   const [log, setLog] = useState(null); const [runs, setRuns] = useState([]);
   useEffect(() => { readNewsLog().then(setLog); readBgRuns().then(setRuns); }, [tick]);
@@ -184,7 +194,10 @@ export default function SettingsScreen() {
         </View>
         <View style={{ marginTop: 10 }}><NotifPrefs title="Remind me before" /></View>
         <Sw label="Birthdays and win anniversaries" hint="At 9:00 on a favourite driver's birthday and on the anniversary of their first win." value={!!o.bdays} onChange={(v) => setOpt('bdays', v)} />
+        <Sw label="Race weekend view on Home" hint="From three days before a race weekend until it ends, Home shows only the next session, the last result and your drivers." value={o.weekendMode !== false} onChange={(v) => setOpt('weekendMode', v)} />
         <Sw label="Race morning reminder" hint="At 8:00 on the day of a race or sprint, with the start time." value={!!o.raceMorning} onChange={(v) => setOpt('raceMorning', v)} />
+        <Sw label="Results: only when my drivers are in it" hint="Race, sprint and qualifying result alerts are skipped unless one of the drivers below is in the results. The alert then lists their finishes." value={!!o.resultsFavOnly} onChange={(v) => setOpt('resultsFavOnly', v)} />
+        <FavAlertChips o={o} setOpt={setOpt} />
         <Sw label="Quiet hours" hint="No alerts between the times below." value={!!o.quiet?.on} onChange={(v) => setOpt('quiet', { from: '23:00', to: '07:00', raceOk: true, ...(o.quiet || {}), on: v })} />
         {o.quiet?.on ? (<View style={{ gap: 10 }}>
           <Dropdown value={o.quiet.from || '23:00'} options={HOURS} onChange={(v) => setOpt('quiet', { ...o.quiet, from: v })} prefix="From" />
@@ -204,6 +217,7 @@ export default function SettingsScreen() {
         <Sw label="Only my favourite drivers and teams" value={o.newsFavOnly} onChange={(v) => setOpt('newsFavOnly', v)} />
         <NewsStatus tick={msg} />
         <Note>If checks never run in the background, Android is limiting the app. Set Battery to Unrestricted for this app, then leave it a few hours.</Note>
+        <Btn icon="notifications-outline" onPress={() => nav.navigate('AlertsInbox')}>Open the alerts inbox</Btn>
         <Btn icon="battery-charging-outline" onPress={() => Linking.openSettings()}>Open app settings</Btn>
         {msg ? <Note>{msg}</Note> : null}
       </Section>
@@ -240,6 +254,7 @@ export default function SettingsScreen() {
         <Btn onPress={() => { setOpts(Object.fromEntries(Object.entries(OPTS).filter(([k]) => !['lang', 'name', 'welcomed', 'accent', 'sport'].includes(k)))); setMsg('Display and performance settings were reset.'); }}>Reset display settings</Btn>
         {msg ? <Note>{msg}</Note> : null}
       </Section>
+      <Card><Btn icon="server-outline" onPress={() => nav.navigate('Storage')}>Storage and data</Btn></Card>
       <Changelog />
       <Card>
         <Btn icon="compass-outline" onPress={() => setOpt('tourDone', false)}>Show the app tour again</Btn>

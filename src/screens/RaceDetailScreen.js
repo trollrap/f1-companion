@@ -5,6 +5,7 @@ import { Text } from '../components/Text';
 import Screen, { Card, Eyebrow, Note } from '../components/Screen';
 import { Countdown, NotifPrefs, Segmented, CircuitBox } from '../components/Shared';
 import Schedule from '../components/Schedule';
+import RacePreview from '../components/RacePreview';
 import Grad from '../components/Grad';
 import { SprintBadge } from '../components/Badge';
 import { useNow } from '../hooks/useSeason';
@@ -43,6 +44,7 @@ export default function RaceDetailScreen({ route }) {
         <NotifPrefs />
         <Note>{nextAlert ? `Next alert: ${nextAlert.session.session_name} at ${hm(nextAlert.at, off)}, ${dayName(nextAlert.at, off)}.` : 'Tap the bell on a session to be notified.'}</Note>
       </Card>
+      <RacePreview name={meeting.meeting_name} />
       <CircuitBox meeting={meeting} />
     </Screen>
   );

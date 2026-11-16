@@ -76,12 +76,13 @@ export async function scheduleSessionAlerts(meeting, sessions, prefs) {
 // Shows a notification straight away (used for session results).
 export async function notifyNow(title, body) {
   const n = mod(); if (!n) return false;
-  if (await require('./quiet').quietNow()) return false;
-  if (!(await ensurePermission())) return false;
+  const L = require('./inbox').logAlert;
+  if (await require('./quiet').quietNow()) { L(title, body, 'held by quiet hours'); return false; }
+  if (!(await ensurePermission())) { L(title, body, 'no permission'); return false; }
   // A plain {channelId} trigger has no type, which newer expo-notifications versions can refuse without any visible error. A one-second interval
   // trigger is the same kind the working test button uses.
-  try { await n.scheduleNotificationAsync({ content: { title, body }, trigger: { type: n.SchedulableTriggerInputTypes.TIME_INTERVAL, seconds: 1, channelId: 'sessions' } }); return true; } catch {}
-  try { await n.scheduleNotificationAsync({ content: { title, body }, trigger: null }); return true; } catch { return false; }
+  try { await n.scheduleNotificationAsync({ content: { title, body }, trigger: { type: n.SchedulableTriggerInputTypes.TIME_INTERVAL, seconds: 1, channelId: 'sessions' } }); L(title, body, 'sent'); return true; } catch {}
+  try { await n.scheduleNotificationAsync({ content: { title, body }, trigger: null }); L(title, body, 'sent'); return true; } catch { L(title, body, 'failed'); return false; }
 }
 export async function sendTestNotification() {
   const n = mod(); if (!n) return 'unavailable';

@@ -381,3 +381,58 @@ Expo Go (SDK 53+) does not include the `expo-notifications` native module; impor
 - News: favourites filter (News screen + `newsFavOnly` alerts), `newsLog`/`bgRuns` diagnostics shown in Settings > News alerts, battery guidance.
 - Career curves (`screens/CareerCurves.js`), Changelog section above About (`data/changelog.js`, add an entry per release), title swing countback (`finishCountsAt` in api/history.js), Milestones keeps last result (kv `milestones:last`).
 - Unverified on device: everything above; news background delivery depends on Android battery settings.
+
+## V1.46.0 (JS-only)
+- Streaks (`streakBoard` in api/history.js, `screens/Streaks.js`): longest consecutive win/podium/points runs per driver; skipped races do not break a run. Checked: Verstappen 10 wins (2023), Schumacher 19 podiums.
+- Engine suppliers (`data/engines.js` written by hand for 2014 to 2025, `engineBoard` in history.js, `screens/EngineHistory.js`). Titles go to the supplier of the champion's most-used team that year; poles = grid P1. Red Bull and sister team stay under Honda (RBPT from 2022). Update the table when a season is added (2026 brings new suppliers).
+- Alerts inbox: `lib/inbox.js` (log written by `notifyNow`, `upcomingAlerts()` lists what is scheduled with Android), `screens/AlertsInbox.js`, linked from Settings > News alerts.
+- Storage manager: `screens/StorageScreen.js`, clears downloaded data (`c:`), saved games (`game:`), logs; fantasy and settings are never cleared.
+- Games: Driver wordle (`lib/guessDriver.js`, `screens/GuessDriver.js`, 8 guesses, saved), Timeline sorter (`lib/timeline.js`, `screens/TimelineSorter.js`, built from debuts/first wins/first titles in the history). Both use useGameSave/useRun and the leave guard.
+- Trophy room (`screens/TrophyRoom.js`): trophies map to the card-pack keys the games award; personal bests from kv.
+- Home sections fade in (Reveal). Changelog entry added.
+- Postponed (needs a new APK): Home screen quick actions.
+- Unverified on device: all of the above.
+
+## V1.47.0 (JS-only)
+- Pole to win (`poleConversion` in api/history.js, `screens/PoleConversion.js`): pole = grid P1, so a grid penalty can differ from the official record by one.
+- Race preview (`circuitSummary` in history.js, `components/RacePreview.js`, shown on the race detail page): past winners, most wins, pole win rate, favourites' record there. Matches `meeting_name` to the history race name; hidden when no match.
+- Favourites digest (`lib/digest.js`, `screens/FavDigest.js`); `digestLine` adds "Your drivers: HAM P3, VER P1" to the F1 race-result alert body.
+- Saved articles (`lib/saved.js`, bookmark on News stories and in the article reader, `SavedNewsScreen` in NewsScreen.js); article text is attached when a saved story is opened. Recent searches (kv `recentSearch`) in SearchScreen.
+- Games: Race weekend bingo (`screens/RaceBingo.js`, saved card), Odd one out (`lib/oddOne.js`, `screens/OddOneOut.js`). Play calendar (`components/PlayCalendar.js` in Trophy room); `kvSet` marks `playDays` for keys matching `^game:|:best$|^daily`; card packs at 7 and 30 day streaks.
+- Fantasy hub: Continue button. Start-up: Fantasy, Preset, Foot, Moto, Explore and Fun-hub screens are now loaded lazily (`getComponent`) from Main.js.
+- Unverified on device: everything, in particular the lazy screens opening from every entry point, the preview card name matching, and article saving.
+
+## V1.48.0 (JS-only)
+- History helpers in api/history.js: `winDroughts`, `winless`, `placesGained`, `careerStats`, `careerTeams` (share a cached `perDriver()` race list). Screens `RankLists.js` (Droughts, Winless, PlacesGained). Checked: Raikkonen 2013 to 2018 gap, Perez 191 races to first win, Hamilton 34-race drought. Places gained: old eras look huge (big grids), noted on screen.
+- Season progress strip (`screens/SeasonStrip.js`): seasonPoints + winnersByRound + jolpicaSchedule; works live for the current year.
+- Games in `screens/QuizPack.js` with generators in `lib/quizPack.js`: Name that season, Career path, Stat showdown (3 lives), Match pairs. All saved/resumable with the leave guard. Drivers with 100+ starts only.
+- Result alerts: `resultsFavOnly` + `alertDrivers` (opts) in `lib/resultAlerts.js` / `lib/digest.js` (`digestLine(rows, only)`), chips in Settings > alerts. Applies to race, sprint and qualifying alerts.
+- Weekend mode on Home (`weekendMode` opt, default on): 3 days before the first session until 12 h after the last. Home tidy-up: `OFF_BY_DEFAULT = ['stat','recap']` only for people who never saved a layout.
+- Fantasy TP: six more paddock events (`MORE_EVENTS` in fun/tp.js).
+- Stability: lint clean; route-name cross-check script found no navigate() to a missing route.
+- Unverified on device: all of the above.
+
+## V1.49.0 (JS-only)
+- Stats (`api/history.js`): `gridSlotOdds()` (era tabs, wins/podiums by grid slot), `lineupStrength()` (top two scorers per team and season as a share of the season's race points), `titleHistory()` (champion, margin, wins; clinch round only for 1991 to 2020, no drops or sprints). Screens in `screens/TitleStats.js`: GridOdds, Lineups, TitleHistory.
+- Title clinch is built as "Title history" with the clinch round for 1991-2020. Outside that range only margins are shown.
+- Rivalry: `components/RivalryCard.js` (Home card key `rivalry`, uses driverStandings + seasonPoints), pick screen `screens/Rivalry.js`, pair stored in `prefs.opts.rivalry` as [driverId, driverId].
+- Share: `components/ShareResult.js` (`ShareResult` card as picture or text, `ShareTextBtn`). Wired into the ten-round games (QuizPack), Connections, Hangman and the three new games. Other older games do not have it yet.
+- Games in `screens/TriviaGames.js`: Trivia ladder (`lib/trivia.js` `ladderQ`, saved as game:ladder, 3 lives), Daily puzzle (same 5 questions per `today()` seed, kv `daily:puzzle`, streak `daily:puzzleStreak`), Word search (`lib/wordSearch.js`, saved as game:wordsearch).
+- Speed pass: all history helpers measured at under 25 ms in node; the cost is the first JSON parse (~300 ms in node). `lib/warm.js` now runs `driversMeta()` 9 s after start via InteractionManager.
+- Unverified on device: all of the above, share sheet, rivalry with live data.
+
+## V1.50.0 (JS-only)
+- `api/history.js`: `ageRecords()`, `hatTricks()`, `debutSeasons()`, `dnfRates()`. Screens in `screens/AgeStats.js` (AgeRecords, HatTricks, BestDebuts, DnfRates). Checked: Verstappen youngest winner (18y227d), Fagioli oldest winner, Vettel youngest pole, Schumacher 22 hat-tricks, Norris lowest DNF rate.
+- Hat-tricks only (pole + win + fastest lap); a true grand slam needs laps led, which the history lacks.
+- `screens/ComparePicks.js` (route ComparePicks): saved predictions vs `sessionResults`, accuracy excludes bonus/double.
+- `screens/NewGames.js`: HigherLower (kv game:hilo), Bracket (game:bracket), Scramble (game:scramble); all use useGameSave + leave guard, ShareResult at the end.
+- Season calendar export already existed (Calendar screen, `lib/ics.js`); not rebuilt.
+- Stability pass: route cross-check, lint, bundle clean; leave guards on all new games. No on-device test.
+- Unverified on device: everything new in 1.49.0 and 1.50.0.
+
+## V1.51.0 (JS-only)
+- `api/history.js`: `teamSeasons()`, `gpList()`, `gpEditions(name)`. Checked: Ferrari 2004 = 262 pts, 15 wins; Monaco 71 editions, Senna 6 wins, Panis won from P14 in 1996.
+- `screens/TeamStats.js`: TeamCurves (wins total or share of season points; renamed teams are separate lines), Rematch (every edition of a GP by name).
+- `screens/Extras151.js`: Poster (ShareCard picture, 3 stats, colour), FavCircuits (kv `circuitMarks`, 25 circuits in `data/circuits.js`), Freshness (reads `c:` cache keys, parses `"t"` from the first 40 chars, removes keys per host to refresh).
+- `screens/ColourGames.js`: Livery (team colours as the app shows them, only ~11 teams are unambiguous answers; options at least 70 apart in RGB), SpeedRound (60 s, wrong = -5 s, claims built from `ladderQ`).
+- Unverified on device: all of it, plus poster photo framing and the share sheet.

@@ -41,7 +41,9 @@ export async function checkResults({ force = false } = {}) {
       done.add(id);
       if (baseline && !force) continue; // first run only records what already exists, so enabling the switch never spams old results
       if (prefs.types && prefs.types[k.type] === false) continue;
-      if (await notifyNow(`${tr(shortName(race.raceName))} · ${tr(k.label)}`, tr('Results are available.'))) sent++;
+      let body = tr('Results are available.'); let dl = ''; try { dl = await require('./digest').digestLine(rows, prefs.opts?.alertDrivers); } catch {}
+      if (dl) body = `${tr('Your drivers')}: ${dl}`; else if (prefs.opts?.resultsFavOnly && !force) continue; // switch on: stay quiet when none of your drivers are in it
+      if (await notifyNow(`${tr(shortName(race.raceName))} · ${tr(k.label)}`, body)) sent++;
     } catch {}
   }
   AsyncStorage.setItem(SEEN, JSON.stringify([...done].slice(-60))).catch(() => {});

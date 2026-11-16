@@ -3,6 +3,7 @@ import { View, Pressable } from 'react-native';
 import { Text } from '../components/Text';
 import Screen, { Card, Eyebrow, Note } from '../components/Screen';
 import { Btn } from '../components/FunBits';
+import { ShareTextBtn } from '../components/ShareResult';
 import { colors, alpha } from '../theme';
 import { kvGet, kvSet, seedOf, rngOf } from '../lib/kv';
 import { useGameSave, useLeaveGuard } from '../lib/gameSave';
@@ -39,6 +40,7 @@ export function ConnectionsScreen() {
       {msg && !won && !over ? <Text style={{ color: colors.gold, fontWeight: '800', textAlign: 'center' }}>{msg}</Text> : null}
       {!over && !won ? <Btn onPress={submit} disabled={sel.length !== 4}>Submit group</Btn> : <Btn onPress={srestart}>{won ? 'Next puzzle' : 'Try another'}</Btn>}
       {won && got ? <Note>Solved. You earned a card pack. Open it in Cards.</Note> : null}
+      {won || over ? <ShareTextBtn text={`F1 Companion Connections: ${won ? 'solved' : 'missed'}, ${solved.length} of 3 groups, ${lives} ${lives === 1 ? 'life' : 'lives'} left\n${'🟩'.repeat(solved.length)}${'⬛'.repeat(3 - solved.length)}`} /> : null}
       <Note>Groups come from the offline history: nationality, world champions, teams a driver raced for, and the decade of their first race.</Note>
     </Screen>);
 }
@@ -67,6 +69,7 @@ export function HangmanScreen() {
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, justifyContent: 'center' }}>
         {KEYS.map((l) => { const used = got.includes(l); const hit = used && need.includes(l); return (<Pressable key={l} accessibilityRole="button" accessibilityLabel={`Letter ${l}`} onPress={() => guess(l)} style={({ pressed }) => [{ width: 44, height: 46, borderRadius: 10, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: hit ? colors.good : used ? colors.red : colors.line, backgroundColor: hit ? alpha(colors.good, 0.2) : used ? alpha(colors.red, 0.12) : colors.card, opacity: used ? 0.55 : 1 }, pressed && { opacity: 0.7 }]}><Text style={{ color: colors.fg, fontWeight: '800', fontSize: 17 }}>{l}</Text></Pressable>); })}
       </View>
+      {won || lost ? <ShareTextBtn text={`F1 Companion Hangman: ${won ? `solved a ${w.cat.toLowerCase()} with ${LIVES - wrong} tyres left` : `lost a ${w.cat.toLowerCase()}`}\n${'🟢'.repeat(LIVES - wrong)}${'🔴'.repeat(wrong)}`} /> : null}
       {won || lost ? <Btn onPress={next}>Next word</Btn> : null}
       {pack ? <Note>Five in a row. You earned a card pack. Open it in Cards.</Note> : <Note>Five solved in a row earns a card pack.</Note>}
     </Screen>);

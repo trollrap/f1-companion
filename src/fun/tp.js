@@ -122,6 +122,27 @@ const EVENTS = [
     { id: 'go', label: 'Send both drivers', hint: 'Reputation up, but a tired week.', run: () => ({ hype: 6, text: 'A great day. The fans love the access.' }) },
     { id: 'skip', label: 'Keep them in the simulator', hint: 'Small pace gain.', run: () => ({ pit: 0.5, text: 'The crew spends the week practising stops.' }) } ] },
 ];
+const MORE_EVENTS = [
+  { id: 'weather', title: 'Heavy rain in the forecast', text: () => 'The forecast for the next race looks wet. The engineers disagree about the setup.', opts: [
+    { id: 'wets', label: 'Prepare for rain', hint: 'Extra crew practice, small cost.', run: () => ({ budget: -2, pit: 0.4, text: 'The crew drills wet-weather stops all week.' }) },
+    { id: 'dry', label: 'Stay on the dry plan', hint: 'Free, but a gamble.', run: (c, rnd) => (rnd() < 0.5 ? { hype: 3, text: 'The rain stays away and the plan looks smart.' } : { hype: -3, rel: -0.5, text: 'The rain arrives and the team scrambles.' }) } ] },
+  { id: 'legend', title: 'A former champion wants to visit', text: () => 'A world champion asks to spend a day in your garage and speak to the drivers.', opts: [
+    { id: 'host', label: 'Roll out the red carpet', hint: 'Costs 2 budget, reputation up.', run: () => ({ budget: -2, hype: 5, text: 'He praises the team in every interview. The fans notice.' }) },
+    { id: 'polite', label: 'Keep it low-key', hint: 'Free, a little reputation.', run: () => ({ hype: 2, text: 'A quiet visit and a friendly photo.' }) } ] },
+  { id: 'parts', title: 'A supplier ships faulty parts', text: () => 'A batch of suspension parts fails inspection. The supplier says they are probably fine.', opts: [
+    { id: 'replace', label: 'Replace the whole batch', hint: 'Costs 5 budget, safer car.', run: () => ({ budget: -5, rel: 0.6, text: 'New parts arrive in time. The car feels solid.' }) },
+    { id: 'risk', label: 'Run them anyway', hint: 'Free, could hurt reliability.', run: (c, rnd) => (rnd() < 0.6 ? { text: 'The parts hold up. Nothing happens.' } : { rel: -1.8, hype: -2, text: 'One fails in practice and the team loses confidence.' }) } ] },
+  { id: 'doc', title: 'A documentary crew calls', text: () => 'A streaming company wants cameras in your garage for a season.', opts: [
+    { id: 'sign', label: 'Sign the deal', hint: '+8 budget, a chance of a leak.', run: (c, rnd) => (rnd() < 0.3 ? { budget: 8, hype: -4, text: 'Cameras catch an argument and it makes the trailer.' } : { budget: 8, hype: 4, text: 'The first episode is a hit and sponsors call.' }) },
+    { id: 'refuse', label: 'Keep the doors closed', hint: 'A little reputation.', run: () => ({ hype: 1, text: 'The team stays focused. Nobody complains.' }) } ] },
+  { id: 'junior', title: 'Your junior impresses in a test', text: () => 'A young driver in the programme set a stunning time in the simulator.', opts: [
+    { id: 'friday', label: 'Give a Friday session', hint: 'Fresh feedback helps the car.', run: () => ({ car: 0.25, hype: 2, text: 'The rookie delivers useful notes and a smile.' }) },
+    { id: 'wait', label: 'Keep him waiting', hint: 'Save the budget.', run: () => ({ budget: 2, text: 'He understands. For now.' }) } ] },
+  { id: 'bonus', title: 'The crew asks for a bonus', text: () => 'Factory staff want a bonus before the next race.', opts: [
+    { id: 'pay', label: 'Pay the bonus', hint: 'Costs 6 budget, sharper pit crew.', run: () => ({ budget: -6, pit: 0.4, text: 'The mood in the garage lifts. Stops get quicker.' }) },
+    { id: 'no', label: 'Say no', hint: 'Free, a gamble on morale.', run: (c, rnd) => (rnd() < 0.5 ? { pit: -0.6, text: 'The crew is annoyed and the stops get sloppy.' } : { hype: 2, text: 'Everyone shrugs and gets back to work.' }) } ] },
+];
+EVENTS.push(...MORE_EVENTS);
 export function eventFor(f, raceId) {
   const tp = f.tp; if (!tp || !raceId) return null; let h = 7; for (const ch of String(raceId)) h = (h * 33 + ch.charCodeAt(0)) >>> 0;
   if (h % 3 === 0) return null; const e = EVENTS[h % EVENTS.length]; const mine = (f.drivers || []).filter((d) => d.teamId === tp.teamId);

@@ -11,6 +11,7 @@ import { usePrefs } from '../hooks/usePrefs';
 import { SOURCES, fetchNews, fetchArticle } from '../api/news';
 import { useFavs } from '../hooks/useFavs';
 import { termsFor, matchesFav } from '../lib/favNews';
+import { useSaved, toggleSaved, attachBody } from '../lib/saved';
 import { colors, alpha } from '../theme';
 
 export const ago = (ms) => { if (!ms) return ''; const m = Math.max(0, Math.round((Date.now() - ms) / 60000)); if (m < 1) return 'just now'; if (m < 60) return `${m} min ago`; const h = Math.round(m / 60); if (h < 24) return `${h} h ago`; const d = Math.round(h / 24); return d < 7 ? `${d} d ago` : new Date(ms).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }); };
@@ -21,11 +22,13 @@ export default function NewsScreen({ navigation }) {
   const d = useAsync(() => fetchNews(sel, n ? { fresh: true } : undefined), [sel.join(','), n]);
   const toggle = (id) => { const next = sel.includes(id) ? sel.filter((x) => x !== id) : [...sel, id]; if (next.length) setOpt('newsSel', next); };
   const favs = useFavs(); const terms = useMemo(() => termsFor(favs), [JSON.stringify(favs.drivers), JSON.stringify(favs.teams)]); const only = !!prefs.opts.newsFav;
+  const savedList = useSaved(); const savedIds = useMemo(() => new Set(savedList.map((z) => z.id)), [savedList]);
   const all = d.v?.items || []; const items = only ? all.filter((x) => matchesFav(x, terms)) : all;
   return (
     <Screen>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
         <Text style={{ color: colors.fg, fontSize: 24, fontWeight: '800', fontStyle: 'italic' }}>News</Text>
+        <Pressable onPress={() => navigation.navigate('SavedNews')} hitSlop={10} accessibilityLabel="Saved articles" style={({ pressed }) => [{ flexDirection: 'row', alignItems: 'center', gap: 6 }, pressed && { opacity: 0.6 }]}><Ionicons name="bookmark-outline" size={20} color={colors.accent} /><Text style={{ color: colors.accent, fontWeight: '700' }}>Saved</Text></Pressable>
         <Pressable onPress={() => setN(n + 1)} hitSlop={10} accessibilityLabel="Reload news" style={({ pressed }) => [{ flexDirection: 'row', alignItems: 'center', gap: 6 }, pressed && { opacity: 0.6 }]}><Ionicons name="refresh" size={18} color={colors.accent} /><Text style={{ color: colors.accent, fontWeight: '700', fontSize: 15 }}>Reload</Text></Pressable>
       </View>
       <Pressable accessibilityRole="switch" accessibilityState={{ checked: only }} onPress={() => setOpt('newsFav', !only)} style={({ pressed }) => [{ flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-start', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 99, borderWidth: 1, borderColor: only ? colors.gold : colors.line, backgroundColor: only ? alpha(colors.gold, 0.18) : 'transparent' }, pressed && { opacity: 0.7 }]}><Ionicons name={only ? 'star' : 'star-outline'} size={16} color={only ? colors.gold : colors.muted} /><Text style={{ color: only ? colors.fg : colors.muted, fontWeight: '700', fontSize: 14 }}>My favourites only</Text></Pressable>
@@ -39,13 +42,13 @@ export default function NewsScreen({ navigation }) {
       {d.v && !items.length && <Note>{only ? (terms.length ? 'No stories about your favourites in these sources right now. Switch the filter off to see everything.' : 'You have no favourite drivers or teams yet. Star some in the Paddock tab, or switch the filter off.') : 'No stories right now. Check your connection, or pick more sources.'}</Note>}
       {d.v?.failed?.length ? <Note>{`Not reachable right now: ${d.v.failed.join(', ')}.`}</Note> : null}
       {items.slice(0, shown).map((x, i) => (
-        <Story key={x.id} x={x} i={i} />))}
+        <Story key={x.id} x={x} i={i} saved={savedIds.has(x.id)} />))}
       {items.length > shown ? <Press onPress={() => setShown(shown + 8)}><View style={{ height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface2, borderWidth: 1, borderColor: colors.line }}><Text style={{ color: colors.fg, fontWeight: '700', fontSize: 16 }}>{`Show more (${items.length - shown})`}</Text></View></Press> : null}
     </Screen>
   );
 }
 // One story. Memoised and drawn with plain views, so a long list stays smooth; tapping opens the article in the phone's browser.
-const Story = React.memo(function Story({ x, i }) {
+const Story = React.memo(function Story({ x, i, saved }) {
   // Pictures are fetched after the card has appeared (and scaled down by the system), so adding more stories never freezes the list.
   const [pic, setPic] = useState(false); useEffect(() => { const h = setTimeout(() => setPic(true), 80); return () => clearTimeout(h); }, []);
   const img = (style) => (pic && x.image ? <Image source={{ uri: x.image }} resizeMode="cover" resizeMethod="resize" fadeDuration={0} style={style} /> : <View style={style} />);
@@ -59,6 +62,7 @@ const Story = React.memo(function Story({ x, i }) {
                 <Text style={{ color: colors.fg, fontSize: i === 0 ? 21 : 18, fontWeight: '700', lineHeight: i === 0 ? 25 : 22 }} numberOfLines={4}>{x.title}</Text>
               </View>
               {x.image && i !== 0 ? img({ width: 86, height: 86, borderRadius: 12, backgroundColor: colors.surface2 }) : null}
+              <Pressable onPress={() => toggleSaved(x)} hitSlop={10} accessibilityRole="button" accessibilityLabel={saved ? 'Remove from saved' : 'Save for later'}><Ionicons name={saved ? 'bookmark' : 'bookmark-outline'} size={22} color={saved ? colors.accent : colors.muted} /></Pressable>
             </View>
           </View>
         </Press>
@@ -66,7 +70,9 @@ const Story = React.memo(function Story({ x, i }) {
 });
 // A story read inside the app: picture, text and pictures from the article, then a link to the original.
 export function ArticleScreen({ route }) {
-  const { item } = route.params; const body = useAsync(() => fetchArticle(item), [item.id]);
+  const { item } = route.params; const body = useAsync(() => (item.body ? Promise.resolve(item.body) : fetchArticle(item)), [item.id]);
+  const savedList = useSaved(); const isSaved = savedList.some((z) => z.id === item.id);
+  useEffect(() => { if (body.v && body.v.length && isSaved) attachBody(item, body.v); }, [body.v, isSaved]);
   return (
     <Screen header={false}>
       {item.image ? <Image source={{ uri: item.image }} resizeMode="cover" style={{ width: '100%', aspectRatio: 16 / 9, borderRadius: 16, backgroundColor: colors.surface2 }} /> : null}
@@ -74,6 +80,7 @@ export function ArticleScreen({ route }) {
         <Text style={{ color: colors.accent, fontFamily: 'label', fontSize: 12, letterSpacing: 1.6 }}>{`${item.sourceName.toUpperCase()}${item.date ? ` · ${ago(item.date).toUpperCase()}` : ''}`}</Text>
         <RNText style={{ fontFamily: 'sans-serif', color: colors.fg, fontSize: 26, fontWeight: '800', lineHeight: 32 }}>{item.title}</RNText>
       </View>
+      <Press onPress={() => toggleSaved(item, body.v)}><View style={{ height: 44, borderRadius: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1, borderColor: colors.line, backgroundColor: isSaved ? alpha(colors.accent, 0.15) : colors.surface }}><Ionicons name={isSaved ? 'bookmark' : 'bookmark-outline'} size={18} color={colors.accent} /><Text style={{ color: colors.fg, fontWeight: '700' }}>{isSaved ? 'Saved for later' : 'Save for later'}</Text></View></Press>
       {body.loading && <Skeleton rows={5} />}
       {(body.v || []).map((b, i) => b.t === 'img'
         ? <Image key={i} source={{ uri: b.v }} resizeMode="cover" style={{ width: '100%', aspectRatio: 16 / 9, borderRadius: 14, backgroundColor: colors.surface2 }} />
@@ -88,4 +95,21 @@ export function ArticleScreen({ route }) {
         </Press>) : null}
     </Screen>
   );
+}
+
+// Stories saved for later. Opens in the in-app reader; the text is there offline if the story was opened while saved.
+export function SavedNewsScreen({ navigation }) {
+  const list = useSaved();
+  return (
+    <Screen header={false}>
+      <Card><Text style={{ color: colors.fg, fontSize: 22, fontWeight: '800', fontStyle: 'italic' }}>Saved articles</Text><Note>Tap the bookmark on a story to keep it here. Open a saved story once and its text is kept for offline reading.</Note></Card>
+      {!list.length ? <Note>Nothing saved yet.</Note> : list.map((x) => (
+        <Press key={x.id} onPress={() => navigation.navigate('Article', { item: x })}>
+          <Card>
+            <Text style={{ color: colors.accent, fontFamily: 'label', fontSize: 11, letterSpacing: 1.4 }}>{`${String(x.sourceName || '').toUpperCase()}${x.body ? ' · OFFLINE' : ''}`}</Text>
+            <Text style={{ color: colors.fg, fontSize: 18, fontWeight: '700', marginTop: 4 }}>{x.title}</Text>
+            <Pressable onPress={() => toggleSaved(x)} hitSlop={8} accessibilityRole="button" style={{ marginTop: 8 }}><Text style={{ color: colors.muted, fontSize: 13 }}>Remove</Text></Pressable>
+          </Card>
+        </Press>))}
+    </Screen>);
 }

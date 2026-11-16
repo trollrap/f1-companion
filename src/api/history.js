@@ -382,3 +382,225 @@ export function finishCountsAt(year, upto) {
   rl.slice(0, upto).forEach((rc) => rc[4].forEach((r) => { const p = /^\d+$/.test(String(r[4])) ? +r[4] : 0; if (!p) return; const id = IX.idOf[r[0]]; if (!id) return; const a = (out[id] ||= []); a[p - 1] = (a[p - 1] || 0) + 1; }));
   return out;
 }
+
+// Longest runs of consecutive race entries with a win, a podium or points, per driver, from the offline history.
+// A run is broken by any race the driver entered without the result (a race they skip does not break it). `active` = still running at the last race in the file.
+export function streakBoard() {
+  load(); const per = {}; const years = Object.keys(H.r).map(Number).sort((a, b) => a - b); let lastKey = null;
+  years.forEach((y) => H.r[String(y)].forEach((rc) => { lastKey = `${y}-${rc[0]}`; rc[4].forEach((r) => { (per[r[0]] ||= []).push({ y, rd: rc[0], pos: /^\d+$/.test(String(r[4])) ? +r[4] : 99, pts: Number(r[5]) || 0, key: `${y}-${rc[0]}` }); }); }));
+  const kinds = { win: (x) => x.pos === 1, podium: (x) => x.pos <= 3, points: (x) => x.pts > 0 };
+  const out = { win: [], podium: [], points: [] };
+  Object.keys(per).forEach((k) => { const L = per[k]; const d = H.d[k]; if (!d) return;
+    Object.keys(kinds).forEach((kind) => { let run = 0, best = null, start = 0;
+      L.forEach((x, i) => { if (kinds[kind](x)) { if (!run) start = i; run++; if (!best || run > best.len) best = { len: run, s: start, e: i }; } else run = 0; });
+      if (!best) return; const cur = run > 0 && L[L.length - 1].key === lastKey ? run : 0;
+      out[kind].push({ id: IX.idOf[k], name: `${d[1]} ${d[2]}`, len: best.len, from: `${L[best.s].y} R${L[best.s].rd}`, to: `${L[best.e].y} R${L[best.e].rd}`, current: cur });
+    }); });
+  Object.keys(out).forEach((kind) => out[kind].sort((a, b) => b.len - a.len || a.name.localeCompare(b.name)));
+  return { rows: out, upTo: lastKey };
+}
+
+// Results grouped by power unit supplier. `map` is data/engines.js. Titles: the champion's car at the time (most-used team that year).
+export function engineBoard(map, fromYear, toYear) {
+  load(); const supplierOf = (tid, y) => Object.keys(map).find((s) => map[s].some(([t, a, b]) => t === tid && y >= a && y <= b));
+  const out = {}; Object.keys(map).forEach((s) => { out[s] = { name: s, entries: 0, wins: 0, podiums: 0, poles: 0, driverTitles: 0, constructorTitles: 0, teams: {}, seasons: new Set(), unmapped: 0 }; });
+  const champTeam = (y) => { const id = driverChampion(y); const ci = id ? dIdx(id) : -1; if (ci < 0) return null; const c = {}; (H.r[String(y)] || []).forEach((rc) => rc[4].forEach((r) => { if (r[0] === ci) { const t = H.t[r[1]][0]; c[t] = (c[t] || 0) + 1; } })); const e = Object.entries(c).sort((a, b) => b[1] - a[1])[0]; return e ? e[0] : null; };
+  for (let y = fromYear; y <= toYear; y++) {
+    const rl = H.r[String(y)]; if (!rl) continue;
+    rl.forEach((rc) => rc[4].forEach((r) => { const tid = H.t[r[1]][0]; const s = supplierOf(tid, y); if (!s) { out[Object.keys(out)[0]].unmapped++; return; } const o = out[s]; o.entries++; o.seasons.add(y); (o.teams[y] ||= new Set()).add(tid); if (r[4] === '1') o.wins++; if (['1', '2', '3'].includes(String(r[4]))) o.podiums++; if (r[2] === 1) o.poles++; }));
+    const ct = champTeam(y); const cs = ct && supplierOf(ct, y); if (cs) out[cs].driverTitles++;
+    const cc = constructorChampion(y); const ccs = cc && supplierOf(cc, y); if (ccs) out[ccs].constructorTitles++;
+  }
+  return Object.values(out).map((o) => ({ ...o, seasons: [...o.seasons].sort(), teams: Object.fromEntries(Object.entries(o.teams).map(([y, v]) => [y, [...v]])) })).sort((a, b) => b.wins - a.wins);
+}
+
+// Pole to win conversion from the offline history. A "pole" is the car on P1 of the starting grid (a grid penalty can make this differ from official pole).
+export function poleConversion() {
+  load(); const d = {}, t = {}, c = {}, y = {}; let poles = 0, conv = 0;
+  Object.keys(H.r).forEach((yr) => H.r[yr].forEach((rc) => {
+    const p = rc[4].find((r) => r[2] === 1); if (!p) return; const win = p[4] === '1'; poles++; if (win) conv++;
+    const dk = IX.idOf[p[0]], tk = H.t[p[1]][1]; const dn = `${H.d[p[0]][1]} ${H.d[p[0]][2]}`;
+    const bump = (m, k, name) => { const o = (m[k] ||= { name, poles: 0, wins: 0 }); o.poles++; if (win) o.wins++; };
+    bump(d, dk, dn); bump(t, tk, tk); bump(c, rc[1], rc[1]); bump(y, yr, yr);
+  }));
+  const fin = (m, min) => Object.values(m).filter((o) => o.poles >= min).map((o) => ({ ...o, rate: o.wins / o.poles })).sort((a, b) => b.rate - a.rate || b.poles - a.poles);
+  return { poles, conv, drivers: fin(d, 10), teams: fin(t, 20), circuits: fin(c, 15), years: Object.values(y).map((o) => ({ ...o, rate: o.wins / o.poles })).sort((a, b) => +b.name - +a.name) };
+}
+
+// Everything the race preview card shows for one Grand Prix name: recent winners, who wins here most, how often pole wins, and how given drivers did here.
+export function circuitSummary(raceName, driverIds = []) {
+  load(); const nm = String(raceName || '').toLowerCase(); const races = [];
+  Object.keys(H.r).sort((a, b) => b - a).forEach((y) => H.r[y].forEach((rc) => { if (String(rc[1]).toLowerCase() === nm) races.push({ y: +y, rc }); }));
+  if (!races.length) return null;
+  const nameOf = (k) => `${H.d[k][1]} ${H.d[k][2]}`; const wins = {}; let poles = 0, conv = 0;
+  const recent = races.slice(0, 5).map(({ y, rc }) => { const w = rc[4].find((r) => r[4] === '1'); return { year: y, winner: w ? nameOf(w[0]) : '-', team: w ? H.t[w[1]][1] : '' }; });
+  races.forEach(({ rc }) => { const w = rc[4].find((r) => r[4] === '1'); if (w) wins[w[0]] = (wins[w[0]] || 0) + 1; const p = rc[4].find((r) => r[2] === 1); if (p) { poles++; if (p[4] === '1') conv++; } });
+  const top = Object.entries(wins).sort((a, b) => b[1] - a[1] || 0).slice(0, 3).map(([k, n]) => ({ name: nameOf(k), n }));
+  const favs = driverIds.map((id) => { const i = dIdx(id); if (i < 0) return null; let starts = 0, w = 0, pod = 0, best = 99;
+    races.forEach(({ rc }) => { const r = rc[4].find((x) => x[0] === i); if (!r) return; starts++; const p = /^\d+$/.test(String(r[4])) ? +r[4] : 99; if (p === 1) w++; if (p <= 3) pod++; if (p < best) best = p; });
+    return starts ? { id, name: nameOf(i), starts, wins: w, podiums: pod, best: best === 99 ? null : best } : null; }).filter(Boolean);
+  return { editions: races.length, first: races[races.length - 1].y, last: races[0].y, recent, top, poleWinRate: poles ? conv / poles : null, favs };
+}
+
+// Per-driver race lists in order (entered races only): [{ y, rd, pos, grid }]. pos 99 = not classified. Cached.
+let _per = null;
+function perDriver() {
+  if (_per) return _per; load(); const per = {}; const years = Object.keys(H.r).map(Number).sort((a, b) => a - b); let last = null;
+  years.forEach((y) => H.r[String(y)].forEach((rc) => { last = `${y}-${rc[0]}`; rc[4].forEach((r) => { (per[r[0]] ||= []).push({ y, rd: rc[0], pos: /^\d+$/.test(String(r[4])) ? +r[4] : 99, grid: r[2], t: r[1], key: last }); }); }));
+  _per = { per, last }; return _per;
+}
+const nameOfIdx = (k) => `${H.d[k][1]} ${H.d[k][2]}`;
+
+// Win droughts. `between`: longest run of races entered between two wins. `waits`: races entered before the first win. `now`: running droughts of drivers still racing at the end of the history.
+export function winDroughts() {
+  const { per, last } = perDriver(); const between = [], waits = [], now = [];
+  Object.keys(per).forEach((k) => { const L = per[k]; const w = []; L.forEach((x, i) => { if (x.pos === 1) w.push(i); }); if (!w.length) return; const name = nameOfIdx(k); const active = L[L.length - 1].key === last;
+    waits.push({ name, n: w[0], to: `${L[w[0]].y} R${L[w[0]].rd}` });
+    let best = null; for (let i = 1; i < w.length; i++) { const g = w[i] - w[i - 1] - 1; if (!best || g > best.n) best = { name, n: g, from: `${L[w[i - 1]].y} R${L[w[i - 1]].rd}`, to: `${L[w[i]].y} R${L[w[i]].rd}` }; }
+    if (best && best.n > 0) between.push(best);
+    if (active) { const since = L.length - 1 - w[w.length - 1]; if (since > 0) now.push({ name, n: since, from: `${L[w[w.length - 1]].y} R${L[w[w.length - 1]].rd}` }); } });
+  const sort = (a) => a.sort((x, y) => y.n - x.n || x.name.localeCompare(y.name));
+  return { between: sort(between).slice(0, 25), waits: sort(waits).slice(0, 25), now: sort(now).slice(0, 25) };
+}
+
+// Drivers who never won (most podiums, most starts) and drivers with exactly one win.
+export function winless() {
+  const { per } = perDriver(); const never = [], one = [];
+  Object.keys(per).forEach((k) => { const L = per[k]; const wins = L.filter((x) => x.pos === 1).length; const pod = L.filter((x) => x.pos <= 3).length; const name = nameOfIdx(k); const yrs = `${L[0].y}${L[L.length - 1].y !== L[0].y ? `-${L[L.length - 1].y}` : ''}`;
+    if (!wins && L.length >= 40) never.push({ name, starts: L.length, podiums: pod, best: Math.min(...L.map((x) => x.pos)), yrs });
+    if (wins === 1) one.push({ name, starts: L.length, podiums: pod, yrs, win: `${L.find((x) => x.pos === 1).y}` }); });
+  never.sort((a, b) => b.podiums - a.podiums || b.starts - a.starts); one.sort((a, b) => b.starts - a.starts);
+  return { never: never.slice(0, 25), one: one.slice(0, 25), oneCount: one.length };
+}
+
+// Average places gained from the grid to the flag, over races where the driver started on the grid (grid 1+) and was classified. Min 50 such races (drivers), 100 (teams), 15 (seasons).
+export function placesGained() {
+  const { per } = perDriver(); const d = [], t = {}, y = {};
+  Object.keys(per).forEach((k) => { let n = 0, s = 0; per[k].forEach((x) => { if (x.grid >= 1 && x.pos < 99) { const g = x.grid - x.pos; n++; s += g; const tn = H.t[x.t][1]; (t[tn] ||= { name: tn, n: 0, s: 0 }); t[tn].n++; t[tn].s += g; (y[x.y] ||= { name: String(x.y), n: 0, s: 0 }); y[x.y].n++; y[x.y].s += g; } });
+    if (n >= 50) d.push({ name: nameOfIdx(k), n, avg: s / n }); });
+  const fin = (m, min) => Object.values(m).filter((o) => o.n >= min).map((o) => ({ name: o.name, n: o.n, avg: o.s / o.n }));
+  const by = (a) => a.sort((x, z) => z.avg - x.avg);
+  return { drivers: by(d), teams: by(fin(t, 100)), years: fin(y, 15).sort((a, b) => +b.name - +a.name) };
+}
+
+// Career numbers for the games, by driver id.
+export function careerStats(id) {
+  const i = dIdx(id); if (i < 0) return null; const L = (perDriver().per[i]) || [];
+  return { wins: L.filter((x) => x.pos === 1).length, podiums: L.filter((x) => x.pos <= 3).length, starts: L.length, poles: L.filter((x) => x.grid === 1).length, titles: titlesOf(id) };
+}
+// Team names in the order a driver first raced for them (consecutive duplicates removed), and the team with most starts.
+export function careerTeams(id) {
+  const i = dIdx(id); if (i < 0) return null; const L = (perDriver().per[i]) || []; const seq = [], cnt = {};
+  L.forEach((x) => { const n = H.t[x.t][1]; cnt[n] = (cnt[n] || 0) + 1; if (seq[seq.length - 1] !== n) seq.push(n); });
+  const main = Object.entries(cnt).sort((a, b) => b[1] - a[1])[0]; return { seq, main: main ? main[0] : '', mainStarts: main ? main[1] : 0 };
+}
+
+// How often each starting slot has turned into a win or a podium, by era. Pit-lane starts (grid 0) are left out.
+export function gridSlotOdds() {
+  load(); const eras = [['All time', 1950, 2100], ['1950 to 1979', 1950, 1979], ['1980 to 1999', 1980, 1999], ['2000 to 2013', 2000, 2013], ['2014 to now', 2014, 2100]];
+  return eras.map(([label, a, b]) => { const slots = Array.from({ length: 24 }, (_, i) => ({ slot: i + 1, n: 0, wins: 0, podiums: 0 }));
+    Object.keys(H.r).filter((y) => +y >= a && +y <= b).forEach((y) => H.r[y].forEach((rc) => rc[4].forEach((r) => { const g = r[2]; if (!(g >= 1 && g <= 24)) return; const s = slots[g - 1]; s.n++; const p = String(r[4]); if (p === '1') s.wins++; if (p === '1' || p === '2' || p === '3') s.podiums++; })));
+    return { label, slots: slots.filter((s) => s.n >= 30) }; });
+}
+
+// Driver pairings per team and season: the two highest scorers for the team. `share` = their combined points as a fraction of all points scored that season,
+// which makes different points systems comparable. Race points only as stored in the history.
+export function lineupStrength() {
+  load(); const out = [];
+  Object.keys(H.r).forEach((y) => { const team = {}; let total = 0;
+    H.r[y].forEach((rc) => rc[4].forEach((r) => { const pts = Number(r[5]) || 0; total += pts; const t = (team[r[1]] ||= {}); t[r[0]] = (t[r[0]] || 0) + pts; }));
+    if (!total) return;
+    Object.keys(team).forEach((tk) => { const ds = Object.entries(team[tk]).sort((a, b) => b[1] - a[1]); if (ds.length < 2 || ds[0][1] + ds[1][1] <= 0) return; const [a, b] = ds; const comb = a[1] + b[1];
+      out.push({ year: +y, team: H.t[tk][1], a: nameOfIdx(a[0]), b: nameOfIdx(b[0]), pa: a[1], pb: b[1], comb, share: comb / total, lop: (a[1] - b[1]) / comb }); }); });
+  const strongest = [...out].sort((x, y) => y.share - x.share).slice(0, 25);
+  const weakest = out.filter((x) => x.share > 0.01).sort((x, y) => x.share - y.share).slice(0, 25);
+  const lopsided = out.filter((x) => x.share >= 0.05).sort((x, y) => y.lop - x.lop).slice(0, 25);
+  const matched = out.filter((x) => x.share >= 0.08).sort((x, y) => x.lop - y.lop).slice(0, 25);
+  return { strongest, lopsided, matched, weakest };
+}
+
+// Every championship: champion, points, margin, wins, and (1991 to 2020 only) the round the title was mathematically won.
+// Clinch maths: after round k the champion's lead over the best other driver must be more than the most points the rest of the season can give (no dropped scores, no sprints in that range; 2014 double points at the last race counted).
+const maxPerRace = (y) => (y <= 2009 ? 10 : y <= 2018 ? 25 : 26);
+export function titleHistory() {
+  load(); const rows = [];
+  Object.keys(H.ds).map(Number).sort((a, b) => a - b).forEach((y) => { const id = driverChampion(y); const ci = id ? dIdx(id) : -1; if (ci < 0) return;
+    const ds = [...H.ds[String(y)]].sort((a, b) => a[1] - b[1]); const top = ds[0], sec = ds[1]; if (!top || top[0] !== ci || !sec) return;
+    const races = H.r[String(y)] || []; let wins = 0; const t = {}; races.forEach((rc) => rc[4].forEach((r) => { if (r[0] === ci) { if (r[4] === '1') wins++; t[r[1]] = (t[r[1]] || 0) + 1; } }));
+    const tk = Object.entries(t).sort((a, b) => b[1] - a[1])[0];
+    let clinch = null;
+    if (y >= 1991 && y <= 2020 && races.length) { const cum = {}; for (let k = 0; k < races.length; k++) { races[k][4].forEach((r) => { cum[r[0]] = (cum[r[0]] || 0) + (Number(r[5]) || 0); }); const mine = cum[ci] || 0; const other = Math.max(0, ...Object.keys(cum).filter((x) => +x !== ci).map((x) => cum[x])); let rest = 0; for (let j = k + 1; j < races.length; j++) rest += y === 2014 && j === races.length - 1 ? 50 : maxPerRace(y); if (mine - other > rest) { clinch = { round: k + 1, of: races.length, name: races[k][1] }; break; } } }
+    rows.push({ year: y, name: nameOfIdx(ci), team: tk ? H.t[tk[0]][1] : '', pts: top[2], second: nameOfIdx(sec[0]), secPts: sec[2], margin: top[2] - sec[2], pct: (top[2] - sec[2]) / top[2], wins, rounds: races.length, clinch }); });
+  const closest = [...rows].sort((a, b) => a.pct - b.pct).slice(0, 15), biggest = [...rows].sort((a, b) => b.pct - a.pct).slice(0, 15);
+  const early = rows.filter((r) => r.clinch).sort((a, b) => (b.clinch.of - b.clinch.round) - (a.clinch.of - a.clinch.round) || b.pct - a.pct).slice(0, 15);
+  const lastRace = rows.filter((r) => r.clinch && r.clinch.round === r.clinch.of).sort((a, b) => b.year - a.year);
+  const fewWins = [...rows].filter((r) => r.rounds >= 8).sort((a, b) => a.wins - b.wins || a.year - b.year).slice(0, 15);
+  return { rows: rows.sort((a, b) => b.year - a.year), closest, biggest, early, lastRace, fewWins };
+}
+
+const ageParts = (days) => { const y = Math.floor(days / 365.25); return { y, d: Math.floor(days - y * 365.25), days }; };
+// Youngest and oldest drivers to start, win, take pole (grid P1) and finish on the podium. Needs a birth date in the history. Ages are in whole years plus days (a year counted as 365.25 days).
+export function ageRecords() {
+  load(); const cat = { start: [], win: [], pole: [], podium: [] };
+  Object.keys(H.r).forEach((y) => H.r[y].forEach((rc) => { const t = Date.parse(rc[3]); if (!t) return;
+    rc[4].forEach((r) => { const dob = H.d[r[0]][3]; const b = dob && Date.parse(dob); if (!b) return; const a = ageParts((t - b) / 864e5); if (a.y < 14 || a.y > 70) return;
+      const o = { name: nameOfIdx(r[0]), race: `${rc[1]} ${y}`, ...a }; const p = String(r[4]);
+      cat.start.push(o); if (p === '1') cat.win.push(o); if (p === '1' || p === '2' || p === '3') cat.podium.push(o); if (r[2] === 1) cat.pole.push(o); }); }));
+  const best = (list, dir) => { const seen = new Set(); return [...list].sort((a, b) => dir * (a.days - b.days)).filter((o) => (seen.has(o.name) ? false : seen.add(o.name))).slice(0, 15); };
+  const out = {}; Object.keys(cat).forEach((k) => { out[k] = { youngest: best(cat[k], 1), oldest: best(cat[k], -1) }; }); return out;
+}
+
+// Races where one driver took pole (grid P1), won, and set the fastest lap. The fastest-lap flag is only stored for seasons that have it, so older totals may be low.
+export function hatTricks() {
+  load(); const by = {}; let total = 0;
+  Object.keys(H.r).forEach((y) => H.r[y].forEach((rc) => rc[4].forEach((r) => { if (r[2] === 1 && String(r[4]) === '1' && r[7] === 1) { total++; const o = (by[r[0]] ||= { name: nameOfIdx(r[0]), n: 0, years: [], last: '' }); o.n++; o.years.push(+y); o.last = `${rc[1]} ${y}`; } })));
+  const rows = Object.values(by).sort((a, b) => b.n - a.n || a.name.localeCompare(b.name)).map((o) => ({ name: o.name, n: o.n, from: Math.min(...o.years), to: Math.max(...o.years), last: o.last }));
+  const perYear = {}; Object.keys(H.r).forEach((y) => { let n = 0; H.r[y].forEach((rc) => rc[4].forEach((r) => { if (r[2] === 1 && String(r[4]) === '1' && r[7] === 1) n++; })); if (n) perYear[y] = n; });
+  const years = Object.entries(perYear).sort((a, b) => b[1] - a[1] || b[0] - a[0]).slice(0, 12).map(([y, n]) => ({ year: +y, n }));
+  return { rows: rows.slice(0, 30), years, total };
+}
+
+// A driver's first season, ranked by the share of all points scored that season (so points systems compare). Needs 8 or more starts in that first season.
+export function debutSeasons() {
+  load(); const first = {}; const tot = {};
+  Object.keys(H.r).map(Number).sort((a, b) => a - b).forEach((y) => { const s = {}; let all = 0;
+    H.r[y].forEach((rc) => rc[4].forEach((r) => { const p = Number(r[5]) || 0; all += p; const o = (s[r[0]] ||= { n: 0, pts: 0, wins: 0, pod: 0 }); o.n++; o.pts += p; if (String(r[4]) === '1') o.wins++; if (['1', '2', '3'].includes(String(r[4]))) o.pod++; }));
+    tot[y] = all; Object.keys(s).forEach((k) => { if (first[k] === undefined) first[k] = { y, ...s[k] }; }); });
+  const rows = Object.entries(first).filter(([, o]) => o.n >= 8 && tot[o.y] > 0).map(([k, o]) => ({ name: nameOfIdx(+k), year: o.y, starts: o.n, pts: Math.round(o.pts * 10) / 10, wins: o.wins, podiums: o.pod, share: o.pts / tot[o.y] }));
+  return { share: [...rows].sort((a, b) => b.share - a.share).slice(0, 25), wins: rows.filter((r) => r.wins > 0).sort((a, b) => b.wins - a.wins || b.share - a.share).slice(0, 25) };
+}
+
+// Share of starts that did not end classified (retired, disqualified, not classified). Drivers with enough starts; withdrawals (W) are ignored.
+export function dnfRates() {
+  load(); const by = {};
+  Object.keys(H.r).forEach((y) => H.r[y].forEach((rc) => rc[4].forEach((r) => { const p = String(r[4]); if (p === 'W') return; const o = (by[r[0]] ||= { n: 0, out: 0, last: 0, first: 9999 }); o.n++; if (Number.isNaN(Number(p))) o.out++; o.last = Math.max(o.last, +y); o.first = Math.min(o.first, +y); })));
+  const mk = (min, minLast) => Object.entries(by).filter(([, o]) => o.n >= min && o.last >= minLast).map(([k, o]) => ({ name: nameOfIdx(+k), n: o.n, out: o.out, rate: o.out / o.n, from: o.first, to: o.last }));
+  const all = mk(100, 0), modern = mk(60, 2010).filter((o) => o.from >= 2000 || o.to >= 2010);
+  return { most: [...all].sort((a, b) => b.rate - a.rate).slice(0, 20), least: [...all].sort((a, b) => a.rate - b.rate).slice(0, 20), mostNow: [...modern].sort((a, b) => b.rate - a.rate).slice(0, 15), leastNow: [...modern].sort((a, b) => a.rate - b.rate).slice(0, 15) };
+}
+
+// Per team (history team id): its name, and per season the points all its drivers scored, wins, and share of all points that season.
+export function teamSeasons() {
+  load(); const out = {}; const years = Object.keys(H.r).map(Number).sort((a, b) => a - b);
+  years.forEach((y) => { let all = 0; const s = {};
+    H.r[String(y)].forEach((rc) => rc[4].forEach((r) => { const p = Number(r[5]) || 0; all += p; const o = (s[r[1]] ||= { pts: 0, wins: 0 }); o.pts += p; if (String(r[4]) === '1') o.wins++; }));
+    Object.keys(s).forEach((k) => { const id = H.t[k][0]; const t = (out[id] ||= { id, name: H.t[k][1], years: [] }); t.name = H.t[k][1]; t.years.push({ y, pts: Math.round(s[k].pts * 10) / 10, wins: s[k].wins, share: all ? s[k].pts / all : 0 }); }); });
+  return Object.values(out).filter((t) => t.years.length >= 2).sort((a, b) => b.years.reduce((n, x) => n + x.wins, 0) - a.years.reduce((n, x) => n + x.wins, 0));
+}
+
+// Every Grand Prix name with how many times it was run, then every edition of one of them.
+export function gpList() {
+  load(); const n = {}; Object.keys(H.r).forEach((y) => H.r[y].forEach((rc) => { n[rc[1]] = (n[rc[1]] || 0) + 1; }));
+  return Object.entries(n).map(([name, editions]) => ({ name, editions })).filter((x) => x.editions >= 2).sort((a, b) => b.editions - a.editions || a.name.localeCompare(b.name));
+}
+export function gpEditions(raceName) {
+  load(); const rows = [];
+  Object.keys(H.r).sort((a, b) => b - a).forEach((y) => H.r[y].forEach((rc) => { if (rc[1] !== raceName) return;
+    const w = rc[4].find((r) => String(r[4]) === '1'); const p = rc[4].find((r) => r[2] === 1); const f = rc[4].find((r) => r[7] === 1);
+    rows.push({ year: +y, date: rc[3], winner: w ? nameOfIdx(w[0]) : null, team: w ? H.t[w[1]][1] : '', winGrid: w ? w[2] : null, pole: p ? nameOfIdx(p[0]) : null, poleFin: p ? String(p[4]) : null, fastest: f ? nameOfIdx(f[0]) : null, starters: rc[4].length }); }));
+  const wins = {}; rows.forEach((r) => { if (r.winner) wins[r.winner] = (wins[r.winner] || 0) + 1; });
+  const most = Object.entries(wins).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([name, n]) => ({ name, n }));
+  const back = rows.filter((r) => r.winGrid > 0).sort((a, b) => b.winGrid - a.winGrid)[0] || null;
+  const poleWins = rows.filter((r) => r.pole && r.poleFin === '1').length, poleN = rows.filter((r) => r.pole).length;
+  return { rows, most, back, poleWins, poleN };
+}

@@ -34,6 +34,7 @@ export function FantasyHub({ navigation }) {
     <Screen>
       <Text style={{ color: colors.fg, fontSize: 24, fontWeight: '800', fontStyle: 'italic' }}>Fantasy</Text>
       <Reveal index={0}><Note>Your own seasons: pick the teams and races, then simulate. Saved automatically on this phone.</Note></Reveal>
+      {live[0] ? <Reveal index={0}><Btn icon="play" tone="solid" onPress={() => navigation.navigate('Fantasy', { id: live[0].id })}>{`Continue ${live[0].name}`}</Btn></Reveal> : null}
       <Eyebrow>Saved seasons</Eyebrow>
       {fun.loaded && !live.length && <Note>No fantasy season yet. Make one: pick how many teams there are, choose the races and simulate.</Note>}
       {live.map(row)}

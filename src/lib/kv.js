@@ -1,6 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 export const kvGet = async (k, d) => { try { const r = await AsyncStorage.getItem(k); return r ? JSON.parse(r) : d; } catch { return d; } };
-export const kvSet = (k, v) => AsyncStorage.setItem(k, JSON.stringify(v)).catch(() => {});
+// Game saves and best scores also mark today as played, for the play calendar (written at most once per day per run).
+let lastMark = '';
+async function markPlayed() { const t = today(); if (lastMark === t) return; lastMark = t; try { const r = await AsyncStorage.getItem('playDays'); const a = r ? JSON.parse(r) : []; if (Array.isArray(a) && !a.includes(t)) await AsyncStorage.setItem('playDays', JSON.stringify([...a, t].slice(-400))); } catch {} }
+const PLAYED = /^game:|:best$|^daily/;
+export const kvSet = (k, v) => { if (PLAYED.test(k)) markPlayed(); return AsyncStorage.setItem(k, JSON.stringify(v)).catch(() => {}); };
 // Local calendar day, so a daily game rolls over at the player's midnight.
 export const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
 export const seedOf = (s) => { let h = 2166136261; for (const c of String(s)) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
