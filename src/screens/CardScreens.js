@@ -38,7 +38,9 @@ export default function CardScreen() {
   useEffect(() => { loadCards().then((x) => setM({ ...x })); return subscribe((x) => setM({ ...x })); }, []);
   const open = async () => { if (busy) return; setBusy(true); setFlipped(0); const p = await openPack(); setPack(p); setBusy(false); };
   if (!m) return <Screen header={false}><Note>Loading…</Note></Screen>;
-  const cards = Object.keys(m.owned).map((id) => ({ ...cardOf(id), n: m.owned[id] })).filter((c) => c.id && c.name);
+  // Cards from a pack that has not been fully turned over yet stay out of the collection, so the list below never shows them early.
+  const hidden = {}; if (pack && flipped < pack.length) pack.forEach((c) => { hidden[c.id] = (hidden[c.id] || 0) + 1; });
+  const cards = Object.keys(m.owned).map((id) => ({ ...cardOf(id), n: m.owned[id] - (hidden[id] || 0) })).filter((c) => c.id && c.name && c.n > 0);
   const by = (r) => cards.filter((c) => c.rarity === r).sort((a, b) => b.wins - a.wins || a.name.localeCompare(b.name));
   return (
     <Screen header={false}>
@@ -54,6 +56,6 @@ export default function CardScreen() {
           <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}><Text style={{ color: RARITY[r].color, fontFamily: 'label', fontSize: 12, letterSpacing: 2 }}>{RARITY[r].label.toUpperCase()}</Text><Text style={{ color: colors.muted }}>{list.length}</Text></View>
           {list.length ? <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }}>{list.map((c) => <DriverCard key={c.id} c={c} w={118} count={c.n} />)}</ScrollView> : <Text style={{ color: colors.muted, fontSize: 13 }}>None yet.</Text>}
         </View>); })}
-      <Note>{`${cards.length} different drivers collected, ${Object.values(m.owned).reduce((a, b) => a + b, 0)} cards in total. Rarity: legendary is a world champion, epic is 10 or more wins, rare is a win or three podiums.`}</Note>
+      <Note>{`${cards.length} different drivers collected, ${cards.reduce((a, c) => a + c.n, 0)} cards in total. Rarity: legendary is a world champion, epic is 10 or more wins, rare is a win or three podiums.`}</Note>
     </Screen>);
 }

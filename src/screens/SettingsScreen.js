@@ -92,76 +92,7 @@ export default function SettingsScreen() {
   const applyColour = async (hex) => { setMsg('Saving the colour…'); await setOpt('accent', hex).catch(() => {}); setMsg('Colour saved. The app restarts to use it everywhere. If it does not, close it completely and open it again.'); setTimeout(async () => { const r = await restartApp(); if (!r) setMsg('Colour saved. Close the app completely (swipe it away) and open it again to see it everywhere.'); }, 900); };
   return (
     <Screen header={false}>
-      <Section icon="language-outline" title="Language" summary={o.lang === 'el' ? 'Ελληνικά · Beta' : 'English'}>
-        {[['en', 'English', null], ['el', 'Ελληνικά', 'BETA']].map(([k, label, tag]) => {
-          const on = (o.lang === 'el' ? 'el' : 'en') === k;
-          return (
-            <Pressable key={k} onPress={() => setOpt('lang', k)} style={({ pressed }) => [s.row, { paddingVertical: 12 }, pressed && { opacity: 0.7 }]} accessibilityRole="radio" accessibilityState={{ selected: on }}>
-              <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                <Text style={[s.label, on && { color: colors.fg, fontWeight: '700' }]}>{label}</Text>
-                {tag ? <View style={{ backgroundColor: colors.accentSoft, borderColor: colors.accent, borderWidth: 1, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 1 }}><Text style={{ color: colors.accent, fontFamily: 'label', fontWeight: '700', fontSize: 10, letterSpacing: 1.2 }}>{tag}</Text></View> : null}
-              </View>
-              <Ionicons name={on ? 'radio-button-on' : 'radio-button-off'} size={22} color={on ? colors.accent : colors.muted} />
-            </Pressable>);
-        })}
-        <Note>Names of drivers, teams and team principals stay as they are.</Note>
-        {o.lang === 'el' ? <Note>The Greek translation is in beta. Some texts may still appear in English.</Note> : null}
-      </Section>
-      <Section icon="reorder-three-outline" title="Home layout" summary="Reorder or hide the cards on Home">
-        {homeLayout(o.homeLayout).map((x, i, arr) => { const label = (HOME_CARDS.find(([k]) => k === x.k) || [])[1]; const move = (d) => { const n = [...arr]; const j = i + d; if (j < 0 || j >= n.length) return; [n[i], n[j]] = [n[j], n[i]]; LayoutAnimation.configureNext(LayoutAnimation.create(200, 'easeInEaseOut', 'opacity')); setOpt('homeLayout', n); };
-          return (<View key={x.k} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 6 }}>
-            <Switch value={x.on} onValueChange={(v) => setOpt('homeLayout', arr.map((y) => (y.k === x.k ? { ...y, on: v } : y)))} trackColor={{ true: colors.accent }} />
-            <Text style={{ color: x.on ? colors.fg : colors.muted, fontSize: 17, flex: 1 }}>{label}</Text>
-            <Pressable onPress={() => move(-1)} hitSlop={8} style={{ padding: 8, opacity: i === 0 ? 0.3 : 1 }}><Ionicons name="chevron-up" size={22} color={colors.fg} /></Pressable>
-            <Pressable onPress={() => move(1)} hitSlop={8} style={{ padding: 8, opacity: i === arr.length - 1 ? 0.3 : 1 }}><Ionicons name="chevron-down" size={22} color={colors.fg} /></Pressable>
-          </View>); })}
-        <Btn onPress={() => setOpt('homeLayout', null)}>Reset the order</Btn>
-      </Section>
-      <Section icon="eye-off-outline" title="Spoiler guard" summary={o.spoiler ? 'On' : 'Off'}>
-        <Sw label="Hide results until tapped" hint="For watching races on delay. Hides Home results, the race recap, standings, race results and calendar winners until you tap them. Live timing is not hidden. Taps are forgotten when the app closes." value={!!o.spoiler} onChange={(v) => { setOpt('spoiler', v); hideAll(); }} />
-        {o.spoiler ? <Btn onPress={hideAll}>Hide everything again</Btn> : null}
-      </Section>
-      <Section icon="person-outline" title="Driver names" summary={{ full: 'First and last', surname: 'Surname only', code: 'Three-letter code' }[o.nameStyle || 'full']}>
-        <Segmented value={o.nameStyle || 'full'} onChange={(v) => setOpt('nameStyle', v)} items={[['full', 'Full'], ['surname', 'Surname'], ['code', 'Code']]} />
-        <Note>Applies to the driver rows in standings, results, Home and Paddock lists. Some screens (headings, quizzes, charts) always use full names. Codes come from the history, and fall back to the first three letters of the surname for brand-new drivers.</Note>
-      </Section>
-      <Section icon="pin-outline" title="Pinned pages" summary={`${(o.pins || []).length} pinned`}>
-        <Note>Pinned pages get a shortcut strip at the top of Home. Up to 8.</Note>
-        {PAGES.map(([route, title]) => { const on = (o.pins || []).includes(route); return (
-          <View key={route} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 4 }}>
-            <Switch value={on} onValueChange={(v) => { const cur = o.pins || []; if (v && cur.length >= 8) return; setOpt('pins', v ? [...cur, route] : cur.filter((x) => x !== route)); }} trackColor={{ true: colors.accent }} />
-            <Text style={{ color: on ? colors.fg : colors.muted, fontSize: 16, flex: 1 }}>{title}</Text>
-          </View>); })}
-        {(o.pins || []).length ? <Btn onPress={() => setOpt('pins', [])}>Unpin all</Btn> : null}
-      </Section>
-      <Section icon="text-outline" title="Font and text size" summary={`${o.font === 'system' ? 'Phone font' : 'App font'} · ${Math.round((Number(o.textScale) || 1) * 100)}%`}>
-        <Segmented value={o.font === 'system' ? 'system' : 'default'} onChange={(v) => setOpt('font', v)} items={[['default', 'App font'], ['system', 'Phone font']]} />
-        <Segmented value={String(Number(o.textScale) || 1)} onChange={(v) => setOpt('textScale', Number(v))} items={[['0.9', 'S'], ['1', 'M'], ['1.1', 'L'], ['1.2', 'XL'], ['1.3', 'XXL']]} />
-        <Text style={{ color: colors.fg, fontSize: 17 }}>This is how normal text looks with your choice. Lap 52 of 71, P4, +3.2s.</Text>
-        <Note>Changes show as screens redraw. Restart the app if something still looks old.</Note>
-      </Section>
-      <Section icon="color-palette-outline" title="Team colours" summary={!o.teamTheme || o.teamTheme === 'off' ? 'Off' : o.teamTheme === 'fav' ? 'My favourite team' : (TEAM_NAMES[o.teamTheme] || o.teamTheme)}>
-        <Note>Tints the whole app with a team's colour instead of your accent colour. Pick a team, or follow your first favourite team (star a team in the Paddock). Change it any time, for example each race weekend. The app restarts to apply it.</Note>
-        <Dropdown value={o.teamTheme || 'off'} options={[['off', 'Off, use my accent colour'], ['fav', 'My first favourite team'], ...Object.keys(teamColors).map((k) => [k, TEAM_NAMES[k] || k])]} onChange={async (v) => { await setOpt('teamTheme', v); setTimeout(() => { restartApp().catch(() => {}); }, 700); }} prefix="Team" />
-      </Section>
-      <Section icon="phone-portrait-outline" title="Haptics" summary={o.haptics === false ? 'Off' : 'On'}>
-        <Sw label="Vibration on key moments" hint="A short buzz at lights out, when a card pack opens, on right and wrong answers in games and on steward calls." value={o.haptics !== false} onChange={(v) => setOpt('haptics', v)} />
-        <Note>Sound effects are not included: custom sounds need a new app build.</Note>
-      </Section>
-      <Section icon="eye-outline" title="Colour-blind friendly" summary={o.colorblind ? 'On: blue and orange' : 'Off'}>
-        <Note>Swaps the red and green used for good and bad news (gains, losses, retirements) for blue and orange, which stay distinct for red-green colour blindness. The app restarts to apply it.</Note>
-        <Segmented value={o.colorblind ? 'on' : 'off'} onChange={async (v) => { await setOpt('colorblind', v === 'on'); setTimeout(() => { restartApp().catch(() => {}); }, 700); }} items={[['off', 'Off'], ['on', 'On']]} />
-      </Section>
-      <Section icon="airplane-outline" title="Offline mode" summary={o.offline ? 'On: saved data only' : 'Off'}>
-        <Sw label="Use saved data only" hint="Nothing is downloaded. Screens show what the app saved earlier (the offline history always works). Good for saving data or flying. Screens with nothing saved show a message." value={!!o.offline} onChange={(v) => setOpt('offline', v)} />
-      </Section>
-      <Section icon="save-outline" title="Backup and restore" summary="Move everything to a new phone">
-        <Note>A backup holds your fantasy saves, settings, predictions, friends and favourites in one file.</Note>
-        <Btn tone="solid" icon="download-outline" onPress={async () => { setBk('Making the backup…'); try { setBk(await exportBackup()); } catch (e) { setBk(''); Alert.alert('Backup failed', String(e?.message || e)); } }}>Back up now</Btn>
-        <Btn icon="cloud-upload-outline" onPress={async () => { try { const l = await findBackups(); if (!l.length) { Alert.alert('No backup found', 'Choose the folder that holds your f1-companion-backup file.'); return; }
-          Alert.alert('Restore which backup?', 'This replaces the data on this phone with the backup.', [{ text: 'Cancel', style: 'cancel' }, ...l.slice(0, 4).map((b) => ({ text: b.name.slice(-30), onPress: async () => { try { const r = await restoreFrom(b.uri); setBk(`Restored ${r.keys} items (${r.saves} fantasy saves). Restarting…`); setTimeout(() => restartApp(), 1200); } catch (e) { Alert.alert('Restore failed', String(e?.message || e)); } } }))]); } catch (e) { Alert.alert('Restore failed', String(e?.message || e)); } }}>Restore from a backup file</Btn>
-        {bk ? <Note>{bk}</Note> : null}
-      </Section>
+      <Text style={s.group}>Look and feel</Text>
       <Section icon="contrast-outline" title="Theme" summary={o.theme === 'light' ? 'White' : o.theme === 'amoled' ? 'AMOLED black' : 'Dark'}>
         {[['dark', 'Dark', 'The default look.'], ['amoled', 'AMOLED black', 'Pure black background. Saves battery on OLED screens.'], ['light', 'White', 'A light theme. Some screens with photos are still tuned for dark.']].map(([k, label, hint]) => { const on = (o.theme || 'dark') === k; return (
           <Pressable key={k} onPress={async () => { if (on) return; setMsgT('Saving the theme…'); await setOpt('theme', k === 'dark' ? null : k).catch(() => {}); setMsgT('Theme saved. The app restarts to use it everywhere.'); setTimeout(async () => { await restartApp(); }, 900); }} style={({ pressed }) => [{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12 }, pressed && { opacity: 0.7 }]}>
@@ -182,6 +113,60 @@ export default function SettingsScreen() {
         <Note>The app restarts once so the colour is used on every screen.</Note>
         {msg ? <Note>{msg}</Note> : null}
       </Section>
+      <Section icon="color-palette-outline" title="Team colours" summary={!o.teamTheme || o.teamTheme === 'off' ? 'Off' : o.teamTheme === 'fav' ? 'My favourite team' : (TEAM_NAMES[o.teamTheme] || o.teamTheme)}>
+        <Note>Tints the whole app with a team's colour instead of your accent colour. Pick a team, or follow your first favourite team (star a team in the Paddock). Change it any time, for example each race weekend. The app restarts to apply it.</Note>
+        <Dropdown value={o.teamTheme || 'off'} options={[['off', 'Off, use my accent colour'], ['fav', 'My first favourite team'], ...Object.keys(teamColors).map((k) => [k, TEAM_NAMES[k] || k])]} onChange={async (v) => { await setOpt('teamTheme', v); setTimeout(() => { restartApp().catch(() => {}); }, 700); }} prefix="Team" />
+      </Section>
+      <Section icon="text-outline" title="Font and text size" summary={`${o.font === 'system' ? 'Phone font' : 'App font'} · ${Math.round((Number(o.textScale) || 1) * 100)}%`}>
+        <Segmented value={o.font === 'system' ? 'system' : 'default'} onChange={(v) => setOpt('font', v)} items={[['default', 'App font'], ['system', 'Phone font']]} />
+        <Segmented value={String(Number(o.textScale) || 1)} onChange={(v) => setOpt('textScale', Number(v))} items={[['0.9', 'S'], ['1', 'M'], ['1.1', 'L'], ['1.2', 'XL'], ['1.3', 'XXL']]} />
+        <Text style={{ color: colors.fg, fontSize: 17 }}>This is how normal text looks with your choice. Lap 52 of 71, P4, +3.2s.</Text>
+        <Note>Changes show as screens redraw. Restart the app if something still looks old.</Note>
+      </Section>
+      <Section icon="options-outline" title="Display" summary={`${o.clock24 ? '24-hour' : '12-hour'} clock · gaps ${GAPS.find(([k]) => k === o.gap)[1].toLowerCase()}`}>
+        <Sw label="24-hour clock" value={o.clock24} onChange={(v) => setOpt('clock24', v)} />
+        <Sw label="Start race pages in track time" hint="Otherwise they open in your device's time." value={o.trackTime} onChange={(v) => setOpt('trackTime', v)} />
+        <Sw label="Pull down to refresh" hint="Off by default. A refresh button sits at the top instead." value={o.pullRefresh === true} onChange={(v) => setOpt('pullRefresh', v)} />
+        <Sw label="Team principal on Paddock cards" value={o.padPrincipal !== false} onChange={(v) => setOpt('padPrincipal', v)} />
+        <Sw label="Driver position and points on Paddock cards" value={o.padStats !== false} onChange={(v) => setOpt('padStats', v)} />
+        <Text style={[s.label, { marginTop: 12, marginBottom: 8 }]}>Home shows first</Text>
+        <Dropdown value={o.homeFirst === 'teams' ? 'teams' : 'drivers'} options={[['drivers', 'Your drivers'], ['teams', 'Your teams']]} onChange={(v) => setOpt('homeFirst', v)} />
+        <Text style={[s.label, { marginTop: 12, marginBottom: 8 }]}>Default gap style</Text>
+        <Dropdown value={o.gap} options={GAPS} onChange={(v) => setOpt('gap', v)} />
+      </Section>
+      <Section icon="eye-outline" title="Colour-blind friendly" summary={o.colorblind ? 'On: blue and orange' : 'Off'}>
+        <Note>Swaps the red and green used for good and bad news (gains, losses, retirements) for blue and orange, which stay distinct for red-green colour blindness. The app restarts to apply it.</Note>
+        <Segmented value={o.colorblind ? 'on' : 'off'} onChange={async (v) => { await setOpt('colorblind', v === 'on'); setTimeout(() => { restartApp().catch(() => {}); }, 700); }} items={[['off', 'Off'], ['on', 'On']]} />
+      </Section>
+      <Text style={s.group}>Home and content</Text>
+      <Section icon="reorder-three-outline" title="Home layout" summary="Reorder or hide the cards on Home">
+        {homeLayout(o.homeLayout).map((x, i, arr) => { const label = (HOME_CARDS.find(([k]) => k === x.k) || [])[1]; const move = (d) => { const n = [...arr]; const j = i + d; if (j < 0 || j >= n.length) return; [n[i], n[j]] = [n[j], n[i]]; LayoutAnimation.configureNext(LayoutAnimation.create(200, 'easeInEaseOut', 'opacity')); setOpt('homeLayout', n); };
+          return (<View key={x.k} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 6 }}>
+            <Switch value={x.on} onValueChange={(v) => setOpt('homeLayout', arr.map((y) => (y.k === x.k ? { ...y, on: v } : y)))} trackColor={{ true: colors.accent }} />
+            <Text style={{ color: x.on ? colors.fg : colors.muted, fontSize: 17, flex: 1 }}>{label}</Text>
+            <Pressable onPress={() => move(-1)} hitSlop={8} style={{ padding: 8, opacity: i === 0 ? 0.3 : 1 }}><Ionicons name="chevron-up" size={22} color={colors.fg} /></Pressable>
+            <Pressable onPress={() => move(1)} hitSlop={8} style={{ padding: 8, opacity: i === arr.length - 1 ? 0.3 : 1 }}><Ionicons name="chevron-down" size={22} color={colors.fg} /></Pressable>
+          </View>); })}
+        <Btn onPress={() => setOpt('homeLayout', null)}>Reset the order</Btn>
+      </Section>
+      <Section icon="pin-outline" title="Pinned pages" summary={`${(o.pins || []).length} pinned`}>
+        <Note>Pinned pages get a shortcut strip at the top of Home. Up to 8.</Note>
+        {PAGES.map(([route, title]) => { const on = (o.pins || []).includes(route); return (
+          <View key={route} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 4 }}>
+            <Switch value={on} onValueChange={(v) => { const cur = o.pins || []; if (v && cur.length >= 8) return; setOpt('pins', v ? [...cur, route] : cur.filter((x) => x !== route)); }} trackColor={{ true: colors.accent }} />
+            <Text style={{ color: on ? colors.fg : colors.muted, fontSize: 16, flex: 1 }}>{title}</Text>
+          </View>); })}
+        {(o.pins || []).length ? <Btn onPress={() => setOpt('pins', [])}>Unpin all</Btn> : null}
+      </Section>
+      <Section icon="person-outline" title="Driver names" summary={{ full: 'First and last', surname: 'Surname only', code: 'Three-letter code' }[o.nameStyle || 'full']}>
+        <Segmented value={o.nameStyle || 'full'} onChange={(v) => setOpt('nameStyle', v)} items={[['full', 'Full'], ['surname', 'Surname'], ['code', 'Code']]} />
+        <Note>Applies to the driver rows in standings, results, Home and Paddock lists. Some screens (headings, quizzes, charts) always use full names. Codes come from the history, and fall back to the first three letters of the surname for brand-new drivers.</Note>
+      </Section>
+      <Section icon="eye-off-outline" title="Spoiler guard" summary={o.spoiler ? 'On' : 'Off'}>
+        <Sw label="Hide results until tapped" hint="For watching races on delay. Hides Home results, the race recap, standings, race results and calendar winners until you tap them. Live timing is not hidden. Taps are forgotten when the app closes." value={!!o.spoiler} onChange={(v) => { setOpt('spoiler', v); hideAll(); }} />
+        {o.spoiler ? <Btn onPress={hideAll}>Hide everything again</Btn> : null}
+      </Section>
+      <Text style={s.group}>Alerts</Text>
       <Section icon="notifications-outline" title="Notifications" summary={`${on} sessions · ${prefs.results ? 'results on' : 'results off'}`}>
         {!notificationsAvailable() && <Note>Alerts only work in the installed app, not in Expo Go.</Note>}
         <Text style={s.hint}>Tap the sessions you want an alert for.</Text>
@@ -196,6 +181,7 @@ export default function SettingsScreen() {
         <Sw label="Birthdays and win anniversaries" hint="At 9:00 on a favourite driver's birthday and on the anniversary of their first win." value={!!o.bdays} onChange={(v) => setOpt('bdays', v)} />
         <Sw label="Race weekend view on Home" hint="From three days before a race weekend until it ends, Home shows only the next session, the last result and your drivers." value={o.weekendMode !== false} onChange={(v) => setOpt('weekendMode', v)} />
         <Sw label="Race morning reminder" hint="At 8:00 on the day of a race or sprint, with the start time." value={!!o.raceMorning} onChange={(v) => setOpt('raceMorning', v)} />
+        <Sw label="Monday recap" hint="On Monday from 9:00, one notification about the latest race and your favourite drivers and teams. Runs when the app opens, and in the background when result alerts are on." value={!!o.mondayRecap} onChange={(v) => setOpt('mondayRecap', v)} />
         <Sw label="Results: only when my drivers are in it" hint="Race, sprint and qualifying result alerts are skipped unless one of the drivers below is in the results. The alert then lists their finishes." value={!!o.resultsFavOnly} onChange={(v) => setOpt('resultsFavOnly', v)} />
         <FavAlertChips o={o} setOpt={setOpt} />
         <Sw label="Quiet hours" hint="No alerts between the times below." value={!!o.quiet?.on} onChange={(v) => setOpt('quiet', { from: '23:00', to: '07:00', raceOk: true, ...(o.quiet || {}), on: v })} />
@@ -221,21 +207,41 @@ export default function SettingsScreen() {
         <Btn icon="battery-charging-outline" onPress={() => Linking.openSettings()}>Open app settings</Btn>
         {msg ? <Note>{msg}</Note> : null}
       </Section>
-      <Section icon="options-outline" title="Display" summary={`${o.clock24 ? '24-hour' : '12-hour'} clock · gaps ${GAPS.find(([k]) => k === o.gap)[1].toLowerCase()}`}>
-        <Sw label="24-hour clock" value={o.clock24} onChange={(v) => setOpt('clock24', v)} />
-        <Sw label="Start race pages in track time" hint="Otherwise they open in your device's time." value={o.trackTime} onChange={(v) => setOpt('trackTime', v)} />
-        <Sw label="Pull down to refresh" hint="Off by default. A refresh button sits at the top instead." value={o.pullRefresh === true} onChange={(v) => setOpt('pullRefresh', v)} />
-        <Sw label="Team principal on Paddock cards" value={o.padPrincipal !== false} onChange={(v) => setOpt('padPrincipal', v)} />
-        <Sw label="Driver position and points on Paddock cards" value={o.padStats !== false} onChange={(v) => setOpt('padStats', v)} />
-        <Text style={[s.label, { marginTop: 12, marginBottom: 8 }]}>Home shows first</Text>
-        <Dropdown value={o.homeFirst === 'teams' ? 'teams' : 'drivers'} options={[['drivers', 'Your drivers'], ['teams', 'Your teams']]} onChange={(v) => setOpt('homeFirst', v)} />
-        <Text style={[s.label, { marginTop: 12, marginBottom: 8 }]}>Default gap style</Text>
-        <Dropdown value={o.gap} options={GAPS} onChange={(v) => setOpt('gap', v)} />
+      <Section icon="phone-portrait-outline" title="Haptics" summary={o.haptics === false ? 'Off' : 'On'}>
+        <Sw label="Vibration on key moments" hint="A short buzz at lights out, when a card pack opens, on right and wrong answers in games and on steward calls." value={o.haptics !== false} onChange={(v) => setOpt('haptics', v)} />
+        <Note>Sound effects are not included: custom sounds need a new app build.</Note>
+      </Section>
+      <Text style={s.group}>Language and speed</Text>
+      <Section icon="language-outline" title="Language" summary={o.lang === 'el' ? 'Ελληνικά · Beta' : 'English'}>
+        {[['en', 'English', null], ['el', 'Ελληνικά', 'BETA']].map(([k, label, tag]) => {
+          const on = (o.lang === 'el' ? 'el' : 'en') === k;
+          return (
+            <Pressable key={k} onPress={() => setOpt('lang', k)} style={({ pressed }) => [s.row, { paddingVertical: 12 }, pressed && { opacity: 0.7 }]} accessibilityRole="radio" accessibilityState={{ selected: on }}>
+              <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                <Text style={[s.label, on && { color: colors.fg, fontWeight: '700' }]}>{label}</Text>
+                {tag ? <View style={{ backgroundColor: colors.accentSoft, borderColor: colors.accent, borderWidth: 1, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 1 }}><Text style={{ color: colors.accent, fontFamily: 'label', fontWeight: '700', fontSize: 10, letterSpacing: 1.2 }}>{tag}</Text></View> : null}
+              </View>
+              <Ionicons name={on ? 'radio-button-on' : 'radio-button-off'} size={22} color={on ? colors.accent : colors.muted} />
+            </Pressable>);
+        })}
+        <Note>Names of drivers, teams and team principals stay as they are.</Note>
+        {o.lang === 'el' ? <Note>The Greek translation is in beta. Some texts may still appear in English.</Note> : null}
       </Section>
       <Section icon="speedometer-outline" title="Performance" summary={`photos ${o.photos ? 'on' : 'off'} · motion ${o.reduceMotion ? 'reduced' : 'full'}`}>
         <Sw label="Driver photos in lists" hint="Turn off if lists feel slow on this phone." value={o.photos} onChange={(v) => setOpt('photos', v)} />
         <Sw label="Reduce motion" hint="Fewer animations." value={o.reduceMotion} onChange={(v) => setOpt('reduceMotion', v)} />
         <Btn onPress={async () => setMsg(`Cleared ${await clearCache()} cached responses.`)}>Clear cached data</Btn>
+      </Section>
+      <Section icon="airplane-outline" title="Offline mode" summary={o.offline ? 'On: saved data only' : 'Off'}>
+        <Sw label="Use saved data only" hint="Nothing is downloaded. Screens show what the app saved earlier (the offline history always works). Good for saving data or flying. Screens with nothing saved show a message." value={!!o.offline} onChange={(v) => setOpt('offline', v)} />
+      </Section>
+      <Text style={s.group}>Data and updates</Text>
+      <Section icon="save-outline" title="Backup and restore" summary="Move everything to a new phone">
+        <Note>A backup holds your fantasy saves, settings, predictions, friends and favourites in one file.</Note>
+        <Btn tone="solid" icon="download-outline" onPress={async () => { setBk('Making the backup…'); try { setBk(await exportBackup()); } catch (e) { setBk(''); Alert.alert('Backup failed', String(e?.message || e)); } }}>Back up now</Btn>
+        <Btn icon="cloud-upload-outline" onPress={async () => { try { const l = await findBackups(); if (!l.length) { Alert.alert('No backup found', 'Choose the folder that holds your f1-companion-backup file.'); return; }
+          Alert.alert('Restore which backup?', 'This replaces the data on this phone with the backup.', [{ text: 'Cancel', style: 'cancel' }, ...l.slice(0, 4).map((b) => ({ text: b.name.slice(-30), onPress: async () => { try { const r = await restoreFrom(b.uri); setBk(`Restored ${r.keys} items (${r.saves} fantasy saves). Restarting…`); setTimeout(() => restartApp(), 1200); } catch (e) { Alert.alert('Restore failed', String(e?.message || e)); } } }))]); } catch (e) { Alert.alert('Restore failed', String(e?.message || e)); } }}>Restore from a backup file</Btn>
+        {bk ? <Note>{bk}</Note> : null}
       </Section>
       <Section icon="cloud-download-outline" title="App updates" summary={`Installed ${currentVersion()}`}>
         <Note>{updatesConfigured() ? 'Checks GitHub for a newer release.' : 'Not set up: add your GitHub repository in src/config.js.'}</Note>
@@ -254,7 +260,11 @@ export default function SettingsScreen() {
         <Btn onPress={() => { setOpts(Object.fromEntries(Object.entries(OPTS).filter(([k]) => !['lang', 'name', 'welcomed', 'accent', 'sport'].includes(k)))); setMsg('Display and performance settings were reset.'); }}>Reset display settings</Btn>
         {msg ? <Note>{msg}</Note> : null}
       </Section>
-      <Card><Btn icon="server-outline" onPress={() => nav.navigate('Storage')}>Storage and data</Btn></Card>
+      <Text style={s.group}>More</Text>
+      <Card>
+        <Btn icon="server-outline" onPress={() => nav.navigate('Storage')}>Storage and data</Btn>
+        <Btn icon="bug-outline" onPress={() => nav.navigate('CrashLog')}>Crash log</Btn>
+      </Card>
       <Changelog />
       <Card>
         <Btn icon="compass-outline" onPress={() => setOpt('tourDone', false)}>Show the app tour again</Btn>
@@ -286,6 +296,7 @@ const s = StyleSheet.create({
   secHead: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 }, secBody: { paddingHorizontal: 14, paddingBottom: 14 },
   ico: { width: 38, height: 38, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.accentSoft },
   secTitle: { color: colors.fg, fontSize: 19, fontWeight: '700' },
+  group: { color: colors.muted, fontSize: 12, fontWeight: '800', letterSpacing: 2, textTransform: 'uppercase', marginTop: 10, marginLeft: 4 },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.line },
   label: { color: colors.fg, fontSize: 17, fontWeight: '600' }, hint: { color: colors.muted, fontSize: 14 },
   btn: { marginTop: 12, backgroundColor: colors.surface2, borderRadius: 12, padding: 12, alignItems: 'center', borderWidth: 1, borderColor: colors.line }, btnText: { color: colors.fg, fontWeight: '700', fontSize: 16 },

@@ -436,3 +436,16 @@ Expo Go (SDK 53+) does not include the `expo-notifications` native module; impor
 - `screens/Extras151.js`: Poster (ShareCard picture, 3 stats, colour), FavCircuits (kv `circuitMarks`, 25 circuits in `data/circuits.js`), Freshness (reads `c:` cache keys, parses `"t"` from the first 40 chars, removes keys per host to refresh).
 - `screens/ColourGames.js`: Livery (team colours as the app shows them, only ~11 teams are unambiguous answers; options at least 70 apart in RGB), SpeedRound (60 s, wrong = -5 s, claims built from `ladderQ`).
 - Unverified on device: all of it, plus poster photo framing and the share sheet.
+
+## V1.52.0 (JS-only)
+- Crash isolation: `components/ErrorBoundary.js` now exports `guardScreen(C, name)`; every route in `Main.js` is wrapped (getComponent and component props, except the tab navigators). A failing screen shows Try again / Go back instead of replacing the whole app. `lib/crashlog.js` records caught errors and uncaught JS errors (global handler installed in App.js); `screens/CrashLog.js` (Settings > More > Crash log) lists and shares them. Native crashes (OOM, native module) cannot be recorded.
+- Card packs: `CardScreens.js` hides cards from a pack until all of them are flipped (collection counts subtract pending pulls).
+- Settings: sections regrouped (Look and feel, Home and content, Alerts, Language and speed, Data and updates, More) with `s.group` headings.
+- `screens/StatsHub.js` (route StatsHub, first Explore tile on Home): grouped, searchable list of every stats route; descriptions come from `lib/pages.js`.
+- Share on stats screens: `lib/shareRoutes.js` set + floating button in `components/Screen.js` using `shareScreenImage` (`snapshotContentContainer`); falls back to text.
+- New stats (`api/history.js`): `journeymen()`, `gridAge()`, `calendarGrowth()`, plus `driverFacts()` and `raceSample()` for games. Screens in `HistoryTrends.js`.
+- `WatchList.js` + `lib/watchlist.js`; TimeMachine now reads `route.params.year/round`.
+- Monday recap: `lib/weeklyRecap.js`, called at the start of `checkResults`; Settings switch `mondayRecap`. Runs on app open, and in the background only when result alerts are on.
+- Games in `GridGames.js`: DriverGrid (kv game:drivergrid), SurnameChain (game:chain), GuessYear (game:run:gyear).
+- Greek: appended entries to `i18n/el.js` (titles, buttons, short messages for 1.45-1.52 screens). Long notes remain English.
+- The cause of the user's "crashes no matter what" is NOT confirmed. Unverified on device: everything, including whether `guardScreen` catches it.

@@ -604,3 +604,44 @@ export function gpEditions(raceName) {
   const poleWins = rows.filter((r) => r.pole && r.poleFin === '1').length, poleN = rows.filter((r) => r.pole).length;
   return { rows, most, back, poleWins, poleN };
 }
+
+// Drivers ranked by how many different teams (history team ids) they raced for, with the order they raced for them. Needs 20 or more starts.
+export function journeymen() {
+  load(); const out = [];
+  H.d.forEach((d, i) => { const L = perDriver().per[i] || []; if (L.length < 20) return; const ids = new Set(), seq = []; L.forEach((x) => { const n = H.t[x.t][1]; ids.add(H.t[x.t][0]); if (seq[seq.length - 1] !== n) seq.push(n); });
+    out.push({ name: `${d[1]} ${d[2]}`, teams: ids.size, starts: L.length, trail: seq }); });
+  return out.sort((a, b) => b.teams - a.teams || b.starts - a.starts).slice(0, 30);
+}
+
+// Average and oldest/youngest driver age on the grid each season, from birth dates, measured at each race and averaged over every start. Drivers without a birth date are skipped.
+export function gridAge() {
+  load(); const rows = [];
+  Object.keys(H.r).map(Number).sort((a, b) => a - b).forEach((y) => { let sum = 0, n = 0, old = null, young = null;
+    H.r[String(y)].forEach((rc) => { const t = Date.parse(rc[3]); if (!t) return; rc[4].forEach((r) => { const b = H.d[r[0]][3] && Date.parse(H.d[r[0]][3]); if (!b) return; const age = (t - b) / 864e5 / 365.25; if (age < 14 || age > 70) return; sum += age; n++; const nm = nameOfIdx(r[0]); if (!old || age > old.age) old = { name: nm, age }; if (!young || age < young.age) young = { name: nm, age }; }); });
+    if (n > 50) rows.push({ year: y, avg: sum / n, old, young }); });
+  return rows;
+}
+
+// The calendar by season: races, different countries, Grand Prix names seen for the first time that year.
+export function calendarGrowth() {
+  load(); const seen = new Set(); const rows = [];
+  Object.keys(H.r).map(Number).sort((a, b) => a - b).forEach((y) => { const rs = H.r[String(y)]; const fresh = []; rs.forEach((rc) => { if (!seen.has(rc[1])) { seen.add(rc[1]); fresh.push(rc[1]); } });
+    rows.push({ year: y, races: rs.length, countries: new Set(rs.map((rc) => rc[2])).size, fresh }); });
+  return rows;
+}
+
+let _facts = null;
+// Per driver: name, nationality, teams raced for (history team ids and names), wins, podiums, poles (grid P1), starts, titles, first and last season.
+export function driverFacts() {
+  if (_facts) return _facts; load(); const f = H.d.map((d, i) => ({ idx: i, name: `${d[1]} ${d[2]}`, last: d[2], nat: d[4] || '', teams: new Set(), teamNames: new Set(), wins: 0, podiums: 0, poles: 0, starts: 0, titles: 0, first: 9999, lastYear: 0 }));
+  Object.keys(H.r).forEach((y) => H.r[y].forEach((rc) => rc[4].forEach((r) => { const o = f[r[0]]; o.starts++; o.teams.add(H.t[r[1]][0]); o.teamNames.add(H.t[r[1]][1]); const p = String(r[4]); if (p === '1') o.wins++; if (p === '1' || p === '2' || p === '3') o.podiums++; if (r[2] === 1) o.poles++; o.first = Math.min(o.first, +y); o.lastYear = Math.max(o.lastYear, +y); })));
+  Object.keys(H.ds).forEach((y) => { try { const id = driverChampion(+y); const i = id ? dIdx(id) : -1; if (i >= 0 && f[i]) f[i].titles++; } catch {} });
+  _facts = f.filter((o) => o.starts > 0); return _facts;
+}
+// A random past race with the facts a "guess the year" round shows. `r` is a random function.
+export function raceSample(r) {
+  load(); const years = Object.keys(H.r).map(Number); const y = years[Math.floor(r() * years.length)]; const rs = H.r[String(y)]; const rc = rs[Math.floor(r() * rs.length)];
+  const by = (p) => rc[4].find((x) => String(x[4]) === p); const w = by('1'), s = by('2'), t = by('3'), pole = rc[4].find((x) => x[2] === 1);
+  if (!w || !s || !t) return null;
+  return { year: y, name: rc[1], winner: nameOfIdx(w[0]), team: H.t[w[1]][1], second: nameOfIdx(s[0]), third: nameOfIdx(t[0]), pole: pole ? nameOfIdx(pole[0]) : null, starters: rc[4].length };
+}

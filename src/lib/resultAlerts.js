@@ -27,7 +27,8 @@ async function prefsNow() { try { return JSON.parse(await AsyncStorage.getItem('
 // Returns how many notifications were sent. `force` ignores the on/off switch (used by the Settings test button).
 export async function checkResults({ force = false } = {}) {
   const prefs = await prefsNow(); setLang(prefs.opts?.lang === 'el' ? 'el' : 'en');
-  if (!force && !prefs.results) return 0;
+  let recap = 0; try { recap = await require('./weeklyRecap').maybeWeeklyRecap(prefs); } catch {}
+  if (!force && !prefs.results) return recap;
   if (prefs.opts?.sport === 'motogp') return checkMotoResults(prefs, force);
   let seen = null; try { seen = JSON.parse(await AsyncStorage.getItem(SEEN)); } catch {}
   const baseline = !Array.isArray(seen); const done = new Set(baseline ? [] : seen); let sent = 0;

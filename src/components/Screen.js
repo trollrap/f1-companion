@@ -3,7 +3,10 @@ import { ScrollView, View, Pressable, RefreshControl, Animated, Easing, StyleShe
 import { Text } from './Text';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigationState } from '@react-navigation/native';
+import { useNavigationState, NavigationRouteContext } from '@react-navigation/native';
+import { Share } from 'react-native';
+import { SHARE_ROUTES } from '../lib/shareRoutes';
+import { shareScreenImage } from '../lib/exportImage';
 import { LinearGradient } from 'expo-linear-gradient';
 import Press from './Press';
 import Header from './Header';
@@ -37,6 +40,8 @@ function OfflineBanner() {
 // Every block keeps a key that is unique and stable (prefixed by the fragment it came from), so a block appearing or disappearing never remounts or re-animates its neighbours.
 const flat = (ch, pre = '') => React.Children.toArray(ch).flatMap((c) => (c && c.type === React.Fragment ? flat(c.props.children, `${pre}${c.key}/`) : [{ el: c, k: `${pre}${c && c.key != null ? c.key : ''}` }]));
 export default function Screen({ children, header = true, refreshable = true, scrollRef, swipe, footer, revealKey }) {
+  const route = React.useContext(NavigationRouteContext); const canShare = !!route && SHARE_ROUTES.has(route.name); const own = useRef(null); const sref = scrollRef || own;
+  const doShare = async () => { const r = await shareScreenImage(sref); if (r === 'unavailable' || r === 'error') { try { await Share.share({ message: `F1 Companion: ${route?.name || ''}` }); } catch {} } };
   // A screen pushed on the stack already has the native header, so it never draws a second header or a second top margin.
   const navType = useNavigationState((st) => st?.type); if (navType === 'stack') header = false;
   const [refreshing, setRefreshing] = useState(false); const { prefs: pp } = usePrefs(); const canPull = refreshable && pp.opts.pullRefresh === true;
@@ -52,18 +57,19 @@ export default function Screen({ children, header = true, refreshable = true, sc
       <OfflineBanner />
       <Animated.View style={{ flex: 1, opacity: fade }}>
       {swipe ? <Swipe {...swipe}>
-      <ScrollView ref={scrollRef} contentContainerStyle={s.body} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled"
+      <ScrollView ref={sref} contentContainerStyle={s.body} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled"
         refreshControl={canPull ? <RefreshControl refreshing={refreshing} onRefresh={pull} tintColor={colors.accent} colors={[colors.accent]} progressBackgroundColor={colors.surface2} /> : undefined}>
         {blocks.map((c, i) => <Reveal key={c.k || i} index={i}>{c.el}</Reveal>)}
       </ScrollView>
       </Swipe> : (
-      <ScrollView ref={scrollRef} contentContainerStyle={s.body} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled"
+      <ScrollView ref={sref} contentContainerStyle={s.body} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled"
         refreshControl={canPull ? <RefreshControl refreshing={refreshing} onRefresh={pull} tintColor={colors.accent} colors={[colors.accent]} progressBackgroundColor={colors.surface2} /> : undefined}>
         {blocks.map((c, i) => <Reveal key={c.k || i} index={i}>{c.el}</Reveal>)}
       </ScrollView>
       )}
       </Animated.View>
       {ghosts.length ? <View pointerEvents="box-none" style={{ position: 'absolute', left: 16, right: 16, bottom: 92 }}>{ghosts.map((c, i) => <React.Fragment key={c.k || i}>{c.el}</React.Fragment>)}</View> : null}
+      {canShare ? <Pressable accessibilityRole="button" accessibilityLabel="Share this screen as a picture" onPress={doShare} style={({ pressed }) => [{ position: 'absolute', right: 16, bottom: 22, width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.accent, elevation: 6 }, pressed && { opacity: 0.8 }]}><Ionicons name="share-outline" size={22} color="#fff" /></Pressable> : null}
       {footer || null}
     </SafeAreaView>
   );

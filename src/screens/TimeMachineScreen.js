@@ -11,9 +11,9 @@ import { circuitFor } from '../data/circuits';
 
 // Time machine: pick any past race and watch it lap by lap. The grid, finishing order and retirements are real; the lap-by-lap chart in between is reconstructed.
 const hashN = (s) => { let h = 7; for (const c of String(s)) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h; };
-export default function TimeMachineScreen() {
+export default function TimeMachineScreen({ route }) {
   const years = useMemo(() => historyYears(), []);
-  const [year, setYear] = useState(years[1] || years[0]); const [round, setRound] = useState(1); const [live, setLive] = useState(null);
+  const [year, setYear] = useState(route?.params?.year && years.includes(route.params.year) ? route.params.year : (years[1] || years[0])); const [round, setRound] = useState(Number(route?.params?.round) || 1); const [live, setLive] = useState(null);
   const rounds = useMemo(() => roundsOf(year), [year]); const rc = rounds.find((x) => x.round === round) || rounds[0];
   const race = useMemo(() => (rc ? raceRowsOf(year, rc.round) : null), [year, rc?.round]);
   const start = () => {

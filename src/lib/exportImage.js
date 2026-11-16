@@ -61,3 +61,9 @@ export async function chooseSaveFolder() {
   } catch { return null; }
 }
 export const canChooseFolder = () => { try { return !!require('expo-file-system/legacy').StorageAccessFramework; } catch { return false; } };
+
+// A whole scrolling screen as one picture (not only the part on screen). 'error' when the picture cannot be made, for example a very long page.
+export async function shareScreenImage(ref) {
+  if (!canShareImage()) return 'unavailable';
+  try { const Sharing = require('expo-sharing'); const uri = await require('react-native-view-shot').captureRef(ref, { format: 'png', quality: 0.9, snapshotContentContainer: true }); if (!(await Sharing.isAvailableAsync())) return 'unavailable'; await Sharing.shareAsync(uri, { mimeType: 'image/png' }); return 'ok'; } catch { return 'error'; }
+}

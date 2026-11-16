@@ -5,6 +5,8 @@ import './src/lib/resultAlerts'; // registers the background task: must load wit
 import { applyAccent, applyTheme, colors, teamColor } from './src/theme';
 import { readDurable } from './src/lib/durable';
 import { loadDev } from './src/lib/dev';
+import { installCrashLog } from './src/lib/crashlog';
+installCrashLog();
 
 // The saved accent colour is applied before any screen file is loaded, so every style is built with it.
 // (Screens are required below, once, after the colour is known; they are not imported at the top of this file.)
