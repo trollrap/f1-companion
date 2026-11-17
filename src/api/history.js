@@ -738,20 +738,68 @@ export function bingoFits(c, f) {
   }
 }
 const bingoLabel = (c) => ({ team: `Raced for ${c.v}`, nat: `${c.v} driver`, letter: `Surname starts with ${c.v}`, title: 'World champion', wins10: 'Won 10 or more races', winless: '50+ starts, never won', pole: 'Took a pole position', podium: 'Podium finisher, never a winner', debut: `First raced in the ${c.v}`, teams4: 'Raced for 4 or more teams' }[c.t]);
-export function bingoCard(r) {
-  const F = driverFacts(); const pool = []; const cnt = (c) => F.filter((f) => bingoFits(c, f)).length;
+let _clues = null;
+function cluePool() {
+  if (_clues) return _clues; const F = driverFacts(); const pool = []; const cnt = (c) => F.filter((f) => bingoFits(c, f)).length;
   const teams = {}, nats = {}, letters = {}, decs = {}; F.forEach((f) => { f.teamNames.forEach((t) => { teams[t] = (teams[t] || 0) + 1; }); nats[f.nat] = (nats[f.nat] || 0) + 1; const l = f.last.charAt(0).toUpperCase(); letters[l] = (letters[l] || 0) + 1; decs[DEC(f.first)] = (decs[DEC(f.first)] || 0) + 1; });
   Object.keys(teams).filter((t) => teams[t] >= 25).forEach((t) => pool.push({ t: 'team', v: t }));
   Object.keys(nats).filter((n) => n && nats[n] >= 15).forEach((n) => pool.push({ t: 'nat', v: n }));
   Object.keys(letters).filter((l) => letters[l] >= 25).forEach((l) => pool.push({ t: 'letter', v: l }));
   Object.keys(decs).filter((d) => decs[d] >= 25).forEach((d) => pool.push({ t: 'debut', v: d }));
   ['title', 'wins10', 'winless', 'pole', 'podium', 'teams4'].forEach((t) => pool.push({ t }));
-  const out = []; const left = [...pool];
-  while (out.length < 9 && left.length) { const c = left.splice(Math.floor(r() * left.length), 1)[0]; if (c.t === 'letter' && out.filter((x) => x.t === 'letter').length >= 2) continue; if (cnt(c) >= 8) out.push(c); }
-  if (out.length < 9) return null; return out.map((c) => ({ ...c, label: bingoLabel(c) }));
+  _clues = pool.filter((c) => cnt(c) >= 8).map((c) => ({ ...c, label: bingoLabel(c) })); return _clues;
+}
+export function bingoCard(r) {
+  const left = [...cluePool()]; const out = [];
+  while (out.length < 9 && left.length) { const c = left.splice(Math.floor(r() * left.length), 1)[0]; if (c.t === 'letter' && out.filter((x) => x.t === 'letter').length >= 2) continue; out.push(c); }
+  return out.length === 9 ? out : null;
 }
 // Drivers whose name contains the typed text, for the answer box.
 export function bingoSearch(q, norm) {
   const n = norm(q); if (n.length < 2) return []; return driverFacts().filter((f) => norm(f.name).includes(n)).sort((a, b) => b.starts - a.starts).slice(0, 6).map((f) => ({ idx: f.idx, name: f.name, starts: f.starts }));
 }
 export function bingoCheck(c, idx) { const f = driverFacts().find((x) => x.idx === idx); return !!f && bingoFits(c, f); }
+
+// Birthday: drivers born on a month and day, and Grands Prix held on that date (any year).
+export function birthdayData(month, day) {
+  load(); const F = driverFacts(); const mm = String(month).padStart(2, '0'), dd = String(day).padStart(2, '0'); const md = `${mm}-${dd}`;
+  const born = F.filter((f) => { const dob = H.d[f.idx][3]; return dob && dob.slice(5) === md; }).map((f) => ({ name: f.name, year: +H.d[f.idx][3].slice(0, 4), starts: f.starts, wins: f.wins, titles: f.titles })).sort((a, b) => b.titles - a.titles || b.wins - a.wins || b.starts - a.starts);
+  const races = []; Object.keys(H.r).map(Number).sort((a, b) => a - b).forEach((y) => H.r[String(y)].forEach((rc) => { if (rc[3] && rc[3].slice(5) === md) { const w = rc[4].find((r) => String(r[4]) === '1'); races.push({ year: y, name: rc[1], winner: w ? nameOfIdx(w[0]) : '', team: w ? H.t[w[1]][1] : '' }); } }));
+  return { born, races };
+}
+
+// One decade: champions, race wins, grid size, retirements, closest title.
+export function eraStats(start) {
+  load(); const years = Object.keys(H.r).map(Number).filter((y) => y >= start && y < start + 10).sort((a, b) => a - b); if (!years.length) return null;
+  const dw = {}, tw = {}; let races = 0, cars = 0, fin = 0, winners = 0;
+  years.forEach((y) => { const set = new Set(); H.r[String(y)].forEach((rc) => { races++; cars += rc[4].length; rc[4].forEach((r) => { if (/^\d+$/.test(String(r[4]))) fin++; if (String(r[4]) === '1') { dw[r[0]] = (dw[r[0]] || 0) + 1; tw[r[1]] = (tw[r[1]] || 0) + 1; set.add(r[0]); } }); }); winners += set.size; });
+  const top = (o, nm) => Object.entries(o).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([k, n]) => ({ name: nm(+k), n }));
+  const champs = years.map((y) => { let id = null; try { id = driverChampion(y); } catch {} const i = id ? dIdx(id) : -1; return { year: y, name: i >= 0 ? nameOfIdx(i) : '' }; }).filter((c) => c.name);
+  const th = titleHistory().rows.filter((r) => r.year >= start && r.year < start + 10); const close = [...th].sort((a, b) => a.pct - b.pct)[0] || null;
+  return { years: years.length, from: years[0], to: years[years.length - 1], races, perSeason: races / years.length, cars: cars / races, finishRate: fin / cars, winnersPerYear: winners / years.length, champs, drivers: top(dw, nameOfIdx), teams: top(tw, (k) => H.t[k][1]), close };
+}
+
+// Draft duel: one real race with a pool of 12 of its drivers (4 from the top 6, 4 from 7th to 12th, 4 from the rest). `r` is a random function.
+export function draftRace(r) {
+  load(); const years = Object.keys(H.r).map(Number).filter((y) => y >= 1970);
+  for (let t = 0; t < 40; t++) { const y = years[Math.floor(r() * years.length)]; const rs = H.r[String(y)]; const rc = rs[Math.floor(r() * rs.length)]; const rows = [...rc[4]].filter((x) => /^\d+$/.test(String(x[4]))).sort((a, b) => Number(a[4]) - Number(b[4])); const all = rc[4];
+    if (rows.length < 14 || all.length < 16) continue;
+    const take = (list, n) => { const l = [...list], o = []; while (o.length < n && l.length) o.push(l.splice(Math.floor(r() * l.length), 1)[0]); return o; };
+    const top = rows.slice(0, 6), mid = rows.slice(6, 12), low = all.filter((x) => !top.includes(x) && !mid.includes(x));
+    const pick = [...take(top, 4), ...take(mid, 4), ...take(low, 4)]; if (pick.length < 12) continue;
+    for (let i = pick.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [pick[i], pick[j]] = [pick[j], pick[i]]; }
+    return { race: `${rc[1]} ${y}`, pool: pick.map((x) => ({ idx: x[0], name: nameOfIdx(x[0]), team: H.t[x[1]][1], pts: Number(x[5]) || 0, pos: /^\d+$/.test(String(x[4])) ? Number(x[4]) : 0, grid: x[2] })) };
+  }
+  return null;
+}
+
+// Tic-tac-toe grid: three row clues and three column clues, where every square has at least two drivers who fit both.
+export function gridDuelCard(r) {
+  const pool = cluePool(); if (pool.length < 6) return null; const F = driverFacts();
+  for (let t = 0; t < 600; t++) { const l = [...pool]; for (let i = l.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [l[i], l[j]] = [l[j], l[i]]; }
+    const rows = l.slice(0, 3), cols = l.slice(3, 6); let ok = true;
+    outer: for (const a of rows) for (const b of cols) { let n = 0; for (const f of F) { if (bingoFits(a, f) && bingoFits(b, f) && ++n >= 2) break; } if (n < 2) { ok = false; break outer; } }
+    if (ok) return { rows, cols }; }
+  return null;
+}
+export const gridFits = (a, b, idx) => { const f = driverFacts().find((x) => x.idx === idx); return !!f && bingoFits(a, f) && bingoFits(b, f); };

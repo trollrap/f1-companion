@@ -229,6 +229,15 @@ function Shell() {
               <Stack.Screen name="Report" getComponent={() => guardScreen(require('./screens/Report').default, 'default')} options={{ title: 'Send a report' }} />
               <Stack.Screen name="MyCard" getComponent={() => guardScreen(require('./screens/MyCard').default, 'default')} options={{ title: 'My F1 card' }} />
               <Stack.Screen name="CareerBingo" getComponent={() => guardScreen(require('./screens/Games153').CareerBingoScreen, 'CareerBingoScreen')} options={{ title: 'Career bingo' }} />
+              <Stack.Screen name="Birthday" getComponent={() => guardScreen(require('./screens/Stats155').BirthdayScreen, 'BirthdayScreen')} options={{ title: 'On my birthday' }} />
+              <Stack.Screen name="EraExplorer" getComponent={() => guardScreen(require('./screens/Stats155').EraExplorerScreen, 'EraExplorerScreen')} options={{ title: 'Era explorer' }} />
+              <Stack.Screen name="Slipstream" getComponent={() => guardScreen(require('./screens/Arcade155').SlipstreamScreen, 'SlipstreamScreen')} options={{ title: 'Slipstream dodge' }} />
+              <Stack.Screen name="Sweeper" getComponent={() => guardScreen(require('./screens/Arcade155').SweeperScreen, 'SweeperScreen')} options={{ title: 'Safety car sweeper' }} />
+              <Stack.Screen name="Points2048" getComponent={() => guardScreen(require('./screens/Arcade155').Points2048Screen, 'Points2048Screen')} options={{ title: 'Points 2048' }} />
+              <Stack.Screen name="ColourMemory" getComponent={() => guardScreen(require('./screens/Party155').ColourMemoryScreen, 'ColourMemoryScreen')} options={{ title: 'Team colour memory' }} />
+              <Stack.Screen name="Battleship" getComponent={() => guardScreen(require('./screens/Party155').BattleshipScreen, 'BattleshipScreen')} options={{ title: 'Track battleship' }} />
+              <Stack.Screen name="DraftDuel" getComponent={() => guardScreen(require('./screens/Party155').DraftDuelScreen, 'DraftDuelScreen')} options={{ title: 'Draft duel' }} />
+              <Stack.Screen name="GridDuel" getComponent={() => guardScreen(require('./screens/Party155').GridDuelScreen, 'GridDuelScreen')} options={{ title: 'Tic-tac-toe grid' }} />
               <Stack.Screen name="Streaks" getComponent={() => guardScreen(require('./screens/Streaks').default, 'default')} options={{ title: 'Streaks' }} />
               <Stack.Screen name="CareerCurves" getComponent={() => guardScreen(require('./screens/CareerCurves').default, 'default')} options={{ title: 'Career curves' }} />
               <Stack.Screen name="CompareSeasons" getComponent={() => guardScreen(require('./screens/SeasonStats').CompareSeasonsScreen, 'CompareSeasonsScreen')} options={{ title: 'Compare seasons' }} />

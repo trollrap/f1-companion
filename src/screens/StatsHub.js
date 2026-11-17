@@ -13,9 +13,9 @@ import { usePrefs } from '../hooks/usePrefs';
 // Every statistics screen in one place, grouped, with a search box. Descriptions come from lib/pages.js so they stay in step.
 const GROUPS = [
   ['Records and rankings', 'trophy', colors.gold, ['Records', 'Dominance', 'TitleHistory', 'ConstructorTitles', 'SeasonParity', 'OpenersClosers', 'PointsPerStart', 'GridOdds', 'Lineups', 'Streaks', 'Droughts', 'Winless', 'PoleConversion', 'PlacesGained', 'Comebacks', 'HatTricks', 'AgeRecords', 'BestDebuts', 'DnfRates', 'PodiumPairs', 'HomeHeroes', 'Milestones', 'GridDrops', 'Reliability']],
-  ['Seasons and races', 'calendar', colors.accent, ['SeasonStrip', 'SeasonReview', 'CompareSeasons', 'CalendarGrowth', 'GridAge', 'Debuts', 'Travel', 'Passing', 'TitleSwing', 'Rematch', 'TimeMachine', 'Replay', 'WhatIf']],
+  ['Seasons and races', 'calendar', colors.accent, ['SeasonStrip', 'EraExplorer', 'SeasonReview', 'CompareSeasons', 'CalendarGrowth', 'GridAge', 'Debuts', 'Travel', 'Passing', 'TitleSwing', 'Rematch', 'TimeMachine', 'Replay', 'WhatIf']],
   ['Drivers, teams and tracks', 'people', colors.good, ['CareerCurves', 'TeamCurves', 'TeamMates', 'Journeymen', 'EngineHistory', 'TeamTrees', 'CircuitCompare']],
-  ['Yours', 'person-circle', colors.red, ['ComparePicks', 'FavDigest', 'TrophyRoom', 'YearReview', 'FavCircuits', 'WatchList', 'Rivalry', 'Poster', 'MyCard']],
+  ['Yours', 'person-circle', colors.red, ['ComparePicks', 'FavDigest', 'TrophyRoom', 'YearReview', 'FavCircuits', 'WatchList', 'Rivalry', 'Poster', 'MyCard', 'Birthday']],
 ];
 const META = { Journeymen: 'drivers who raced for the most teams', GridAge: 'how the average driver age changed', CalendarGrowth: 'races and countries per season', WatchList: 'past races to watch later', StatsHub: '' };
 export default function StatsHubScreen({ navigation }) {

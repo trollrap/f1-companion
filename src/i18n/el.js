@@ -165,4 +165,10 @@ Object.assign(DICT, {
   'Career bingo': 'Μπίνγκο καριέρας', 'Back up your saves': 'Αντίγραφο ασφαλείας', 'Back up now': 'Αντίγραφο τώρα', 'Later': 'Αργότερα', 'Weekly backup reminder': 'Εβδομαδιαία υπενθύμιση αντιγράφου',
   'New card': 'Νέα κάρτα', 'Bingo!': 'Μπίνγκο!', 'Out of guesses': 'Τέλος προσπαθειών',
 });
+Object.assign(DICT, {
+  'On my birthday': 'Την ημέρα των γενεθλίων μου', 'Era explorer': 'Εξερεύνηση εποχών', 'Slipstream dodge': 'Αποφυγή αυτοκινήτων', 'Safety car sweeper': 'Ναρκαλιευτής Safety car', 'Points 2048': 'Βαθμοί 2048',
+  'Team colour memory': 'Μνήμη χρωμάτων', 'Track battleship': 'Ναυμαχία πίστας', 'Draft duel': 'Μονομαχία επιλογών', 'Tic-tac-toe grid': 'Τρίλιζα οδηγών', 'Arcade and two players': 'Arcade και δύο παίκτες',
+  'New track': 'Νέα πίστα', 'New battle': 'Νέα μάχη', 'New race': 'Νέος αγώνας', 'New grid': 'Νέο πλέγμα', 'Go again': 'Ξανά', 'Start': 'Έναρξη', 'Clear': 'Καθάρισμα', 'Flag': 'Σημαία',
+  'Enemy waters': 'Εχθρικά νερά', 'Your fleet': 'Ο στόλος σου', 'World champions': 'Παγκόσμιοι πρωταθλητές', 'Most wins': 'Περισσότερες νίκες', 'Closest title': 'Πιο κοντινός τίτλος',
+});
 

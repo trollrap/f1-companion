@@ -470,3 +470,11 @@ Expo Go (SDK 53+) does not include the `expo-notifications` native module; impor
 - Career bingo: `bingoCard/bingoFits/bingoSearch/bingoCheck` in `api/history.js`, `CareerBingoScreen` in `Games153.js` (kv game:cbingo, cbingo:best; 6 misses; a line of three ends the game; score = squares + 3 per line). Each clue has at least 8 matching drivers.
 - Unverified on device: all of it.
 
+## V1.55.0 (JS-only)
+- `api/history.js`: `birthdayData(m,d)`, `eraStats(decadeStart)`, shared `cluePool()` (bingoCard now draws from it), `draftRace(r)`, `gridDuelCard(r)`, `gridFits`. Checked: Hamilton 73 wins and 198 races in the 2010s; Hamilton born 7 Jan; grid-duel cards build 30 of 30 (every square has 2+ fitting drivers).
+- `screens/Stats155.js`: Birthday (kv birthday:v1), EraExplorer.
+- `screens/Arcade155.js`: Slipstream (rAF loop in refs, only `slip:best` saved; stops when the app leaves the foreground), Sweeper (game:sweeper, first tap safe, timer from saved start time, `sweeper:best` = fastest seconds), Points2048 (game:p2048, PanResponder swipe plus arrow buttons, win tile 512, `p2048:best`; `move()` exported).
+- `screens/Party155.js`: ColourMemory (game:simon, replays the saved sequence on resume), Battleship (game:battle, 8x8, cars 4/3/3/2, random placement, AI hunts around unsunk hits, `battle:best` = fewest shots), DraftDuel (game:draft, pass and play, 3 picks each from 12 drivers of a hidden race; ties go to best finish), GridDuel (game:ttt, 2 players, wrong name loses the turn).
+- Fun menu: new row "Arcade and two players". Pages, StatsHub, share routes updated.
+- Unverified on device: all of it, especially swipe gestures (Slipstream and 2048), Slipstream frame rate, and Sweeper long-press.
+
