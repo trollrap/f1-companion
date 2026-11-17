@@ -262,7 +262,10 @@ export function seasonGrid(year) {
 }
 export function firstWinOf(id) { const i = dIdx(id); if (i < 0) return null; let best = null; driverRows(i).forEach(({ year, rc, row }) => { if (row[4] === '1' && (!best || String(rc[3]) < best.date)) best = { year, date: String(rc[3]), name: rc[1] }; }); return best; }
 export function dobOf(id) { const i = dIdx(id); return i < 0 ? null : H.d[i][3] || null; }
-export function titlesOf(id) { load(); const i = dIdx(id); if (i < 0) return 0; return historyYears().filter((y) => driverChampion(y) && dIdx(driverChampion(y)) === i).length; }
+let _titles = null;
+// Titles per driver index, counted once (it used to be recounted for every driver, which made the first stats screen slow on a phone).
+function titleMap() { if (_titles) return _titles; load(); _titles = {}; historyYears().forEach((y) => { const c = driverChampion(y); const i = c ? dIdx(c) : -1; if (i >= 0) _titles[i] = (_titles[i] || 0) + 1; }); return _titles; }
+export function titlesOf(id) { load(); const i = dIdx(id); if (i < 0) return 0; return titleMap()[i] || 0; }
 
 // Passing by race: for every Grand Prix name, the average number of places finishers moved between grid and flag, and how often pole won.
 // Counts classified finishers who started on the grid. Pit stops and strategy move cars too, so this is "position change", not a count of overtakes.
@@ -349,8 +352,11 @@ export function podiumPairs(since) {
 let META = null;
 export function driversMeta() {
   if (META) return META; load();
-  META = H.d.map((d, i) => { const rows = driverRows(i); if (rows.length < 20) return null; const teams = new Set(rows.map((r) => H.t[r.row[1]][0])); const champs = titlesOf(IX.idOf[i]);
-    return { id: IX.idOf[i], name: `${d[1]} ${d[2]}`, last: d[2], nat: d[4], races: rows.length, first: IX.firstYear[i], lastYear: IX.lastYear[i], teams, champ: champs > 0 }; }).filter(Boolean);
+  // One pass over every result row. (It used to rescan every race for every driver, about 20 million steps, which froze a phone for many seconds.)
+  const st = {}; Object.keys(H.r).forEach((y) => H.r[y].forEach((rc) => rc[4].forEach((r) => { const o = (st[r[0]] ||= { n: 0, teams: new Set() }); o.n++; o.teams.add(H.t[r[1]][0]); })));
+  const tm = titleMap();
+  META = H.d.map((d, i) => { const o = st[i]; if (!o || o.n < 20) return null;
+    return { id: IX.idOf[i], name: `${d[1]} ${d[2]}`, last: d[2], nat: d[4], races: o.n, first: IX.firstYear[i], lastYear: IX.lastYear[i], teams: o.teams, champ: (tm[i] || 0) > 0 }; }).filter(Boolean);
   return META;
 }
 export function teamNameOf(teamId) { load(); const t = H.t.find((x) => x[0] === teamId); return t ? t[1] : teamId; }
@@ -449,7 +455,7 @@ function perDriver() {
   years.forEach((y) => H.r[String(y)].forEach((rc) => { last = `${y}-${rc[0]}`; rc[4].forEach((r) => { (per[r[0]] ||= []).push({ y, rd: rc[0], pos: /^\d+$/.test(String(r[4])) ? +r[4] : 99, grid: r[2], t: r[1], key: last }); }); }));
   _per = { per, last }; return _per;
 }
-const nameOfIdx = (k) => `${H.d[k][1]} ${H.d[k][2]}`;
+export const nameOfIdx = (k) => `${H.d[k][1]} ${H.d[k][2]}`;
 
 // Win droughts. `between`: longest run of races entered between two wins. `waits`: races entered before the first win. `now`: running droughts of drivers still racing at the end of the history.
 export function winDroughts() {
@@ -645,3 +651,107 @@ export function raceSample(r) {
   if (!w || !s || !t) return null;
   return { year: y, name: rc[1], winner: nameOfIdx(w[0]), team: H.t[w[1]][1], second: nameOfIdx(s[0]), third: nameOfIdx(t[0]), pole: pole ? nameOfIdx(pole[0]) : null, starters: rc[4].length };
 }
+
+// How every constructors' championship was decided (1958 on): winner, runner-up, points margin and the winner's race wins that year. Names follow the team ids in the history, so a renamed team is counted separately.
+export function constructorTitleHistory() {
+  load(); const rows = [];
+  Object.keys(H.cs).map(Number).sort((a, b) => a - b).forEach((y) => { const cs = [...H.cs[String(y)]].sort((a, b) => a[1] - b[1]); const top = cs[0], sec = cs[1]; if (!top || top[1] !== 1 || !sec || !(top[2] > 0)) return;
+    const races = H.r[String(y)] || []; let wins = 0; races.forEach((rc) => rc[4].forEach((r) => { if (r[1] === top[0] && String(r[4]) === '1') wins++; }));
+    rows.push({ year: y, team: H.t[top[0]][1], tid: top[0], pts: top[2], second: H.t[sec[0]][1], secPts: sec[2], margin: top[2] - sec[2], pct: (top[2] - sec[2]) / top[2], wins, rounds: races.length }); });
+  const byTeam = {}; rows.forEach((r) => { (byTeam[r.tid] ||= { team: r.team, years: [] }).years.push(r.year); });
+  const teams = Object.values(byTeam).map((o) => { let best = 1, run = 1; for (let i = 1; i < o.years.length; i++) { run = o.years[i] === o.years[i - 1] + 1 ? run + 1 : 1; if (run > best) best = run; } return { team: o.team, n: o.years.length, streak: best, from: o.years[0], to: o.years[o.years.length - 1] }; }).sort((a, b) => b.n - a.n || a.from - b.from);
+  const sorted = (f) => [...rows].sort(f).slice(0, 12);
+  return { rows: [...rows].sort((a, b) => b.year - a.year), closest: sorted((a, b) => a.pct - b.pct), biggest: sorted((a, b) => b.pct - a.pct), teams };
+}
+
+// Season parity: how many different drivers and teams won, and how much one driver dominated. Only seasons with 8 or more rounds.
+export function seasonParity() {
+  load(); const rows = [];
+  Object.keys(H.r).map(Number).sort((a, b) => a - b).forEach((y) => { const races = H.r[String(y)]; if (!races || races.length < 8) return;
+    const dw = {}, tw = {}; let n = 0;
+    races.forEach((rc) => { const w = rc[4].find((r) => String(r[4]) === '1'); if (!w) return; n++; dw[w[0]] = (dw[w[0]] || 0) + 1; tw[w[1]] = (tw[w[1]] || 0) + 1; });
+    if (!n) return; const top = Object.entries(dw).sort((a, b) => b[1] - a[1])[0];
+    rows.push({ year: y, rounds: n, drivers: Object.keys(dw).length, teams: Object.keys(tw).length, topName: nameOfIdx(+top[0]), topWins: top[1], share: top[1] / n }); });
+  const open = [...rows].sort((a, b) => b.drivers / b.rounds - a.drivers / a.rounds || b.drivers - a.drivers || b.year - a.year).slice(0, 12);
+  const mostDrivers = [...rows].sort((a, b) => b.drivers - a.drivers || b.year - a.year).slice(0, 12);
+  const oneSided = [...rows].sort((a, b) => b.share - a.share || b.year - a.year).slice(0, 12);
+  const avg = rows.length ? rows.reduce((s, r) => s + r.drivers, 0) / rows.length : 0;
+  return { rows: rows.sort((a, b) => b.year - a.year), open, mostDrivers, oneSided, avg };
+}
+
+// Who wins the first and the last race of each season, and who wins both.
+export function openersClosers() {
+  load(); const rows = []; const op = {}, cl = {};
+  Object.keys(H.r).map(Number).sort((a, b) => a - b).forEach((y) => { const races = H.r[String(y)]; if (!races || races.length < 2) return;
+    const win = (rc) => { const w = rc[4].find((r) => String(r[4]) === '1'); return w ? w[0] : -1; };
+    const a = win(races[0]), b = win(races[races.length - 1]); if (a < 0 || b < 0) return;
+    const ch = driverChampion(y), ci = ch ? dIdx(ch) : -1;
+    rows.push({ year: y, opener: nameOfIdx(a), openerRace: races[0][1], closer: nameOfIdx(b), closerRace: races[races.length - 1][1], both: a === b, openerChamp: a === ci, closerChamp: b === ci });
+    const oo = (op[a] ||= { name: nameOfIdx(a), n: 0 }); oo.n++; const cc = (cl[b] ||= { name: nameOfIdx(b), n: 0 }); cc.n++; });
+  const top = (o) => Object.values(o).sort((a, b) => b.n - a.n || a.name.localeCompare(b.name)).slice(0, 10);
+  const n = rows.length;
+  return { rows: rows.sort((a, b) => b.year - a.year), openers: top(op), closers: top(cl), both: rows.filter((r) => r.both), n, openerChamps: rows.filter((r) => r.openerChamp).length, closerChamps: rows.filter((r) => r.closerChamp).length };
+}
+
+// Points per start. Raw average points, and the average share of the winner's points in each race (so scoring systems compare). Needs 40 or more starts.
+export function pointsPerStart() {
+  load(); const st = {};
+  Object.keys(H.r).forEach((y) => H.r[y].forEach((rc) => { let mx = 0; rc[4].forEach((r) => { const p = Number(r[5]) || 0; if (p > mx) mx = p; });
+    rc[4].forEach((r) => { const o = (st[r[0]] ||= { n: 0, pts: 0, share: 0, first: +y, last: +y }); o.n++; const p = Number(r[5]) || 0; o.pts += p; if (mx > 0) o.share += p / mx; if (+y < o.first) o.first = +y; if (+y > o.last) o.last = +y; }); }));
+  const all = Object.keys(st).filter((i) => st[i].n >= 40).map((i) => ({ name: nameOfIdx(+i), n: st[i].n, pts: st[i].pts, avg: st[i].pts / st[i].n, share: st[i].share / st[i].n, from: st[i].first, to: st[i].last }));
+  return { share: [...all].sort((a, b) => b.share - a.share).slice(0, 25), raw: [...all].sort((a, b) => b.avg - a.avg).slice(0, 25), count: all.length };
+}
+
+// Team-mate questions: a driver, a season and a team where exactly one other driver shared the car for 3 or more races (and the driver raced at least half the season).
+let _mates = null;
+function matePool() {
+  if (_mates) return _mates; load(); const out = [];
+  Object.keys(H.r).map(Number).filter((y) => y >= 1970).forEach((y) => { const races = H.r[String(y)]; if (!races || races.length < 8) return;
+    const byTeam = {}; const allDrv = {}; races.forEach((rc) => rc[4].forEach((r) => { const t = (byTeam[r[1]] ||= {}); t[r[0]] = (t[r[0]] || 0) + 1; allDrv[r[0]] = (allDrv[r[0]] || 0) + 1; }));
+    Object.entries(byTeam).forEach(([ti, ds]) => { const big = Object.entries(ds).filter(([, n]) => n >= 3).map(([d, n]) => [+d, n]); if (big.length !== 2) return;
+      const sameTeam = new Set(Object.keys(ds).map(Number)); const pool = Object.keys(allDrv).map(Number).filter((d) => allDrv[d] >= 4 && !sameTeam.has(d));
+      big.forEach(([d, n], k) => { const m = big[1 - k]; if (n < races.length / 2 || m[1] < 3 || pool.length < 3) return; out.push({ year: y, team: H.t[ti][1], d, m: m[0], pool }); }); }); });
+  _mates = out; return out;
+}
+export function teammateQ(r) {
+  const p = matePool(); if (!p.length) return null; const q = p[Math.floor(r() * p.length)]; const opts = [q.m]; let guard = 0;
+  while (opts.length < 4 && guard++ < 60) { const c = q.pool[Math.floor(r() * q.pool.length)]; if (!opts.includes(c)) opts.push(c); }
+  if (opts.length < 4) return null; for (let i = opts.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [opts[i], opts[j]] = [opts[j], opts[i]]; }
+  return { q: `Who was ${nameOfIdx(q.d)}'s team-mate at ${q.team} in ${q.year}?`, options: opts.map(nameOfIdx), answer: opts.indexOf(q.m), why: `${nameOfIdx(q.m)} drove alongside ${nameOfIdx(q.d)} at ${q.team} in ${q.year}.` };
+}
+
+// Career bingo. A card is nine clues about a driver's career; each clue is { t, v } and `bingoFits` says whether a driver matches it.
+const DEC = (y) => `${Math.floor(y / 10) * 10}s`;
+export function bingoFits(c, f) {
+  switch (c.t) {
+    case 'team': return f.teamNames.has(c.v);
+    case 'nat': return f.nat === c.v;
+    case 'letter': return f.last.charAt(0).toUpperCase() === c.v;
+    case 'title': return f.titles >= 1;
+    case 'wins10': return f.wins >= 10;
+    case 'winless': return f.wins === 0 && f.starts >= 50;
+    case 'pole': return f.poles >= 1;
+    case 'podium': return f.podiums >= 1 && f.wins === 0;
+    case 'debut': return DEC(f.first) === c.v;
+    case 'teams4': return f.teams.size >= 4;
+    default: return false;
+  }
+}
+const bingoLabel = (c) => ({ team: `Raced for ${c.v}`, nat: `${c.v} driver`, letter: `Surname starts with ${c.v}`, title: 'World champion', wins10: 'Won 10 or more races', winless: '50+ starts, never won', pole: 'Took a pole position', podium: 'Podium finisher, never a winner', debut: `First raced in the ${c.v}`, teams4: 'Raced for 4 or more teams' }[c.t]);
+export function bingoCard(r) {
+  const F = driverFacts(); const pool = []; const cnt = (c) => F.filter((f) => bingoFits(c, f)).length;
+  const teams = {}, nats = {}, letters = {}, decs = {}; F.forEach((f) => { f.teamNames.forEach((t) => { teams[t] = (teams[t] || 0) + 1; }); nats[f.nat] = (nats[f.nat] || 0) + 1; const l = f.last.charAt(0).toUpperCase(); letters[l] = (letters[l] || 0) + 1; decs[DEC(f.first)] = (decs[DEC(f.first)] || 0) + 1; });
+  Object.keys(teams).filter((t) => teams[t] >= 25).forEach((t) => pool.push({ t: 'team', v: t }));
+  Object.keys(nats).filter((n) => n && nats[n] >= 15).forEach((n) => pool.push({ t: 'nat', v: n }));
+  Object.keys(letters).filter((l) => letters[l] >= 25).forEach((l) => pool.push({ t: 'letter', v: l }));
+  Object.keys(decs).filter((d) => decs[d] >= 25).forEach((d) => pool.push({ t: 'debut', v: d }));
+  ['title', 'wins10', 'winless', 'pole', 'podium', 'teams4'].forEach((t) => pool.push({ t }));
+  const out = []; const left = [...pool];
+  while (out.length < 9 && left.length) { const c = left.splice(Math.floor(r() * left.length), 1)[0]; if (c.t === 'letter' && out.filter((x) => x.t === 'letter').length >= 2) continue; if (cnt(c) >= 8) out.push(c); }
+  if (out.length < 9) return null; return out.map((c) => ({ ...c, label: bingoLabel(c) }));
+}
+// Drivers whose name contains the typed text, for the answer box.
+export function bingoSearch(q, norm) {
+  const n = norm(q); if (n.length < 2) return []; return driverFacts().filter((f) => norm(f.name).includes(n)).sort((a, b) => b.starts - a.starts).slice(0, 6).map((f) => ({ idx: f.idx, name: f.name, starts: f.starts }));
+}
+export function bingoCheck(c, idx) { const f = driverFacts().find((x) => x.idx === idx); return !!f && bingoFits(c, f); }

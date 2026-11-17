@@ -220,6 +220,15 @@ function Shell() {
               <Stack.Screen name="DriverGrid" getComponent={() => guardScreen(require('./screens/GridGames').DriverGridScreen, 'DriverGridScreen')} options={{ title: 'Driver grid' }} />
               <Stack.Screen name="SurnameChain" getComponent={() => guardScreen(require('./screens/GridGames').SurnameChainScreen, 'SurnameChainScreen')} options={{ title: 'Surname chain' }} />
               <Stack.Screen name="GuessYear" getComponent={() => guardScreen(require('./screens/GridGames').GuessYearScreen, 'GuessYearScreen')} options={{ title: 'Guess the year' }} />
+              <Stack.Screen name="ConstructorTitles" getComponent={() => guardScreen(require('./screens/Stats153').ConstructorTitlesScreen, 'ConstructorTitlesScreen')} options={{ title: "Constructors' titles" }} />
+              <Stack.Screen name="SeasonParity" getComponent={() => guardScreen(require('./screens/Stats153').SeasonParityScreen, 'SeasonParityScreen')} options={{ title: 'Season parity' }} />
+              <Stack.Screen name="OpenersClosers" getComponent={() => guardScreen(require('./screens/Stats153').OpenersClosersScreen, 'OpenersClosersScreen')} options={{ title: 'Openers and finales' }} />
+              <Stack.Screen name="PointsPerStart" getComponent={() => guardScreen(require('./screens/Stats153').PointsPerStartScreen, 'PointsPerStartScreen')} options={{ title: 'Points per start' }} />
+              <Stack.Screen name="Duel" getComponent={() => guardScreen(require('./screens/Games153').DuelScreen, 'DuelScreen')} options={{ title: 'Pass-and-play duel' }} />
+              <Stack.Screen name="TeamMateGame" getComponent={() => guardScreen(require('./screens/Games153').TeamMateGameScreen, 'TeamMateGameScreen')} options={{ title: 'Who was the team-mate' }} />
+              <Stack.Screen name="Report" getComponent={() => guardScreen(require('./screens/Report').default, 'default')} options={{ title: 'Send a report' }} />
+              <Stack.Screen name="MyCard" getComponent={() => guardScreen(require('./screens/MyCard').default, 'default')} options={{ title: 'My F1 card' }} />
+              <Stack.Screen name="CareerBingo" getComponent={() => guardScreen(require('./screens/Games153').CareerBingoScreen, 'CareerBingoScreen')} options={{ title: 'Career bingo' }} />
               <Stack.Screen name="Streaks" getComponent={() => guardScreen(require('./screens/Streaks').default, 'default')} options={{ title: 'Streaks' }} />
               <Stack.Screen name="CareerCurves" getComponent={() => guardScreen(require('./screens/CareerCurves').default, 'default')} options={{ title: 'Career curves' }} />
               <Stack.Screen name="CompareSeasons" getComponent={() => guardScreen(require('./screens/SeasonStats').CompareSeasonsScreen, 'CompareSeasonsScreen')} options={{ title: 'Compare seasons' }} />

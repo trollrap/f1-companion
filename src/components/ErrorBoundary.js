@@ -2,7 +2,7 @@ import React from 'react';
 import { View, ScrollView, Pressable } from 'react-native';
 import { Text } from './Text';
 import { colors } from '../theme';
-import { logCrash } from '../lib/crashlog';
+import { logCrash, crumb } from '../lib/crashlog';
 // Shows a crash on screen (with the message) instead of leaving a blank or endlessly loading app.
 export default class ErrorBoundary extends React.Component {
   state = { error: null };
@@ -44,6 +44,6 @@ const wrapped = new Map();
 // Wraps a screen component once, so React Navigation keeps the same component between renders.
 export function guardScreen(C, name) {
   if (!C) return C; if (wrapped.has(C)) return wrapped.get(C);
-  const W = (p) => <Guard navigation={p.navigation} name={name}><C {...p} /></Guard>; W.displayName = `Guarded(${C.displayName || C.name || name || 'Screen'})`;
+  const W = (p) => { React.useEffect(() => { crumb(name || 'screen'); }, []); return <Guard navigation={p.navigation} name={name}><C {...p} /></Guard>; }; W.displayName = `Guarded(${C.displayName || C.name || name || 'Screen'})`;
   wrapped.set(C, W); return W;
 }

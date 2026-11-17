@@ -449,3 +449,24 @@ Expo Go (SDK 53+) does not include the `expo-notifications` native module; impor
 - Games in `GridGames.js`: DriverGrid (kv game:drivergrid), SurnameChain (game:chain), GuessYear (game:run:gyear).
 - Greek: appended entries to `i18n/el.js` (titles, buttons, short messages for 1.45-1.52 screens). Long notes remain English.
 - The cause of the user's "crashes no matter what" is NOT confirmed. Unverified on device: everything, including whether `guardScreen` catches it.
+
+## V1.52.1 (JS-only)
+- Likely cause of the "app isn't responding" crashes: `driversMeta()` rescanned all races for every driver (about 20M steps; 300 ms on a laptop, far longer on Hermes) and 1.49 started calling it 9 s after every launch via `lib/warm.js`. Now a single pass (2 ms), `titlesOf` cached through `titleMap()`, warm-up removed. Same output checked (259 drivers, 35 champions). Not confirmed on a device.
+- `lib/crashlog.js`: session breadcrumbs (`sessionState`), freeze detector (1 s timer more than 4 s late), unclean-exit report on next launch; `guardScreen` records the open screen with `crumb()`. All show in Settings > More > Crash log.
+
+## V1.53.0 (JS-only)
+- `api/history.js`: `constructorTitleHistory()` (H.cs position 1 vs 2, no clinch round), `seasonParity()`, `openersClosers()`, `pointsPerStart()` (share of the race winner's points; 40+ starts), `teammateQ(r)` (year >= 1970, exactly two drivers with 3+ races in a team, driver on at least half the season; distractors from other teams that year). Checked: 2025 McLaren 833 v Mercedes 469; 2024 McLaren 666 v Ferrari 652; 76 openers, 19 seasons won both.
+- `screens/Stats153.js` (ConstructorTitles, SeasonParity, OpenersClosers, PointsPerStart), added to SHARE_ROUTES, StatsHub, pages.js.
+- `screens/Report.js` (route Report; Settings > More > Send a report): version, update id, notification permission, alert settings, bgRuns, newsLog per-source lines, inbox and crash log; shares as text.
+- `screens/MyCard.js` (route MyCard): ShareCard with first favourite driver/team, trophies (TROPHIES now exported from TrophyRoom), cards owned, top four BESTS.
+- Pins: `usePins()` in FunScreens (kv `pins:games` = list of routes); star on every game tile; `PinnedRow` at the top of the Fun menu and the games list. The Fun menu no longer has the "Your driver" hero; FunProfile route and the Search entry remain.
+- `screens/Games153.js`: DuelScreen (kv game:duel; turns alternate, three lives each, hand-over screen before each turn) and TeamMateGameScreen (useRun 'mate', 10 rounds, kv mate:best).
+- Unverified on device: all of it, including the star taps and the share sheet. The news-notification fault is still undiagnosed; ask for the Report text.
+
+## V1.54.0 (JS-only)
+- Streak shield: `lib/shield.js` (kv `shield:v1` {have, covered, granted}); pure `settle()` covers exactly one missed day inside a live streak, grants one shield per 7-day run (keyed by run start). Applied when `components/PlayCalendar.js` opens (Trophy room); covered days show gold. Checked with 4 cases. A gap of 2+ days, or opening the calendar only after the second missed day, ends the streak.
+- Backup reminder: `components/BackupNudge.js` on Home (above the sections); kv `backup:since`/`backup:last`/`backup:snooze`; `exportBackup()` in `lib/backup.js` now records `backup:last`; Settings switch `backupNudge`. Due after 7 days.
+- "Home stat shortcuts" duplicated the existing Pinned pages (prefs.opts.pins, max 8, Settings and Home chips). Instead StatsHub rows got a pin toggle for the same list.
+- Career bingo: `bingoCard/bingoFits/bingoSearch/bingoCheck` in `api/history.js`, `CareerBingoScreen` in `Games153.js` (kv game:cbingo, cbingo:best; 6 misses; a line of three ends the game; score = squares + 3 per line). Each clue has at least 8 matching drivers.
+- Unverified on device: all of it.
+

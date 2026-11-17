@@ -153,3 +153,16 @@ Object.assign(DICT, {
   'Streaks': 'Σερί', 'Engine suppliers': 'Κατασκευαστές κινητήρων', 'Alerts inbox': 'Εισερχόμενα ειδοποιήσεων', 'Trophy room': 'Αίθουσα τροπαίων', 'Pole to win': 'Από pole σε νίκη', 'Win droughts': 'Ξηρασίες νικών', 'Best without a win': 'Οι καλύτεροι χωρίς νίκη', 'Places gained': 'Θέσεις που κερδήθηκαν', 'Season progress': 'Πορεία σεζόν', 'Favourites digest': 'Περίληψη αγαπημένων', 'Saved articles': 'Αποθηκευμένα άρθρα', 'Race weekend bingo': 'Μπίνγκο αγωνιστικού Σαββατοκύριακου', 'Odd one out': 'Ο παράξενος', 'Driver wordle': 'Wordle οδηγών', 'Timeline sorter': 'Ταξινόμηση χρονολογίας', 'Name that season': 'Βρες τη σεζόν', 'Career path': 'Πορεία καριέρας', 'Stat showdown': 'Μονομαχία στατιστικών', 'Match pairs': 'Ζευγάρωμα', 'Career curves': 'Καμπύλες καριέρας', 'Guess driver': 'Βρες τον οδηγό',
   'True': 'Αληθές', 'False': 'Ψευδές', 'Correct. ': 'Σωστά. ', 'Not quite. ': 'Όχι ακριβώς. ', 'Daily puzzle · ': 'Καθημερινό παζλ · ',
 });
+Object.assign(DICT, {
+  "Constructors' titles": 'Τίτλοι κατασκευαστών', 'Season parity': 'Ισορροπία σεζόν', 'Openers and finales': 'Πρεμιέρες και φινάλε', 'Points per start': 'Βαθμοί ανά εκκίνηση',
+  'Send a report': 'Αποστολή αναφοράς', 'Share the report': 'Κοινοποίηση αναφοράς', 'Pinned games': 'Καρφιτσωμένα παιχνίδια', 'My F1 card': 'Η κάρτα μου F1',
+  'Pass-and-play duel': 'Μονομαχία στο ίδιο κινητό', 'Who was the team-mate': 'Ποιος ήταν ο συναθλητής', 'Team-mate quiz': 'Κουίζ συναθλητών', 'Rematch': 'Ρεβάνς',
+  'Closest': 'Πιο κοντινά', 'Biggest': 'Μεγαλύτερα', 'Every year': 'Κάθε χρονιά', 'Most open': 'Πιο ανοιχτές', 'One-sided': 'Μονόπλευρες', 'Won both': 'Νίκη και στα δύο', 'Openers': 'Πρεμιέρες', 'Finales': 'Φινάλε',
+  'Share of a win': 'Μερίδιο νίκης', 'Raw points': 'Ακατέργαστοι βαθμοί', 'Most titles': 'Περισσότεροι τίτλοι', 'Favourite driver': 'Αγαπημένος οδηγός', 'Favourite team': 'Αγαπημένη ομάδα', 'Trophies': 'Τρόπαια', 'Cards': 'Κάρτες', 'Best scores': 'Καλύτερα σκορ',
+  'Tap the star on a game to pin it to the top of the Fun menu.': 'Πάτα το αστέρι σε ένα παιχνίδι για να το καρφιτσώσεις στην κορυφή του μενού Fun.',
+});
+Object.assign(DICT, {
+  'Career bingo': 'Μπίνγκο καριέρας', 'Back up your saves': 'Αντίγραφο ασφαλείας', 'Back up now': 'Αντίγραφο τώρα', 'Later': 'Αργότερα', 'Weekly backup reminder': 'Εβδομαδιαία υπενθύμιση αντιγράφου',
+  'New card': 'Νέα κάρτα', 'Bingo!': 'Μπίνγκο!', 'Out of guesses': 'Τέλος προσπαθειών',
+});
+

@@ -15,6 +15,7 @@ import { useFun, pickImage, uid, canPickImage } from '../fun/store';
 import { sessionsOf, standings, freeNumber, TEAM_COLORS } from '../fun/sim';
 import { profileStats } from '../fun/profile';
 import { usePrefs } from '../hooks/usePrefs';
+import { kvGet, kvSet } from '../lib/kv';
 import { usePaddockMeta } from '../hooks/useTeams';
 import { CIRCUITS } from '../data/circuits';
 import { colors, alpha } from '../theme';
@@ -26,25 +27,56 @@ export const nameParts = (full) => { const [first, ...rest] = String(full || '')
 /* ------------------------------------------------------------------ Games, in horizontal rows */
 const GAME_ROWS = [
   ['Daily games', [['Mystery', 'Mystery driver', 'Guess the driver, daily', 'help-circle', 'MysteryDriver'], ['Circuit', 'Guess the circuit', 'Clues, fewer is better', 'map', 'GuessCircuit'], ['Quiz', 'F1 quiz', 'Ten questions', 'school', 'Quiz'], ['Fan', 'Fan zone', 'Daily quiz and more', 'happy', 'FanZone']]],
-  ['Reflexes and quizzes', [['Season', 'Name that season', 'Guess the year', 'calendar', 'NameSeason'], ['Path', 'Career path', 'Teams in order', 'git-branch', 'CareerPath'], ['Showdown', 'Stat showdown', 'More or fewer', 'flash', 'Showdown'], ['Pairs', 'Match pairs', 'Flip and match', 'copy', 'MatchPairs'], ['Odd', 'Odd one out', 'Which does not belong', 'help-circle', 'OddOneOut'], ['Bingo', 'Race bingo', 'Tick while you watch', 'apps', 'RaceBingo'], ['Wordle', 'Driver wordle', 'Clues, eight guesses', 'grid', 'GuessDriver'], ['Timeline', 'Timeline sorter', 'Order the events', 'swap-vertical', 'TimelineSorter'], ['Lights', 'Lights out', 'Test your reaction', 'speedometer', 'LightsOut'], ['Pit', 'Pit stop timer', 'Four wheels, fast', 'timer', 'PitStop'], ['Flags', 'Flag quiz', 'Guess the country', 'flag', 'FlagQuiz'], ['Radio', 'Team radio', 'Who said it?', 'mic', 'RadioGame'], ['TF', 'True or false', 'Swipe on facts', 'thumbs-up', 'TrueFalse'], ['Win', 'Winner guess', 'Who won this GP?', 'ribbon', 'WinnerGuess'], ['Link', 'Connections', 'Three hidden groups', 'link', 'Connections'], ['Hang', 'Hangman', 'Letter by letter', 'text', 'Hangman'], ['Num', 'Closest number', 'Guess the total', 'options', 'ClosestNumber'], ['Lap', 'Lap tapper', 'Tap through corners', 'navigate', 'LapTapper'], ['Number', 'Number quiz', 'Driver and number', 'keypad', 'NumberQuiz'], ['Duel', 'Career duel', 'Who has more?', 'flash', 'CareerDuel'], ['Grid', 'Build the grid', 'Right seat, right team', 'grid', 'BuildGrid'], ['Ladder', 'Trivia ladder', 'Endless, three lives', 'trending-up', 'Ladder'], ['Daily', 'Daily puzzle', 'Same five for all', 'today', 'DailyPuzzle'], ['Search', 'Word search', 'Find hidden words', 'search', 'WordSearch'], ['HiLo', 'Higher or lower', 'Build a streak', 'arrow-up-circle', 'HigherLower'], ['Bracket', 'Tournament', '16-driver knockout', 'git-merge', 'Bracket'], ['Scramble', 'Season scramble', 'Beat the clock', 'shuffle', 'Scramble'], ['Livery', 'Team colours', 'Name the team', 'color-palette', 'Livery'], ['Speed', 'Speed round', '60 seconds', 'flash', 'SpeedRound'], ['DGrid', 'Driver grid', 'Nine squares', 'grid', 'DriverGrid'], ['Chain', 'Surname chain', 'Last letter links', 'link', 'SurnameChain'], ['GYear', 'Guess the year', 'Date the race', 'calendar-number', 'GuessYear'], ['Year', 'Year in review', 'Your year in the app', 'stats-chart', 'YearReview']]],
+  ['Reflexes and quizzes', [['Season', 'Name that season', 'Guess the year', 'calendar', 'NameSeason'], ['Path', 'Career path', 'Teams in order', 'git-branch', 'CareerPath'], ['Showdown', 'Stat showdown', 'More or fewer', 'flash', 'Showdown'], ['Pairs', 'Match pairs', 'Flip and match', 'copy', 'MatchPairs'], ['Odd', 'Odd one out', 'Which does not belong', 'help-circle', 'OddOneOut'], ['Bingo', 'Race bingo', 'Tick while you watch', 'apps', 'RaceBingo'], ['Wordle', 'Driver wordle', 'Clues, eight guesses', 'grid', 'GuessDriver'], ['Timeline', 'Timeline sorter', 'Order the events', 'swap-vertical', 'TimelineSorter'], ['Lights', 'Lights out', 'Test your reaction', 'speedometer', 'LightsOut'], ['Pit', 'Pit stop timer', 'Four wheels, fast', 'timer', 'PitStop'], ['Flags', 'Flag quiz', 'Guess the country', 'flag', 'FlagQuiz'], ['Radio', 'Team radio', 'Who said it?', 'mic', 'RadioGame'], ['TF', 'True or false', 'Swipe on facts', 'thumbs-up', 'TrueFalse'], ['Win', 'Winner guess', 'Who won this GP?', 'ribbon', 'WinnerGuess'], ['Link', 'Connections', 'Three hidden groups', 'link', 'Connections'], ['Hang', 'Hangman', 'Letter by letter', 'text', 'Hangman'], ['Num', 'Closest number', 'Guess the total', 'options', 'ClosestNumber'], ['Lap', 'Lap tapper', 'Tap through corners', 'navigate', 'LapTapper'], ['Number', 'Number quiz', 'Driver and number', 'keypad', 'NumberQuiz'], ['Duel', 'Career duel', 'Who has more?', 'flash', 'CareerDuel'], ['Grid', 'Build the grid', 'Right seat, right team', 'grid', 'BuildGrid'], ['Ladder', 'Trivia ladder', 'Endless, three lives', 'trending-up', 'Ladder'], ['Daily', 'Daily puzzle', 'Same five for all', 'today', 'DailyPuzzle'], ['Search', 'Word search', 'Find hidden words', 'search', 'WordSearch'], ['HiLo', 'Higher or lower', 'Build a streak', 'arrow-up-circle', 'HigherLower'], ['Bracket', 'Tournament', '16-driver knockout', 'git-merge', 'Bracket'], ['Scramble', 'Season scramble', 'Beat the clock', 'shuffle', 'Scramble'], ['Livery', 'Team colours', 'Name the team', 'color-palette', 'Livery'], ['Speed', 'Speed round', '60 seconds', 'flash', 'SpeedRound'], ['DGrid', 'Driver grid', 'Nine squares', 'grid', 'DriverGrid'], ['Chain', 'Surname chain', 'Last letter links', 'link', 'SurnameChain'], ['GYear', 'Guess the year', 'Date the race', 'calendar-number', 'GuessYear'], ['Year', 'Year in review', 'Your year in the app', 'stats-chart', 'YearReview'], ['Mate', 'Team-mate quiz', 'Who shared the car?', 'people', 'TeamMateGame'], ['Bingo2', 'Career bingo', 'Name drivers, get three in a line', 'apps', 'CareerBingo'], ['PP', 'Pass-and-play duel', 'Two players, one phone', 'people-circle', 'Duel']]],
   ['Predict and play', [['Predict', 'Predictions', 'Call the next race', 'trophy', 'Predict'], ['Board', 'Leaderboard', 'Friends and streaks', 'podium', 'Leaderboard'], ['Cards', 'Driver cards', 'Collect and open packs', 'albums', 'Cards']]],
   ['What if', [['Replay', 'Season replay', 'Change the points', 'git-compare', 'Replay'], ['Dom', 'Dominance', 'Most dominant seasons', 'flame', 'Dominance'], ['Time', 'Time machine', 'Watch a past race', 'time', 'TimeMachine'], ['WhatIf', 'Title what-if', 'Who can still win?', 'calculator', 'WhatIf']]],
 ];
+const ALL_GAMES = GAME_ROWS.flatMap((r) => r[1]);
+// Pinned games are stored as a list of routes under kv "pins:games" and shown at the top of the Fun menu.
+export function usePins() {
+  const [pins, setPins] = useState([]);
+  useEffect(() => { let off = false; kvGet('pins:games', []).then((v) => { if (!off && Array.isArray(v)) setPins(v); }); return () => { off = true; }; }, []);
+  const toggle = (route) => setPins((cur) => { const n = cur.includes(route) ? cur.filter((x) => x !== route) : [...cur, route]; kvSet('pins:games', n); return n; });
+  return [pins, toggle];
+}
+function GameTile({ g, pinned, onPin, onOpen }) {
+  const [, name, sub, icon] = g;
+  return (
+    <View style={{ width: 150 }}>
+      <Pressable accessibilityRole="button" accessibilityLabel={`${name}. ${sub}`} onPress={onOpen} style={({ pressed }) => [{ padding: 14, borderRadius: 18, backgroundColor: colors.card, borderWidth: 1, borderColor: pinned ? colors.gold : colors.line, gap: 6 }, pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] }]}>
+        <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: alpha(colors.accent, 0.18), alignItems: 'center', justifyContent: 'center' }}><Ionicons name={icon} size={22} color={colors.accent} /></View>
+        <Text style={{ color: colors.fg, fontSize: 16, fontWeight: '800' }} numberOfLines={1}>{name}</Text>
+        <Text style={{ color: colors.muted, fontSize: 12 }} numberOfLines={2}>{sub}</Text>
+      </Pressable>
+      <Pressable accessibilityRole="button" accessibilityLabel={pinned ? `Unpin ${name}` : `Pin ${name}`} hitSlop={8} onPress={onPin} style={{ position: 'absolute', right: 8, top: 8, padding: 4 }}>
+        <Ionicons name={pinned ? 'star' : 'star-outline'} size={18} color={pinned ? colors.gold : colors.muted} />
+      </Pressable>
+    </View>);
+}
+export function PinnedRow({ navigation, pins, toggle }) {
+  const list = pins.map((r) => ALL_GAMES.find((g) => g[4] === r)).filter(Boolean);
+  if (!list.length) return null;
+  return (
+    <View style={{ gap: 8 }}>
+      <Eyebrow>Pinned games</Eyebrow>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingRight: 8 }}>
+        {list.map((g) => <GameTile key={g[4]} g={g} pinned onPin={() => toggle(g[4])} onOpen={() => navigation.navigate(g[4])} />)}
+      </ScrollView>
+    </View>);
+}
 export function GameRows({ navigation }) {
+  const [pins, toggle] = usePins();
   return (
     <View style={{ gap: 14 }}>
+      <PinnedRow navigation={navigation} pins={pins} toggle={toggle} />
       {GAME_ROWS.map(([title, items]) => (
         <View key={title} style={{ gap: 8 }}>
           <Eyebrow>{title}</Eyebrow>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingRight: 8 }}>
-            {items.map(([k, name, sub, icon, route]) => (
-              <Pressable key={k} accessibilityRole="button" accessibilityLabel={`${name}. ${sub}`} onPress={() => navigation.navigate(route)} style={({ pressed }) => [{ width: 150, padding: 14, borderRadius: 18, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.line, gap: 6 }, pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] }]}>
-                <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: alpha(colors.accent, 0.18), alignItems: 'center', justifyContent: 'center' }}><Ionicons name={icon} size={22} color={colors.accent} /></View>
-                <Text style={{ color: colors.fg, fontSize: 16, fontWeight: '800' }} numberOfLines={1}>{name}</Text>
-                <Text style={{ color: colors.muted, fontSize: 12 }} numberOfLines={2}>{sub}</Text>
-              </Pressable>))}
+            {items.map((g) => <GameTile key={g[0]} g={g} pinned={pins.includes(g[4])} onPin={() => toggle(g[4])} onOpen={() => navigation.navigate(g[4])} />)}
           </ScrollView>
         </View>))}
+      <Note>Tap the star on a game to pin it to the top of the Fun menu.</Note>
     </View>);
 }
 /* ------------------------------------------------------------------ Fun home (tab) */
@@ -69,7 +101,7 @@ function Hero({ i, color, icon, kicker, title, info, onPress, height = 128, chil
     </Reveal>);
 }
 export function FunHome({ navigation }) {
-  const fun = useFun(); const p = fun.profile;
+  const fun = useFun(); const [pins, toggle] = usePins();
   const live = fun.fantasies.filter((f) => !f.archived); const cur = live[0];
   let fInfo = fun.loaded ? 'Build your own season. Pick teams and races, then simulate.' : 'Loading your seasons…';
   if (cur) { const done = cur.races.filter((r) => sessionsOf(r).every((s) => cur.results?.[r.id]?.[s])).length; fInfo = `${live.length} saved season${live.length === 1 ? '' : 's'} · ${cur.name}: ${done}/${cur.races.length} races`; }
@@ -78,13 +110,10 @@ export function FunHome({ navigation }) {
       <Reveal index={0}><Text style={{ color: colors.fg, fontSize: 24, fontWeight: '800', fontStyle: 'italic' }}>Fun</Text></Reveal>
       <Hero i={1} color={colors.accent} icon="flag" kicker="FANTASY" title="Fantasy seasons" info={fInfo} onPress={() => navigation.navigate('FantasyHub')} />
       <Hero i={2} color={colors.gold} icon="game-controller" kicker="GAMES" title="Games and quizzes" info={`${nGames} games: daily puzzles, reflexes, predictions and what-ifs`} onPress={() => navigation.navigate('FunGames')} />
-      <Hero i={3} color={p?.color || colors.good} icon="person" kicker="YOUR DRIVER" title={p ? (p.name || 'Unnamed') : 'Create your driver'} info={p ? `#${p.number || '-'} · ${profileStats(p, fun.fantasies).seasons ?? 0} seasons` : 'Photo, number, team, seasons and results'} height={138} onPress={() => navigation.navigate('FunProfile')}>
-        {p?.photo ? <View style={{ position: 'absolute', right: -6, bottom: -6 }}><Avatar uri={p.photo} size={150} radius={20} color={p.color} /></View> : null}
-        {p?.photo ? <Scrim dir="h" from={0.6} to={0} style={{ right: '35%' }} /> : null}
-      </Hero>
-      <Hero i={4} color={colors.red} icon="albums" kicker="COLLECT" title="Driver cards" info="Open packs and build your collection" onPress={() => navigation.navigate('Cards')} height={110} />
-      <Hero i={5} color={colors.purple} icon="ribbon" kicker="ACHIEVE" title="Trophy room" info="Your achievements and personal bests" onPress={() => navigation.navigate('TrophyRoom')} height={100} />
-      <Reveal index={6}><Note>Just for fun: nothing here touches the real data.</Note></Reveal>
+      <PinnedRow navigation={navigation} pins={pins} toggle={toggle} />
+      <Hero i={3} color={colors.red} icon="albums" kicker="COLLECT" title="Driver cards" info="Open packs and build your collection" onPress={() => navigation.navigate('Cards')} height={110} />
+      <Hero i={4} color={colors.purple} icon="ribbon" kicker="ACHIEVE" title="Trophy room" info="Your achievements and personal bests" onPress={() => navigation.navigate('TrophyRoom')} height={100} />
+      <Reveal index={5}><Note>Just for fun: nothing here touches the real data.</Note></Reveal>
     </Screen>
   );
 }

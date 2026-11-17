@@ -241,6 +241,7 @@ export default function SettingsScreen() {
         <Btn tone="solid" icon="download-outline" onPress={async () => { setBk('Making the backup…'); try { setBk(await exportBackup()); } catch (e) { setBk(''); Alert.alert('Backup failed', String(e?.message || e)); } }}>Back up now</Btn>
         <Btn icon="cloud-upload-outline" onPress={async () => { try { const l = await findBackups(); if (!l.length) { Alert.alert('No backup found', 'Choose the folder that holds your f1-companion-backup file.'); return; }
           Alert.alert('Restore which backup?', 'This replaces the data on this phone with the backup.', [{ text: 'Cancel', style: 'cancel' }, ...l.slice(0, 4).map((b) => ({ text: b.name.slice(-30), onPress: async () => { try { const r = await restoreFrom(b.uri); setBk(`Restored ${r.keys} items (${r.saves} fantasy saves). Restarting…`); setTimeout(() => restartApp(), 1200); } catch (e) { Alert.alert('Restore failed', String(e?.message || e)); } } }))]); } catch (e) { Alert.alert('Restore failed', String(e?.message || e)); } }}>Restore from a backup file</Btn>
+        <Sw label="Weekly backup reminder" hint="Shows a card on Home when your last backup is more than a week old." value={o.backupNudge !== false} onChange={(v) => setOpt('backupNudge', v)} />
         {bk ? <Note>{bk}</Note> : null}
       </Section>
       <Section icon="cloud-download-outline" title="App updates" summary={`Installed ${currentVersion()}`}>
@@ -264,6 +265,7 @@ export default function SettingsScreen() {
       <Card>
         <Btn icon="server-outline" onPress={() => nav.navigate('Storage')}>Storage and data</Btn>
         <Btn icon="bug-outline" onPress={() => nav.navigate('CrashLog')}>Crash log</Btn>
+        <Btn icon="mail-outline" onPress={() => nav.navigate('Report')}>Send a report</Btn>
       </Card>
       <Changelog />
       <Card>

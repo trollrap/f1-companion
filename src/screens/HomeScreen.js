@@ -6,6 +6,7 @@ import Skeleton from '../components/Skeleton';
 import { Text } from '../components/Text';
 import { Ionicons } from '@expo/vector-icons';
 import UpdateBanner from '../components/UpdateBanner';
+import BackupNudge from '../components/BackupNudge';
 import Screen, { ErrorNote, Card, Eyebrow, Note } from '../components/Screen';
 import { Countdown, ResultRow, ResultLine, DriverName } from '../components/Shared';
 import Grad, { Scrim } from '../components/Grad';
@@ -182,6 +183,7 @@ export default function HomeScreen({ navigation }) {
   return (
     <Screen>
       <UpdateBanner />
+      <BackupNudge />
       {prefs.opts.name ? <Text style={{ color: colors.muted, fontSize: 17 }}>{`Hi, ${prefs.opts.name} 👋`}</Text> : null}
       {weekend ? <Pressable accessibilityRole="button" onPress={() => setShowAll(true)}><Text style={{ color: colors.muted, fontSize: 13 }}>Race weekend view. Tap to show everything.</Text></Pressable> : showAll && wk && now >= wk.a && now <= wk.b ? <Pressable accessibilityRole="button" onPress={() => setShowAll(false)}><Text style={{ color: colors.muted, fontSize: 13 }}>Back to the race weekend view</Text></Pressable> : null}
       {order.map((k, i) => (P[k] && !(k === 'mine' && !mine.length && !mineT.length) ? <Reveal key={k} index={Math.min(i, 5)}>{P[k]}</Reveal> : null))}

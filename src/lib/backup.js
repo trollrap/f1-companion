@@ -2,6 +2,7 @@
 // The backup is one JSON file. Caches (keys starting with "c:") are left out, they download again.
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { readDurable, writeDurable } from './durable';
+import { kvSet } from './kv';
 const DURABLE = ['fun:v1', 'prefs:v2', 'welcomed', 'accent'];
 const fs = () => { try { return require('expo-file-system/legacy'); } catch { return null; } };
 export async function makeBackup() {
@@ -12,7 +13,7 @@ export async function makeBackup() {
 }
 const stamp = () => new Date().toISOString().slice(0, 16).replace(/[-:T]/g, '');
 // Writes the backup into the remembered folder when there is one, otherwise opens the share sheet. Returns a short text for the screen.
-export async function exportBackup() {
+async function exportBackupRaw() {
   const text = await makeBackup(); const name = `f1-companion-backup-${stamp()}.json`; const FS = fs(); if (!FS) throw new Error('Files are not available in this build.');
   let dir = null; try { dir = await AsyncStorage.getItem('saveDir'); } catch {}
   if (dir && FS.StorageAccessFramework) { try { const uri = await FS.StorageAccessFramework.createFileAsync(dir, name.replace(/\.json$/, ''), 'application/json'); await FS.writeAsStringAsync(uri, text, { encoding: FS.EncodingType.UTF8 }); return `Saved ${name} in your chosen folder.`; } catch {} }
@@ -34,3 +35,5 @@ export async function restoreFrom(uri) {
   for (const [k, v] of Object.entries(j.plain)) { if (typeof v === 'string') await AsyncStorage.setItem(k, v); }
   return { saves: (() => { try { return (JSON.parse(j.durable['fun:v1'] || '{}').fantasies || []).length; } catch { return 0; } })(), keys: Object.keys(j.plain).length + Object.keys(j.durable).length, at: j.at };
 }
+// Records the time of the last successful backup, which the Home reminder reads.
+export async function exportBackup() { const r = await exportBackupRaw(); await kvSet('backup:last', Date.now()); return r; }
