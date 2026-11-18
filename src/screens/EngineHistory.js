@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { View, Pressable } from 'react-native';
 import { Text } from '../components/Text';
 import Screen, { Card, Eyebrow, Note } from '../components/Screen';
+import { StatHeader } from '../components/StatRows';
 import Reveal from '../components/Reveal';
 import { colors, alpha } from '../theme';
 import { engineBoard, teamNameOf } from '../api/history';
@@ -17,7 +18,7 @@ export default function EngineHistoryScreen() {
   const races = Math.max(1, ...B.map((o) => o.wins)); const total = B.reduce((n, o) => n + o.wins, 0);
   return (
     <Screen header={false}>
-      <Card><Eyebrow>Power unit suppliers</Eyebrow><Note>The hybrid V6 turbo era, 2014 to 2025: results of every car by the engine behind it, works and customer teams together. Poles count a car starting from P1 on the grid. Titles go to the supplier of the winning car. The engine list is written by hand, see the note under it.</Note></Card>
+      <StatHeader title="Power unit suppliers" icon="cog" note="The hybrid V6 turbo era, 2014 to 2025: results of every car by the engine behind it, works and customer teams together. Poles count a car starting from P1 on the grid. Titles go to the supplier of the winning car. The engine list is written by hand, see the note under it." />
       {B.map((o, i) => (
         <Reveal key={o.name} index={i}>
           <Pressable accessibilityRole="button" accessibilityState={{ expanded: open === o.name }} onPress={() => setOpen(open === o.name ? null : o.name)}>

@@ -40,6 +40,7 @@ import { warmCaches } from './lib/warm';
 import { FunHome, FunProfile } from './screens/FunScreens';
 import SettingsScreen from './screens/SettingsScreen';
 import AlertScheduler from './components/AlertScheduler';
+import { navRef } from './lib/navRef';
 import ErrorBoundary, { guardScreen } from './components/ErrorBoundary';
 import { shortName } from './lib/time';
 import { tr } from './lib/i18n';
@@ -117,7 +118,7 @@ function Shell() {
   if (!ready) return <View style={{ flex: 1, backgroundColor: colors.bg }} />;
   if (!prefs.opts.welcomed) return <WelcomeScreen />;
   return (
-          <NavigationContainer key={`${prefs.opts.lang === 'el' ? 'el' : 'en'}-${prefs.opts.sport === 'motogp' ? 'mg' : prefs.opts.sport === 'football' ? 'fb' : 'f1'}`} theme={navTheme}>
+          <NavigationContainer ref={navRef} key={`${prefs.opts.lang === 'el' ? 'el' : 'en'}-${prefs.opts.sport === 'motogp' ? 'mg' : prefs.opts.sport === 'football' ? 'fb' : 'f1'}`} theme={navTheme}>
             <StatusBar style={colors.isLight ? 'dark' : 'light'} />
             <AlertScheduler />
             <Tour visible={!prefs.opts.tourDone} onClose={() => setOpt('tourDone', true)} />
@@ -238,6 +239,17 @@ function Shell() {
               <Stack.Screen name="Battleship" getComponent={() => guardScreen(require('./screens/Party155').BattleshipScreen, 'BattleshipScreen')} options={{ title: 'Track battleship' }} />
               <Stack.Screen name="DraftDuel" getComponent={() => guardScreen(require('./screens/Party155').DraftDuelScreen, 'DraftDuelScreen')} options={{ title: 'Draft duel' }} />
               <Stack.Screen name="GridDuel" getComponent={() => guardScreen(require('./screens/Party155').GridDuelScreen, 'GridDuelScreen')} options={{ title: 'Tic-tac-toe grid' }} />
+              <Stack.Screen name="ConnectFour" getComponent={() => guardScreen(require('./screens/Table157').ConnectFourScreen, 'ConnectFourScreen')} options={{ title: 'Connect four' }} />
+              <Stack.Screen name="Blackjack" getComponent={() => guardScreen(require('./screens/Table157').BlackjackScreen, 'BlackjackScreen')} options={{ title: 'Blackjack 21' }} />
+              <Stack.Screen name="LapChart" getComponent={() => guardScreen(require('./screens/Laps157').default, 'default')} options={{ title: 'Lap chart' }} />
+              <Stack.Screen name="GameStats" getComponent={() => guardScreen(require('./screens/GameStats').default, 'default')} options={{ title: 'Games stats' }} />
+              <Stack.Screen name="Snake" getComponent={() => guardScreen(require('./screens/Arcade158').SnakeScreen, 'SnakeScreen')} options={{ title: 'Snake' }} />
+              <Stack.Screen name="Checkers" getComponent={() => guardScreen(require('./screens/Arcade158').CheckersScreen, 'CheckersScreen')} options={{ title: 'Checkers' }} />
+              <Stack.Screen name="DailyChallenges" getComponent={() => guardScreen(require('./screens/Challenges158').DailyChallengesScreen, 'DailyChallengesScreen')} options={{ title: 'Daily challenges' }} />
+              <Stack.Screen name="Achievements" getComponent={() => guardScreen(require('./screens/Challenges158').AchievementsScreen, 'AchievementsScreen')} options={{ title: 'Achievements' }} />
+              <Stack.Screen name="SeasonHeatmap" getComponent={() => guardScreen(require('./screens/Stats158').SeasonHeatmapScreen, 'SeasonHeatmapScreen')} options={{ title: 'Season heatmap' }} />
+              <Stack.Screen name="QualiBattles" getComponent={() => guardScreen(require('./screens/Stats158').QualiBattlesScreen, 'QualiBattlesScreen')} options={{ title: 'Team-mate battles' }} />
+              <Stack.Screen name="CountdownCard" getComponent={() => guardScreen(require('./screens/CountdownCard').default, 'default')} options={{ title: 'Countdown card' }} />
               <Stack.Screen name="Streaks" getComponent={() => guardScreen(require('./screens/Streaks').default, 'default')} options={{ title: 'Streaks' }} />
               <Stack.Screen name="CareerCurves" getComponent={() => guardScreen(require('./screens/CareerCurves').default, 'default')} options={{ title: 'Career curves' }} />
               <Stack.Screen name="CompareSeasons" getComponent={() => guardScreen(require('./screens/SeasonStats').CompareSeasonsScreen, 'CompareSeasonsScreen')} options={{ title: 'Compare seasons' }} />

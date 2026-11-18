@@ -4,7 +4,10 @@ import { Text } from '../components/Text';
 import Screen, { Card, Eyebrow, Note } from '../components/Screen';
 import { Btn } from '../components/FunBits';
 import ShareResult from '../components/ShareResult';
-import { colors, alpha } from '../theme';
+import { GameHeader, ResultPanel, TurnBanner, Hint, Feedback } from '../components/GameKit';
+import { Ionicons } from '@expo/vector-icons';
+import { catOf } from '../lib/gameCatalog';
+import { colors, alpha, teamColor } from '../theme';
 import { norm } from '../lib/names';
 import * as hap from '../lib/haptics';
 import { kvGet, kvSet, rngOf, seedOf } from '../lib/kv';
@@ -33,12 +36,13 @@ export function ColourMemoryScreen() {
     if (p === g.seq[pos]) { const n = pos + 1; if (n === len) { hap.good(); setPhase('wait'); upd({ seq: [...g.seq, Math.floor(Math.random() * 4)] }); } else setPos(n); }
     else { hap.bad(); const sc = len - 1; upd({ over: true }); if (sc > best) { setBest(sc); kvSet('simon:best', sc); } }
   };
-  if (over) { const sc = len - 1; return (<Screen header={false}><ShareResult text={`F1 Companion colour memory: ${sc} in a row`}><Card><Eyebrow>Team colour memory</Eyebrow><Text style={{ color: colors.fg, fontSize: 32, fontWeight: '800' }}>{`${sc} in a row`}</Text><Note>{`Best ${Math.max(best, sc)}.`}</Note></Card></ShareResult><Btn tone="solid" onPress={() => { run.current++; restart(); }}>Play again</Btn></Screen>); }
+  if (over) { const sc = len - 1; return (<Screen header={false}><ShareResult text={`F1 Companion colour memory: ${sc} in a row`}><ResultPanel cat="puzzle" win={sc > 0} icon="color-palette" kicker="Team colour memory" big={`${sc} in a row`} sub={`Best ${Math.max(best, sc)}`} best={sc > 0 && sc >= best} /></ShareResult><Btn tone="solid" icon="refresh" onPress={() => { run.current++; restart(); }}>Play again</Btn></Screen>); }
   return (
     <Screen header={false}>
-      <Card><Eyebrow>Team colour memory</Eyebrow><Note>{phase === 'show' ? 'Watch the colours…' : phase === 'input' ? `Your turn: ${pos} of ${len}` : 'Next round…'}</Note><Note>{`Round ${len}. Best ${best}. Saved as you go.`}</Note></Card>
+      <GameHeader cat="puzzle" icon="color-palette" title="Team colour memory" hint="Watch the pads light up, then repeat the order. One more colour every round. Saved as you go." stats={[['Round', len], ['In a row', Math.max(0, len - 1)], ['Best', best]]} />
+      <View style={{ alignItems: 'center', padding: 8 }}><Text style={{ color: phase === 'input' ? colors.good : colors.onSoft, fontSize: 18, fontWeight: '800' }}>{phase === 'show' ? 'Watch…' : phase === 'input' ? `Your turn  ${pos} / ${len}` : 'Correct!'}</Text></View>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12, justifyContent: 'center' }}>
-        {PADS.map(([n, c], p) => (<Pressable key={n} accessibilityRole="button" accessibilityLabel={n} onPress={() => press(p)} style={{ width: '46%', height: 130, borderRadius: 18, backgroundColor: lit === p ? c : alpha(c, 0.28), alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: lit === p ? colors.fg : 'transparent' }}><Text style={{ color: lit === p ? '#000' : colors.fg, fontWeight: '800', fontSize: 16 }}>{n}</Text></Pressable>))}
+        {PADS.map(([n, c], p) => (<Pressable key={n} accessibilityRole="button" accessibilityLabel={n} onPress={() => press(p)} style={{ width: '47%', height: 140, borderRadius: 22, backgroundColor: lit === p ? c : alpha(c, 0.22), alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: lit === p ? '#fff' : alpha(c, 0.6), shadowColor: c, shadowOpacity: lit === p ? 0.9 : 0, shadowRadius: 24, elevation: lit === p ? 10 : 0 }}><Ionicons name="car-sport" size={34} color={lit === p ? '#000' : alpha(c, 0.9)} /><Text style={{ color: lit === p ? '#000' : colors.fg, fontWeight: '800', fontSize: 16, marginTop: 6 }}>{n}</Text></Pressable>))}
       </View>
     </Screen>);
 }
@@ -71,19 +75,21 @@ export function BattleshipScreen() {
     upd({ mine, theirs, msg });
   };
   const cell = (ships, shots, i, reveal) => { const has = ships.some((s) => s.includes(i)); const shot = shots.includes(i); const dead = has && sunk(ships, shots).some((s) => s.includes(i));
-    return { bg: shot ? (has ? alpha(colors.accent, dead ? 0.9 : 0.6) : alpha(colors.fg, 0.08)) : reveal && has ? alpha(colors.good, 0.45) : alpha(colors.fg, 0.14), txt: shot ? (has ? '✹' : '·') : '' }; };
+    return { bg: shot ? (has ? alpha(colors.accent, dead ? 0.95 : 0.65) : alpha('#4da3ff', 0.1)) : reveal && has ? alpha('#9aa4b8', 0.55) : alpha('#4da3ff', 0.2), icon: shot ? (has ? (dead ? 'skull' : 'flame') : null) : null, dot: shot && !has, border: shot && has ? colors.accent : alpha('#4da3ff', 0.35) }; };
   const grid = (ships, shots, reveal, onTap, label) => (
-    <View style={{ alignSelf: 'center', gap: 3 }} accessibilityLabel={label}>
+    <View style={{ alignSelf: 'center', gap: 3, padding: 6, borderRadius: 16, backgroundColor: alpha('#0a2540', 0.55), borderWidth: 1, borderColor: alpha('#4da3ff', 0.3) }} accessibilityLabel={label}>
       {Array.from({ length: BN }, (_, r) => (<View key={r} style={{ flexDirection: 'row', gap: 3 }}>{Array.from({ length: BN }, (_, c) => { const i = r * BN + c; const k = cell(ships, shots, i, reveal);
-        return (<Pressable key={c} disabled={!onTap} accessibilityRole={onTap ? 'button' : undefined} accessibilityLabel={`Row ${r + 1} column ${c + 1}`} onPress={() => onTap && onTap(i)} style={{ width: S, height: S, borderRadius: 6, backgroundColor: k.bg, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.line }}><Text style={{ color: colors.fg, fontSize: S * 0.5, fontWeight: '800' }}>{k.txt}</Text></Pressable>); })}</View>))}
+        return (<Pressable key={c} disabled={!onTap} accessibilityRole={onTap ? 'button' : undefined} accessibilityLabel={`Row ${r + 1} column ${c + 1}`} onPress={() => onTap && onTap(i)} style={{ width: S, height: S, borderRadius: 7, backgroundColor: k.bg, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: k.border }}>{k.icon ? <Ionicons name={k.icon} size={S * 0.55} color="#fff" /> : k.dot ? <View style={{ width: S * 0.18, height: S * 0.18, borderRadius: S * 0.09, backgroundColor: alpha('#fff', 0.5) }} /> : null}</Pressable>); })}</View>))}
     </View>);
+  const mySunk = sunk(g.me, g.theirs).length, foeSunk = sunk(g.foe, g.mine).length;
   return (
     <Screen header={false}>
-      <Card><Eyebrow>Track battleship</Eyebrow><Note>{`Hunt the phone's four cars (4, 3, 3 and 2 tiles long) before it finds yours. Your fleet is placed at random. Best win: ${best ? `${best} shots` : '—'}. Saved as you go.`}</Note><Text style={{ color: colors.fg, fontSize: 15, marginTop: 6 }}>{g.msg}</Text></Card>
-      <Eyebrow>Enemy waters</Eyebrow>{grid(g.foe, g.mine, done, done ? null : fire, 'Enemy waters')}
-      <Eyebrow>Your fleet</Eyebrow>{grid(g.me, g.theirs, true, null, 'Your fleet')}
-      {done ? <ShareResult text={`F1 Companion track battleship: ${won ? `won in ${g.mine.length} shots` : 'lost to the phone'}`}><Card><Eyebrow>{won ? 'Victory' : 'Defeat'}</Eyebrow><Text style={{ color: colors.fg, fontSize: 28, fontWeight: '800' }}>{won ? `${g.mine.length} shots` : 'Fleet sunk'}</Text></Card></ShareResult> : null}
-      {done ? <Btn tone="solid" onPress={restart}>New battle</Btn> : null}
+      <GameHeader cat="arcade" icon="locate" title="Track battleship" hint="Hunt the phone's four cars (4, 3, 3 and 2 tiles long) before it finds yours. Your fleet is placed at random. Fewest shots is the best score. Saved as you go." stats={[['Your shots', g.mine.length], ['Cars sunk', `${foeSunk}/4`], ['Best', best ? `${best}` : '—']]} />
+      <Feedback ok={!/missed|Miss|sank your|hit you/.test(g.msg || '')}>{g.msg}</Feedback>
+      <Text style={{ color: colors.onSoft, fontFamily: 'label', fontSize: 11, letterSpacing: 2 }}>ENEMY WATERS</Text>{grid(g.foe, g.mine, done, done ? null : fire, 'Enemy waters')}
+      <Text style={{ color: colors.onSoft, fontFamily: 'label', fontSize: 11, letterSpacing: 2 }}>{`YOUR FLEET  ·  ${4 - mySunk} OF 4 LEFT`}</Text>{grid(g.me, g.theirs, true, null, 'Your fleet')}
+      {done ? <ShareResult text={`F1 Companion track battleship: ${won ? `won in ${g.mine.length} shots` : 'lost to the phone'}`}><ResultPanel cat="arcade" win={won} icon={won ? 'trophy' : 'skull'} kicker={won ? 'Victory' : 'Defeat'} big={won ? `${g.mine.length} shots` : 'Fleet sunk'} best={won && g.mine.length <= best} /></ShareResult> : null}
+      {done ? <Btn tone="solid" icon="refresh" onPress={restart}>New battle</Btn> : null}
     </Screen>);
 }
 
@@ -101,18 +107,23 @@ export function DraftDuelScreen() {
     const a = total(0), b = total(1); const w = a !== b ? (a > b ? 0 : 1) : best(0) !== best(1) ? (best(0) < best(1) ? 0 : 1) : -1; const txt = `F1 Companion draft duel (${g.race}): Player 1 ${a} pts, Player 2 ${b} pts${w < 0 ? ', a draw' : `, Player ${w + 1} wins`}`;
     return (
       <Screen header={false}>
-        <ShareResult text={txt}><Card><Eyebrow>{g.race}</Eyebrow><Text style={{ color: colors.fg, fontSize: 30, fontWeight: '800' }}>{w < 0 ? 'A draw' : `Player ${w + 1} wins`}</Text><Note>{`Player 1 ${a} points, Player 2 ${b} points. Level points go to the better finishing position.`}</Note></Card></ShareResult>
-        {[0, 1].map((k) => (<Card key={k}><Eyebrow>{`Player ${k + 1} · ${total(k)} pts`}</Eyebrow>{g.picks[k].map((i) => { const x = g.pool.find((y) => y.idx === i); return <Text key={i} style={{ color: colors.fg, fontSize: 15, paddingVertical: 2 }}>{`${x.name} (${x.team}): ${x.pos ? `P${x.pos}` : 'did not finish'}, ${x.pts} pts`}</Text>; })}</Card>))}
-        <Btn tone="solid" onPress={restart}>New race</Btn>
+        <ShareResult text={txt}><ResultPanel cat="two" win={w >= 0} icon="trophy" kicker={g.race} big={w < 0 ? 'A draw' : `Player ${w + 1} wins`} sub={`${a} points to ${b}. Level points go to the better finishing position.`} /></ShareResult>
+        {[0, 1].map((k) => (<View key={k} style={{ padding: 14, borderRadius: 18, backgroundColor: colors.card, borderWidth: 1, borderColor: alpha(k ? colors.good : colors.accent, w === k ? 0.9 : 0.3), gap: 6 }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}><Text style={{ color: k ? colors.good : colors.accent, fontFamily: 'label', fontSize: 12, letterSpacing: 2 }}>{`PLAYER ${k + 1}`}</Text><Text style={{ color: colors.fg, fontWeight: '800', fontSize: 16 }}>{`${total(k)} pts`}</Text></View>
+          {g.picks[k].map((i) => { const x = g.pool.find((y) => y.idx === i); return (<View key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}><View style={{ width: 4, height: 34, borderRadius: 2, backgroundColor: teamColor(x.tid) }} /><View style={{ flex: 1 }}><Text style={{ color: colors.fg, fontSize: 15, fontWeight: '700' }}>{x.name}</Text><Text style={{ color: colors.muted, fontSize: 12 }}>{x.team}</Text></View><Text style={{ color: colors.fg, fontSize: 14, fontWeight: '800' }}>{`${x.pos ? `P${x.pos}` : 'DNF'}  ·  ${x.pts}`}</Text></View>); })}
+        </View>))}
+        <Btn tone="solid" icon="refresh" onPress={restart}>New race</Btn>
       </Screen>);
   }
   return (
     <Screen header={false}>
-      <Card><Eyebrow>Draft duel</Eyebrow><Note>{`A real Grand Prix is hidden. Take turns drafting ${P} drivers each. The points they scored in that race decide the winner. Saved as you go.`}</Note><Text style={{ color: colors.fg, fontSize: 20, fontWeight: '800', marginTop: 6 }}>{`Player ${g.turn + 1}, pick a driver`}</Text><Note>{`P1: ${g.picks[0].length}/${P}   P2: ${g.picks[1].length}/${P}`}</Note></Card>
-      {g.pool.map((x) => { const by = g.picks[0].includes(x.idx) ? 1 : g.picks[1].includes(x.idx) ? 2 : 0;
-        return (<Pressable key={x.idx} accessibilityRole="button" disabled={!!by} onPress={() => pick(x.idx)} style={{ padding: 14, borderRadius: 14, borderWidth: 1.5, borderColor: by ? colors.line : colors.accent, backgroundColor: by ? alpha(colors.fg, 0.05) : colors.card, opacity: by ? 0.6 : 1, flexDirection: 'row', alignItems: 'center' }}>
-          <View style={{ flex: 1 }}><Text style={{ color: colors.fg, fontSize: 16, fontWeight: '700' }}>{x.name}</Text><Text style={{ color: colors.muted, fontSize: 13 }}>{`${x.team} · started P${x.grid}`}</Text></View>
-          {by ? <Text style={{ color: colors.muted, fontWeight: '800' }}>{`P${by}`}</Text> : null}</Pressable>); })}
+      <GameHeader cat="two" icon="people" title="Draft duel" hint={`A real Grand Prix is hidden. Take turns drafting ${P} drivers each. The points they scored in that race decide the winner. Saved as you go.`} stats={[['P1 picks', `${g.picks[0].length}/${P}`], ['P2 picks', `${g.picks[1].length}/${P}`]]} />
+      <TurnBanner who={g.turn + 1} label={`Player ${g.turn + 1}, pick a driver`} />
+      {g.pool.map((x) => { const by = g.picks[0].includes(x.idx) ? 1 : g.picks[1].includes(x.idx) ? 2 : 0; const tc = teamColor(x.tid);
+        return (<Pressable key={x.idx} accessibilityRole="button" accessibilityLabel={`${x.name}, ${x.team}, started P${x.grid}`} disabled={!!by} onPress={() => pick(x.idx)} style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, borderRadius: 16, borderWidth: 1.5, borderColor: by ? alpha(by === 1 ? colors.accent : colors.good, 0.6) : colors.line, backgroundColor: pressed ? alpha(tc, 0.25) : by ? alpha(by === 1 ? colors.accent : colors.good, 0.1) : colors.card, opacity: by ? 0.7 : 1 })}>
+          <View style={{ width: 5, alignSelf: 'stretch', borderRadius: 3, backgroundColor: tc }} />
+          <View style={{ flex: 1 }}><Text style={{ color: colors.fg, fontSize: 16, fontWeight: '800' }}>{x.name}</Text><Text style={{ color: colors.muted, fontSize: 13 }}>{x.team}</Text></View>
+          {by ? <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: by === 1 ? colors.accent : colors.good, alignItems: 'center', justifyContent: 'center' }}><Text style={{ color: '#fff', fontWeight: '800' }}>{by}</Text></View> : <View style={{ alignItems: 'flex-end' }}><Text style={{ color: colors.fg, fontWeight: '800', fontSize: 15 }}>{`P${x.grid}`}</Text><Text style={{ color: colors.muted, fontSize: 10, letterSpacing: 1 }}>GRID</Text></View>}</Pressable>); })}
     </Screen>);
 }
 
@@ -134,25 +145,28 @@ export function GridDuelScreen() {
     else { hap.bad(); upd({ turn: 3 - g.turn, msg: `${h.name} does not fit. Player ${3 - g.turn}'s turn.` }); setSel(null); setText(''); }
   };
   const winner = line ? g.own[line[0]] : 0;
-  const cl = (c) => (<Text style={{ color: colors.fg, fontSize: 11, fontWeight: '700', textAlign: 'center' }}>{c.label}</Text>);
+  const cl = (c) => (<View style={{ paddingHorizontal: 6, paddingVertical: 6, borderRadius: 10, backgroundColor: alpha(catOf('two').color, 0.18), alignItems: 'center', justifyContent: 'center', minHeight: 44 }}><Text style={{ color: colors.fg, fontSize: 11, fontWeight: '800', textAlign: 'center' }}>{c.label}</Text></View>);
+  if (done) return (
+    <Screen header={false}>
+      <ShareResult text={`F1 Companion tic-tac-toe grid: ${winner ? `Player ${winner} won` : 'a draw'}`}><ResultPanel cat="two" win={!!winner} icon={winner ? 'trophy' : 'remove-circle'} kicker="Tic-tac-toe grid" big={winner ? `Player ${winner} wins` : 'A draw'} /></ShareResult>
+      <Btn tone="solid" icon="refresh" onPress={() => { setSel(null); setText(''); restart(); }}>New grid</Btn>
+    </Screen>);
   return (
     <Screen header={false}>
-      <Card><Eyebrow>Tic-tac-toe grid</Eyebrow><Note>Tap a square and name a driver who fits both its row clue and its column clue. A wrong name loses your turn. Each driver can be used once. Three in a line wins. Saved as you go.</Note>
-        <Text style={{ color: colors.fg, fontSize: 18, fontWeight: '800', marginTop: 4 }}>{done ? (winner ? `Player ${winner} wins` : 'A draw') : `Player ${g.turn} (${g.turn === 1 ? 'X' : 'O'}) to move`}</Text></Card>
+      <GameHeader cat="two" icon="grid" title="Tic-tac-toe grid" hint="Tap a square and name a driver who fits both its row clue and its column clue. A wrong name loses your turn. Each driver can be used once. Three in a line wins. Saved as you go." stats={[['Player 1', 'X'], ['Player 2', 'O']]} />
+      <TurnBanner who={g.turn} label={`Player ${g.turn} (${g.turn === 1 ? 'X' : 'O'}) to move`} />
       <View style={{ gap: 6 }}>
-        <View style={{ flexDirection: 'row', gap: 6 }}><View style={{ flex: 1 }} />{g.cols.map((c, i) => <View key={i} style={{ flex: 2, justifyContent: 'center', minHeight: 44 }}>{cl(c)}</View>)}</View>
+        <View style={{ flexDirection: 'row', gap: 6 }}><View style={{ width: 78 }} />{g.cols.map((c, i) => <View key={i} style={{ flex: 1 }}>{cl(c)}</View>)}</View>
         {[0, 1, 2].map((r) => (<View key={r} style={{ flexDirection: 'row', gap: 6 }}>
-          <View style={{ flex: 1, justifyContent: 'center' }}>{cl(g.rows[r])}</View>
-          {[0, 1, 2].map((c) => { const i = r * 3 + c; const o = g.own[i]; const win = line && line.includes(i);
-            return (<Pressable key={c} accessibilityRole="button" accessibilityLabel={`Square ${r + 1}, ${c + 1}${o ? `, taken by player ${o}` : ''}`} onPress={() => { if (!done && !o) { setSel(i); setText(''); } }} style={{ flex: 2, minHeight: 84, borderRadius: 12, alignItems: 'center', justifyContent: 'center', padding: 4, borderWidth: 1.5, borderColor: win ? colors.gold : sel === i ? colors.accent : colors.line, backgroundColor: o ? alpha(o === 1 ? colors.accent : colors.good, 0.25) : colors.card }}>
-              {o ? <><Text style={{ color: colors.fg, fontSize: 24, fontWeight: '800' }}>{o === 1 ? 'X' : 'O'}</Text><Text style={{ color: colors.muted, fontSize: 10 }} numberOfLines={1}>{nameOfIdx(g.who[i])}</Text></> : null}</Pressable>); })}
+          <View style={{ width: 78, justifyContent: 'center' }}>{cl(g.rows[r])}</View>
+          {[0, 1, 2].map((c) => { const i = r * 3 + c; const o = g.own[i]; const tone = o === 1 ? colors.accent : colors.good;
+            return (<Pressable key={c} accessibilityRole="button" accessibilityLabel={`Square ${r + 1}, ${c + 1}${o ? `, taken by player ${o}` : ''}`} onPress={() => { if (!o) { setSel(i); setText(''); } }} style={{ flex: 1, aspectRatio: 1, borderRadius: 16, alignItems: 'center', justifyContent: 'center', padding: 4, borderWidth: 1.5, borderColor: sel === i ? colors.fg : o ? alpha(tone, 0.7) : colors.line, backgroundColor: o ? alpha(tone, 0.22) : colors.card }}>
+              {o ? <><Text style={{ color: tone, fontFamily: 'display', fontSize: 34, fontWeight: '800' }}>{o === 1 ? 'X' : 'O'}</Text><Text style={{ color: colors.onSoft, fontSize: 10 }} numberOfLines={1}>{nameOfIdx(g.who[i])}</Text></> : <Ionicons name="add" size={22} color={alpha(colors.fg, 0.25)} />}</Pressable>); })}
         </View>))}
       </View>
-      {sel !== null && !done ? (<Card><Eyebrow>{`${g.rows[Math.floor(sel / 3)].label} and ${g.cols[sel % 3].label}`}</Eyebrow>
-        <TextInput value={text} onChangeText={setText} autoFocus autoCorrect={false} placeholder="Type a driver's name" placeholderTextColor={colors.muted} accessibilityLabel="Driver name" style={{ color: colors.fg, fontSize: 16, padding: 12, borderRadius: 12, backgroundColor: colors.bg, marginTop: 6 }} />
-        {hits.map((h) => (<Pressable key={h.idx} accessibilityRole="button" onPress={() => choose(h)} style={{ paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.line }}><Text style={{ color: colors.fg, fontSize: 15 }}>{`${h.name}  ·  ${h.starts} starts`}</Text></Pressable>))}</Card>) : null}
-      {g.msg ? <Note>{g.msg}</Note> : null}
-      {done ? <ShareResult text={`F1 Companion tic-tac-toe grid: ${winner ? `Player ${winner} won` : 'a draw'}`}><Card><Eyebrow>Tic-tac-toe grid</Eyebrow><Text style={{ color: colors.fg, fontSize: 28, fontWeight: '800' }}>{winner ? `Player ${winner} wins` : 'A draw'}</Text></Card></ShareResult> : null}
-      {done ? <Btn tone="solid" onPress={() => { setSel(null); setText(''); restart(); }}>New grid</Btn> : null}
+      {sel !== null ? (<View style={{ padding: 14, borderRadius: 18, backgroundColor: colors.card, borderWidth: 1, borderColor: alpha(catOf('two').color, 0.5), gap: 6 }}><Text style={{ color: catOf('two').color, fontFamily: 'label', fontSize: 11, letterSpacing: 2 }}>{`${g.rows[Math.floor(sel / 3)].label}  +  ${g.cols[sel % 3].label}`.toUpperCase()}</Text>
+        <TextInput value={text} onChangeText={setText} autoFocus autoCorrect={false} placeholder="Type a driver's name" placeholderTextColor={colors.muted} accessibilityLabel="Driver name" style={{ color: colors.fg, fontSize: 16, padding: 12, borderRadius: 12, backgroundColor: colors.bg }} />
+        {hits.map((h) => (<Pressable key={h.idx} accessibilityRole="button" onPress={() => choose(h)} style={{ paddingVertical: 10, flexDirection: 'row', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: colors.line }}><Text style={{ color: colors.fg, fontSize: 15, fontWeight: '700' }}>{h.name}</Text><Text style={{ color: colors.muted, fontSize: 13 }}>{`${h.starts} starts`}</Text></Pressable>))}</View>) : null}
+      {g.msg ? <Feedback ok={/fits\./.test(g.msg) && !/not fit/.test(g.msg)}>{g.msg}</Feedback> : null}
     </Screen>);
 }

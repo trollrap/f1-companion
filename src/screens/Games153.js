@@ -6,18 +6,19 @@ import { Btn } from '../components/FunBits';
 import Reveal from '../components/Reveal';
 import ShareResult from '../components/ShareResult';
 import { colors, alpha } from '../theme';
+import { GameHeader, Lives, Prompt, Answer, Feedback, ResultPanel, TurnBanner, Hint } from '../components/GameKit';
+import { Ionicons } from '@expo/vector-icons';
 import { norm } from '../lib/names';
 import * as hap from '../lib/haptics';
 import { kvGet, kvSet, rngOf, seedOf } from '../lib/kv';
 import { useGameSave, useLeaveGuard, useTimers, useRun } from '../lib/gameSave';
 import { ladderQ } from '../lib/trivia';
+import { catOf } from '../lib/gameCatalog';
 import { teammateQ, bingoCard, bingoSearch, bingoCheck, nameOfIdx } from '../api/history';
 
 const Loading = () => <Screen header={false}><Note>Loading…</Note></Screen>;
-const Opt = ({ text, state, onPress, i }) => (
-  <Reveal index={i}><Pressable accessibilityRole="button" onPress={onPress} style={{ padding: 16, borderRadius: 14, borderWidth: 1.5, borderColor: state === 'right' ? colors.good : state === 'wrong' ? colors.accent : colors.line, backgroundColor: colors.card }}>
-    <Text style={{ color: colors.fg, fontSize: 16, fontWeight: '600' }}>{text}</Text></Pressable></Reveal>);
-const hearts = (n) => `${'❤️'.repeat(Math.max(0, n))}${'🖤'.repeat(Math.max(0, 3 - n))}`;
+const LET = ['A', 'B', 'C', 'D'];
+const Opt = ({ text, state, onPress, i }) => <Answer letter={LET[i]} label={text} state={state} onPress={onPress} disabled={state === 'locked'} />;
 
 // ---------- Pass-and-play duel: two players share one phone and take turns; three lives each ----------
 const duelQ = (seed, t) => { for (let k = 0; k < 4; k++) { const q = ladderQ(rngOf(seedOf(`duel${seed}:${t}:${k}`)), Math.floor(t / 4)); if (q) return q; } return null; };
@@ -33,23 +34,27 @@ export function DuelScreen() {
     const txt = `F1 Companion pass-and-play duel: Player ${win + 1} won, ${score[win]} to ${score[1 - win]}.`;
     return (
       <Screen header={false}>
-        <ShareResult text={txt}><Card><Eyebrow>Pass-and-play duel</Eyebrow><Text style={{ color: colors.fg, fontSize: 32, fontWeight: '800' }}>{`Player ${win + 1} wins`}</Text><Note>{`${score[0]} correct for Player 1, ${score[1]} for Player 2.`}</Note></Card></ShareResult>
-        <Btn tone="solid" onPress={() => { setPick(null); setShown(false); restart(); }}>Rematch</Btn>
+        <ShareResult text={txt}><ResultPanel cat="two" kicker="Pass-and-play duel" big={`Player ${win + 1} wins`} sub={`${score[0]} correct for Player 1, ${score[1]} for Player 2`} icon="trophy" /></ShareResult>
+        <Btn tone="solid" icon="refresh" onPress={() => { setPick(null); setShown(false); restart(); }}>Rematch</Btn>
       </Screen>);
   }
+  const hdr = <GameHeader cat="two" icon="people-circle" title="Pass-and-play duel" hint="Two players share one phone and take turns. A wrong answer costs a life. Lose all three and you lose. Questions get harder as the game goes on." stats={[['P1 score', score[0]], ['P2 score', score[1]], ['Turn', t + 1]]} />;
+  const livesRow = (<View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 6 }}><View style={{ alignItems: 'flex-start', gap: 2 }}><Text style={{ color: colors.muted, fontSize: 11 }}>PLAYER 1</Text><Lives n={lives[0]} /></View><View style={{ alignItems: 'flex-end', gap: 2 }}><Text style={{ color: colors.muted, fontSize: 11 }}>PLAYER 2</Text><Lives n={lives[1]} /></View></View>);
   if (!shown) return (
     <Screen header={false}>
-      <Card><Eyebrow>Pass-and-play duel</Eyebrow><Text style={{ color: colors.fg, fontSize: 28, fontWeight: '800', marginTop: 6 }}>{`Player ${who + 1}, your turn`}</Text>
-        <Note>{`Player 1 ${hearts(lives[0])} ${score[0]}   ·   Player 2 ${hearts(lives[1])} ${score[1]}`}</Note><Note>Hand over the phone, then tap. Lose all three lives and you lose.</Note></Card>
-      <Btn tone="solid" onPress={() => setShown(true)}>{`I'm Player ${who + 1}`}</Btn>
+      {hdr}{livesRow}
+      <TurnBanner who={who + 1} label={`Player ${who + 1}, your turn`} />
+      <Hint>Hand over the phone, then tap. Nobody peeks.</Hint>
+      <Btn tone="solid" icon="play" onPress={() => setShown(true)}>{`I'm Player ${who + 1}`}</Btn>
     </Screen>);
   const choose = (k) => { if (pick !== null) return; setPick(k); const ok = k === q.answer; ok ? hap.good() : hap.bad();
     later(() => { setPick(null); setShown(false); const l = [...lives], s = [...score]; if (ok) s[who]++; else l[who]--; const done = l[who] <= 0; upd({ t: t + 1, lives: l, score: s, over: done }); if (done) kvSet('duel:last', { w: 1 - who, s }); }, 1700); };
   return (
     <Screen header={false}>
-      <Card><Eyebrow>{`Player ${who + 1} · ${q.kind}`}</Eyebrow><Text style={{ color: colors.fg, fontSize: 17, fontWeight: '600', marginTop: 6 }}>{q.q}</Text><Note>{`${hearts(lives[who])}   Score ${score[who]}`}</Note></Card>
-      {q.options.map((o, k) => <Opt key={`${t}${k}`} i={k} text={o} onPress={() => choose(k)} state={pick === null ? '' : k === q.answer ? 'right' : pick === k ? 'wrong' : ''} />)}
-      {pick !== null ? <Note>{`${pick === q.answer ? 'Correct. ' : 'Not quite. '}${q.why}`}</Note> : null}
+      {hdr}{livesRow}
+      <Prompt kicker={`Player ${who + 1} · ${q.kind}`} color={who ? colors.good : colors.accent}>{q.q}</Prompt>
+      {q.options.map((o, k) => <Opt key={`${t}${k}`} i={k} text={o} onPress={() => choose(k)} state={pick === null ? '' : k === q.answer ? 'right' : pick === k ? 'wrong' : 'locked'} />)}
+      {pick !== null ? <Feedback ok={pick === q.answer}>{q.why}</Feedback> : null}
     </Screen>);
 }
 
@@ -64,17 +69,18 @@ export function TeamMateGameScreen() {
   if (rounds.length < 5) return <Screen header={false}><Note>The built-in history could not build team-mate questions.</Note></Screen>;
   if (done) return (
     <Screen header={false}>
-      <ShareResult text={`F1 Companion team-mate quiz: ${score}/${rounds.length}\n${'🟩'.repeat(score)}${'⬛'.repeat(rounds.length - score)}`}><Card><Eyebrow>Who was the team-mate</Eyebrow><Text style={{ color: colors.fg, fontSize: 32, fontWeight: '800' }}>{`${score} / ${rounds.length}`}</Text><Note>{`Best ${Math.max(best, score)}.`}</Note></Card></ShareResult>
-      <Btn tone="solid" onPress={() => { setPick(null); run.again(); }}>Play again</Btn>
+      <ShareResult text={`F1 Companion team-mate quiz: ${score}/${rounds.length}\n${'🟩'.repeat(score)}${'⬛'.repeat(rounds.length - score)}`}><ResultPanel cat="quiz" kicker="Who was the team-mate" big={`${score} / ${rounds.length}`} sub={`Best ${Math.max(best, score)}`} best={score > 0 && score >= best} /></ShareResult>
+      <Btn tone="solid" icon="refresh" onPress={() => { setPick(null); run.again(); }}>Play again</Btn>
     </Screen>);
   const q = rounds[i];
   const choose = (k) => { if (pick !== null) return; setPick(k); const ok = k === q.answer; ok ? hap.good() : hap.bad(); const sc = score + (ok ? 1 : 0); if (ok) run.setScore(sc);
     later(() => { setPick(null); run.setI((x) => x + 1); if (i + 1 >= rounds.length) { run.finish(); if (sc > best) { setBest(sc); kvSet('mate:best', sc); } } }, 1500); };
   return (
     <Screen header={false}>
-      <Card><Eyebrow>{`Who was the team-mate · ${i + 1} of ${rounds.length}`}</Eyebrow><Text style={{ color: colors.fg, fontSize: 18, fontWeight: '700', marginTop: 6 }}>{q.q}</Text><Note>{`Seasons from 1970. Score ${score}. Best ${best}.`}</Note></Card>
-      {q.options.map((o, k) => <Opt key={`${i}${k}`} i={k} text={o} onPress={() => choose(k)} state={pick === null ? '' : k === q.answer ? 'right' : pick === k ? 'wrong' : ''} />)}
-      {pick !== null ? <Note>{q.why}</Note> : null}
+      <GameHeader cat="quiz" icon="people" title="Team-mate quiz" hint="Name the driver who shared the car for a season. Seasons from 1970. Ten rounds, saved as you go." stats={[['Round', `${i + 1}/${rounds.length}`], ['Score', score], ['Best', best]]} />
+      <Prompt kicker={`Round ${i + 1}`}>{q.q}</Prompt>
+      {q.options.map((o, k) => <Opt key={`${i}${k}`} i={k} text={o} onPress={() => choose(k)} state={pick === null ? '' : k === q.answer ? 'right' : pick === k ? 'wrong' : 'locked'} />)}
+      {pick !== null ? <Feedback ok={pick === q.answer}>{q.why}</Feedback> : null}
     </Screen>);
 }
 
@@ -97,8 +103,8 @@ export function CareerBingoScreen() {
     const sc = nGot + lines * 3; const grid = [0, 1, 2].map((r) => [0, 1, 2].map((c) => (got[r * 3 + c] ? '🟩' : '⬛')).join('')).join('\n');
     return (
       <Screen header={false}>
-        <ShareResult text={`F1 Companion career bingo: ${lines ? 'BINGO' : 'no line'}, ${nGot}/9\n${grid}`}><Card><Eyebrow>Career bingo</Eyebrow><Text style={{ color: colors.fg, fontSize: 32, fontWeight: '800' }}>{lines ? 'Bingo!' : 'Out of guesses'}</Text><Note>{`${nGot} of 9 squares, ${lines} line${lines === 1 ? '' : 's'}. Score ${sc}. Best ${Math.max(best, sc)}.`}</Note></Card></ShareResult>
-        <Btn tone="solid" onPress={() => { setSel(null); setText(''); setMsg(''); restart(); }}>New card</Btn>
+        <ShareResult text={`F1 Companion career bingo: ${lines ? 'BINGO' : 'no line'}, ${nGot}/9\n${grid}`}><ResultPanel cat="puzzle" win={!!lines} kicker="Career bingo" big={lines ? 'Bingo!' : 'Out of guesses'} sub={`${nGot} of 9 squares, ${lines} line${lines === 1 ? '' : 's'}. Score ${sc}. Best ${Math.max(best, sc)}.`} best={sc > 0 && sc >= best} /></ShareResult>
+        <Btn tone="solid" icon="refresh" onPress={() => { setSel(null); setText(''); setMsg(''); restart(); }}>New card</Btn>
       </Screen>);
   }
   const pickDriver = (h) => {
@@ -107,21 +113,24 @@ export function CareerBingoScreen() {
     else { hap.bad(); const m = miss + 1; upd({ miss: m, over: m >= MAX_MISS }); if (m >= MAX_MISS) finish(nGot, lines); setMsg(`${h.name} does not fit "${cells[sel].label}".`); }
   };
   const nameOf = (idx) => { try { return nameOfIdx(idx); } catch { return ''; } };
+  const pc = catOf('puzzle').color;
   return (
     <Screen header={false}>
-      <Card><Eyebrow>Career bingo</Eyebrow><Note>{`Tap a square, then name a driver who fits it. Each driver can be used once. Three in a line wins. Misses left: ${MAX_MISS - miss}. Best ${best}.`}</Note></Card>
+      <GameHeader cat="puzzle" icon="apps" title="Career bingo" hint="Tap a square, then name a driver who fits it. Each driver can be used once. Three in a line wins. Six misses and it is over." stats={[['Squares', `${nGot}/9`], ['Lines', lines], ['Misses left', MAX_MISS - miss]]} />
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
         {cells.map((c, k) => (
-          <Pressable key={k} accessibilityRole="button" accessibilityLabel={`${c.label}${got[k] ? `, ${nameOf(got[k])}` : ''}`} onPress={() => { if (!got[k]) { setSel(k); setText(''); setMsg(''); } }} style={{ width: '31.5%', minHeight: 96, padding: 8, borderRadius: 14, borderWidth: 1.5, borderColor: sel === k ? colors.accent : got[k] ? colors.good : colors.line, backgroundColor: got[k] ? alpha(colors.good, 0.18) : colors.card, justifyContent: 'center' }}>
-            <Text style={{ color: colors.fg, fontSize: 12, fontWeight: '700', textAlign: 'center' }}>{c.label}</Text>
-            {got[k] ? <Text style={{ color: colors.good, fontSize: 12, textAlign: 'center', marginTop: 4 }} numberOfLines={2}>{nameOf(got[k])}</Text> : null}
+          <Pressable key={k} accessibilityRole="button" accessibilityLabel={`${c.label}${got[k] ? `, ${nameOf(got[k])}` : ''}`} onPress={() => { if (!got[k]) { setSel(k); setText(''); setMsg(''); } }} style={{ width: '31.5%', minHeight: 100, padding: 8, borderRadius: 16, borderWidth: 1.5, borderColor: sel === k ? colors.fg : got[k] ? colors.good : alpha(pc, 0.4), backgroundColor: got[k] ? alpha(colors.good, 0.2) : alpha(pc, 0.12), justifyContent: 'center', alignItems: 'center', gap: 4 }}>
+            {got[k] ? <Ionicons name="checkmark-circle" size={20} color={colors.good} /> : <Ionicons name="help-circle-outline" size={20} color={alpha(pc, 0.8)} />}
+            <Text style={{ color: colors.fg, fontSize: 12, fontWeight: '800', textAlign: 'center' }}>{c.label}</Text>
+            {got[k] ? <Text style={{ color: colors.good, fontSize: 12, textAlign: 'center' }} numberOfLines={2}>{nameOf(got[k])}</Text> : null}
           </Pressable>))}
       </View>
       {sel !== null ? (
-        <Card><Eyebrow>{cells[sel].label}</Eyebrow>
-          <TextInput value={text} onChangeText={setText} autoFocus placeholder="Type a driver's name" placeholderTextColor={colors.muted} autoCorrect={false} accessibilityLabel="Driver name" style={{ color: colors.fg, fontSize: 16, padding: 12, borderRadius: 12, backgroundColor: colors.bg, marginTop: 6 }} />
-          {hits.map((h) => (<Pressable key={h.idx} accessibilityRole="button" onPress={() => pickDriver(h)} style={{ paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.line }}><Text style={{ color: colors.fg, fontSize: 15 }}>{`${h.name}  ·  ${h.starts} starts`}</Text></Pressable>))}
-        </Card>) : null}
-      {msg ? <Note>{msg}</Note> : null}
+        <View style={{ padding: 14, borderRadius: 18, backgroundColor: colors.card, borderWidth: 1, borderColor: alpha(pc, 0.5), gap: 6 }}>
+          <Text style={{ color: pc, fontFamily: 'label', fontSize: 11, letterSpacing: 2 }}>{cells[sel].label.toUpperCase()}</Text>
+          <TextInput value={text} onChangeText={setText} autoFocus placeholder="Type a driver's name" placeholderTextColor={colors.muted} autoCorrect={false} accessibilityLabel="Driver name" style={{ color: colors.fg, fontSize: 16, padding: 12, borderRadius: 12, backgroundColor: colors.bg }} />
+          {hits.map((h) => (<Pressable key={h.idx} accessibilityRole="button" onPress={() => pickDriver(h)} style={{ paddingVertical: 10, flexDirection: 'row', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: colors.line }}><Text style={{ color: colors.fg, fontSize: 15, fontWeight: '700' }}>{h.name}</Text><Text style={{ color: colors.muted, fontSize: 13 }}>{`${h.starts} starts`}</Text></Pressable>))}
+        </View>) : null}
+      {msg ? <Feedback ok={msg.endsWith('fits.')}>{msg}</Feedback> : null}
     </Screen>);
 }

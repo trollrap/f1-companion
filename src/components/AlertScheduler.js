@@ -3,7 +3,9 @@ import { AppState } from 'react-native';
 import { useSeason } from '../hooks/useSeason';
 import { alertSessions, currentSeason, events as motoEvents } from '../api/motogp';
 import { usePrefs } from '../hooks/usePrefs';
-import { scheduleSessionAlerts, scheduleBirthdays } from '../lib/notifications';
+import { scheduleSessionAlerts, scheduleBirthdays, notificationsModule } from '../lib/notifications';
+import { navRef } from '../lib/navRef';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFavs } from '../hooks/useFavs';
 import { bdayItems } from '../lib/bdays';
 import { checkResults, syncResultTask } from '../lib/resultAlerts';
@@ -12,6 +14,21 @@ import { checkNews } from '../lib/newsAlerts';
 export default function AlertScheduler() {
   const season = useSeason(); const { prefs } = usePrefs();
   const moto = prefs.opts.sport === 'motogp'; const favs = useFavs();
+  // Tapping a news notification opens the story in the in-app reader (which has a link to the original). Also handles a tap that launched the app from closed.
+  useEffect(() => {
+    const n = notificationsModule(); if (!n) return undefined; let dead = false;
+    const open = (item, tries = 0) => { if (dead) return; if (navRef.isReady()) navRef.navigate('Article', { item }); else if (tries < 25) setTimeout(() => open(item, tries + 1), 400); };
+    const go = async (resp) => {
+      try {
+        const id = resp && resp.notification && resp.notification.request && resp.notification.request.identifier; const d = resp && resp.notification.request.content.data;
+        if (!id || !d || !d.item) return;
+        if ((await AsyncStorage.getItem('lastTapId')) === id) return; await AsyncStorage.setItem('lastTapId', id); open(d.item);
+      } catch {}
+    };
+    try { n.getLastNotificationResponseAsync().then(go).catch(() => {}); } catch {}
+    let sub = null; try { sub = n.addNotificationResponseReceivedListener(go); } catch {}
+    return () => { dead = true; if (sub) sub.remove(); };
+  }, []);
   // Birthdays and first-win anniversaries of favourite drivers (Settings > Notifications). Off by default; turning it off clears them.
   useEffect(() => { try { scheduleBirthdays(prefs.opts.bdays ? bdayItems(favs.drivers) : []).catch(() => {}); } catch {} }, [!!prefs.opts.bdays, JSON.stringify(favs.drivers || [])]);
   useEffect(() => {

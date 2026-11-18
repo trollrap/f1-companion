@@ -3,6 +3,7 @@ import { View } from 'react-native';
 import Svg, { Line, Polyline, Circle, Text as SvgText } from 'react-native-svg';
 import { Text } from '../components/Text';
 import Screen, { Card, Eyebrow, Note } from '../components/Screen';
+import { StatHeader } from '../components/StatRows';
 import Reveal from '../components/Reveal';
 import { Segmented } from '../components/Shared';
 import { colors } from '../theme';
@@ -32,7 +33,7 @@ export function JourneymenScreen() {
   if (!d) return <Missing />;
   return (
     <Screen header={false}>
-      <Card><Eyebrow>Journeymen</Eyebrow><Note>Drivers with 20 or more starts, ranked by how many different teams they raced for. A team that was renamed counts as one team when the history keeps the same id, and as two when it does not.</Note></Card>
+      <StatHeader title="Journeymen" icon="analytics" note="Drivers with 20 or more starts, ranked by how many different teams they raced for. A team that was renamed counts as one team when the history keeps the same id, and as two when it does not." />
       {d.map((o, i) => (
         <Reveal key={o.name} index={Math.min(i, 8)}>
           <Card>
@@ -49,7 +50,7 @@ export function GridAgeScreen() {
   const last = d[d.length - 1]; const first = d[0]; const decades = d.filter((r) => r.year % 10 === 0 || r === last);
   return (
     <Screen header={false}>
-      <Card><Eyebrow>Grid age over time</Eyebrow><Note>Average age of the drivers on the grid, measured at every race and averaged over every start. Drivers with no birth date in the history are left out.</Note></Card>
+      <StatHeader title="Grid age over time" icon="analytics" note="Average age of the drivers on the grid, measured at every race and averaged over every start. Drivers with no birth date in the history are left out." />
       <Card><Eyebrow>Average age by season</Eyebrow><Line1 pts={d.map((r) => ({ y: r.year, v: r.avg }))} unit="" decimals={0} /><Note>{`${first.year}: ${first.avg.toFixed(1)} years. ${last.year}: ${last.avg.toFixed(1)} years.`}</Note></Card>
       {decades.map((r, i) => (
         <Reveal key={r.year} index={Math.min(i, 6)}>
@@ -68,7 +69,7 @@ export function CalendarGrowthScreen() {
   const big = [...d].sort((a, b) => b.races - a.races || b.year - a.year)[0]; const venues = d.filter((r) => r.fresh.length).slice(-12).reverse();
   return (
     <Screen header={false}>
-      <Card><Eyebrow>Calendar growth</Eyebrow><Note>{`Races and countries per season. The busiest season so far had ${big.races} races (${big.year}). "New" lists Grand Prix names seen for the first time, so a renamed race counts as new.`}</Note></Card>
+      <StatHeader title="Calendar growth" icon="analytics" note={`Races and countries per season. The busiest season so far had ${big.races} races (${big.year}). "New" lists Grand Prix names seen for the first time, so a renamed race counts as new.`} />
       <Segmented value={m} items={[['races', 'Races'], ['countries', 'Countries']]} onChange={setM} />
       <Card><Line1 pts={d.map((r) => ({ y: r.year, v: r[m] }))} tint={m === 'races' ? colors.accent : colors.gold} /></Card>
       <Eyebrow>Newest additions</Eyebrow>

@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { View } from 'react-native';
 import { Text } from '../components/Text';
 import Screen, { Card, Eyebrow, Note } from '../components/Screen';
+import { StatHeader, StatRow, StatList } from '../components/StatRows';
 import Dropdown from '../components/Dropdown';
 import ShareCard from '../components/ShareCard';
 import { Segmented } from '../components/Shared';
@@ -17,18 +18,12 @@ export function PassingScreen() {
   const max = Math.max(1, ...rows.map((r) => r.avgMoved));
   return (
     <Screen header={false}>
-      <Card><Eyebrow>Overtaking by circuit</Eyebrow>
+      <StatHeader title="Overtaking by circuit" icon="swap-horizontal" color={colors.good} note="Average places the finishers moved between grid and flag at each Grand Prix." />
+      <Card>
         <View style={{ marginTop: 10, gap: 10 }}><Segmented value={tab} onChange={setTab} items={[['most', 'Most movement'], ['least', 'Processional']]} /><Dropdown value={era} options={ERAS} onChange={setEra} prefix="Era" /></View>
         <Note>The average number of places the finishers moved between grid and flag at each Grand Prix. Pit stops, strategy and first-lap chaos move cars too, so this shows how much the order shuffles, not an exact count of overtakes. Grands Prix with fewer than 40 classified finishers in the era are left out.</Note></Card>
       <ShareCard title={`Most ${tab === 'most' ? 'movement' : 'processional'} Grands Prix, ${ERAS.find((e) => e[0] === era)[1]}`}>
-        <Card>
-          {sorted.map((r, i) => (
-            <View key={r.name} style={{ paddingVertical: 7, borderTopWidth: i ? 1 : 0, borderTopColor: colors.line }}>
-              <View style={{ flexDirection: 'row', gap: 8 }}><Text style={{ width: 24, color: colors.muted, fontWeight: '800' }}>{i + 1}</Text><Text style={{ flex: 1, color: colors.fg, fontWeight: '800', fontSize: 15 }} numberOfLines={1}>{r.name}</Text><Text style={{ color: colors.fg, fontWeight: '900' }}>{r.avgMoved.toFixed(1)}</Text></View>
-              <View style={{ height: 6, borderRadius: 3, backgroundColor: alpha(colors.fg, 0.1), marginTop: 5, overflow: 'hidden' }}><View style={{ width: `${Math.round((r.avgMoved / max) * 100)}%`, height: 6, backgroundColor: colors.accent }} /></View>
-              <Text style={{ color: colors.muted, fontSize: 12, marginTop: 3 }}>{`${r.races} races · pole won ${Math.round(r.poleRate * 100)}% · winners started P${r.avgWinnerStart.toFixed(1)} on average`}</Text>
-            </View>))}
-        </Card>
+        <StatList>{sorted.map((r, i) => <StatRow key={r.name} i={i} medal badge={i + 1} title={r.name} sub={`${r.races} races · pole won ${Math.round(r.poleRate * 100)}% · winners started P${r.avgWinnerStart.toFixed(1)}`} value={r.avgMoved.toFixed(1)} frac={r.avgMoved / max} />)}</StatList>
       </ShareCard>
     </Screen>);
 }

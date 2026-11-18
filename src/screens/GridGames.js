@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { View, Pressable, TextInput } from 'react-native';
 import { Text } from '../components/Text';
 import Screen, { Card, Eyebrow, Note } from '../components/Screen';
+import { GameHeader } from '../components/GameKit';
 import { Btn } from '../components/FunBits';
 import ShareResult from '../components/ShareResult';
 import { colors, alpha } from '../theme';
@@ -53,7 +54,7 @@ export function DriverGridScreen() {
     </Card>);
   return (
     <Screen header={false}>
-      <Card><Eyebrow>Driver grid</Eyebrow><Note>{`Fill each square with a driver who raced for that team and fits the clue. You have 9 guesses and each driver counts once. ${9 - used} left.`}</Note></Card>
+      <GameHeader cat="puzzle" icon="grid" title="Driver grid" hint={`Fill each square with a driver who raced for that team and fits the clue. You have 9 guesses and each driver counts once. ${9 - used} left.`} />
       {over ? <ShareResult text={txt}>{board}</ShareResult> : board}
       {over ? (<><Note>{`${filled} of 9 squares filled.`}</Note><Btn tone="solid" onPress={() => { setSel(null); setQ(''); setMsg(''); restart(); }}>New grid</Btn></>) : (
         <>

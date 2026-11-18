@@ -5,6 +5,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
 import { Text } from '../components/Text';
 import Screen, { Card, Eyebrow, Note } from '../components/Screen';
+import { StatHeader } from '../components/StatRows';
 import { Btn } from '../components/FunBits';
 import Grad from '../components/Grad';
 import ShareCard from '../components/ShareCard';
@@ -34,7 +35,7 @@ export function PosterScreen() {
   const text = `${info.name}: ${pick.map((k) => `${STAT_DEFS[k][1](c, info.driverId)} ${STAT_DEFS[k][0].toLowerCase()}`).join(', ')}. F1 Companion`;
   return (
     <Screen header={false}>
-      <Card><Eyebrow>Poster maker</Eyebrow><Note>Pick any driver from the history, three stats and a colour, then share the poster as a picture.</Note></Card>
+      <StatHeader title="Poster maker" icon="sparkles" note="Pick any driver from the history, three stats and a colour, then share the poster as a picture." />
       <TextInput value={q} onChangeText={setQ} placeholder="Search a driver" placeholderTextColor={colors.muted} accessibilityLabel="Search a driver" style={{ color: colors.fg, fontSize: 16, padding: 12, borderRadius: 12, backgroundColor: colors.card }} />
       {sugg.map((d) => (<Pressable key={d.driverId} accessibilityRole="button" onPress={() => { setId(d.driverId); setQ(''); hap.tap(); }} style={{ paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.line }}><Text style={{ color: colors.fg }}>{d.name}</Text></Pressable>))}
       <ShareCard title={text}>
@@ -94,7 +95,7 @@ export function FreshnessScreen() {
   if (!rows) return <Screen header={false}><Note>Loading…</Note></Screen>;
   return (
     <Screen header={false}>
-      <Card><Eyebrow>Data freshness</Eyebrow><Note>The app keeps a saved copy of everything it downloads, and refreshes it in the background when you open a screen. This shows how recent each saved copy is. Past seasons come from the built-in history and never change.</Note></Card>
+      <StatHeader title="Data freshness" icon="sparkles" note="The app keeps a saved copy of everything it downloads, and refreshes it in the background when you open a screen. This shows how recent each saved copy is. Past seasons come from the built-in history and never change." />
       {SRC.map(([g, label]) => { const r = rows[g]; return (
         <Card key={g}>
           <Text style={{ color: colors.fg, fontSize: 16, fontWeight: '700' }}>{label}</Text>

@@ -311,3 +311,33 @@ export async function gridData(year) {
     results: rr.map(({ race, r }) => ({ round: Number(race.round), race: race.raceName, driverId: r.Driver.driverId, grid: Number(r.grid) })),
   };
 }
+
+// Lap by lap running order of one race. Jolpica lists every lap time with the position held, 100 rows a page, so a race takes about a dozen pages.
+// Returns { laps, cars: [{ id, code, name, teamId, grid, finish, pos: [position after lap 1, 2, ...] }] }. Positions before a car's first or after its last lap are null.
+export async function raceLaps(year, round) {
+  const res = await sessionResults(year, round, 'results'); if (!res || !res.length) return null;
+  const rows = await pageAll(`/${year}/${round}/laps.json`, (d) => (d.RaceTable.Races[0] ? d.RaceTable.Races[0].Laps : []), ttlFor(year, HOUR), 20);
+  const by = {}; let n = 0;
+  rows.forEach((l) => { const k = Number(l.number); n = Math.max(n, k); (by[k] = by[k] || []).push(...l.Timings); });
+  if (!n) return null;
+  const cars = res.map((r) => ({ id: r.driverId, code: r.code || (r.last || '').slice(0, 3).toUpperCase(), name: r.driver, teamId: r.teamId, grid: r.grid > 0 ? r.grid : res.length, finish: r.position, status: r.status, pos: Array(n).fill(null) }));
+  const idx = Object.fromEntries(cars.map((c, i) => [c.id, i]));
+  Object.keys(by).forEach((k) => by[k].forEach((t) => { const i = idx[t.driverId]; if (i !== undefined) cars[i].pos[Number(k) - 1] = Number(t.position); }));
+  return { laps: n, cars };
+}
+
+// Team-mate battles for a season: for every team, the two drivers who raced most for it, and who was ahead in qualifying and in the race at each round.
+// Rounds where either driver did not take part in a session are left out of that session's count. Qualifying comes from Jolpica (not in the offline history).
+export async function teamBattles(year) {
+  const sch = await jolpicaSchedule(year); const done = sch.filter((r) => new Date(`${r.date}T23:59:59Z`) < new Date());
+  const per = await Promise.all(done.map(async (r) => { const [q, x] = await Promise.all([sessionResults(year, r.round, 'qualifying').catch(() => null), sessionResults(year, r.round, 'results').catch(() => null)]); return { round: r.round, name: r.raceName.replace(' Grand Prix', ''), q, x }; }));
+  const teams = {};
+  per.forEach((p) => (p.x || []).forEach((r) => { const t = (teams[r.teamId] ||= { teamId: r.teamId, name: r.team, n: {} }); t.n[r.driverId] = t.n[r.driverId] || { id: r.driverId, name: r.driver, last: r.last, n: 0 }; t.n[r.driverId].n++; }));
+  const out = Object.values(teams).map((t) => {
+    const [a, b] = Object.values(t.n).sort((m, n) => n.n - m.n).slice(0, 2); if (!a || !b) return null;
+    const cmp = (list, key) => per.map((p) => { const rows = p[list]; if (!rows) return 0; const ra = rows.find((r) => r.driverId === a.id), rb = rows.find((r) => r.driverId === b.id); if (!ra || !rb) return 0; const pa = Number(ra[key]), pb = Number(rb[key]); if (!(pa > 0) || !(pb > 0) || pa === pb) return 0; return pa < pb ? 1 : -1; });
+    const q = cmp('q', 'position'), r = cmp('x', 'position'); const sum = (l, v) => l.filter((x) => x === v).length;
+    return { teamId: t.teamId, name: t.name, a, b, q, r, qa: sum(q, 1), qb: sum(q, -1), ra: sum(r, 1), rb: sum(r, -1) };
+  }).filter(Boolean).sort((m, n) => (n.qa + n.qb + n.ra + n.rb) - (m.qa + m.qb + m.ra + m.rb) || m.name.localeCompare(n.name));
+  return { rounds: per.map((p) => ({ round: p.round, name: p.name })), teams: out };
+}

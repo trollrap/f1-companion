@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { Share, Platform } from 'react-native';
 import Constants from 'expo-constants';
 import { Text } from '../components/Text';
-import Screen, { Card, Eyebrow, Note } from '../components/Screen';
+import Screen, { Card } from '../components/Screen';
+import { StatHeader } from '../components/StatRows';
 import { Btn } from '../components/FunBits';
 import { colors } from '../theme';
 import { readCrashes } from '../lib/crashlog';
@@ -34,7 +35,7 @@ export default function ReportScreen() {
   useEffect(() => { build().then(setTxt).catch((e) => setTxt(`Could not build the report: ${(e && e.message) || e}`)); }, []);
   return (
     <Screen header={false}>
-      <Card><Eyebrow>Send a report</Eyebrow><Note>Bundles the version, alert and news checks and the crash log into one text you can share. It holds no personal data beyond your alert settings.</Note></Card>
+      <StatHeader title="Send a report" icon="mail" note="Bundles the version, alert and news checks and the crash log into one text you can share. It holds no personal data beyond your alert settings." />
       {txt ? <Btn tone="solid" icon="share-outline" onPress={() => { Share.share({ message: txt }).catch(() => {}); }}>Share the report</Btn> : null}
       <Card><Text style={{ color: colors.fg, fontSize: 12 }} selectable>{txt || 'Collecting…'}</Text></Card>
     </Screen>);

@@ -2,23 +2,13 @@ import React, { useMemo, useState } from 'react';
 import { View } from 'react-native';
 import { Text } from '../components/Text';
 import Screen, { Card, Eyebrow, Note } from '../components/Screen';
-import Reveal from '../components/Reveal';
+import { StatHeader, StatRow, StatList } from '../components/StatRows';
 import { Segmented } from '../components/Shared';
 import { colors } from '../theme';
 import { winDroughts, winless, placesGained } from '../api/history';
 
 function Rows({ rows, big, sub, max, tint }) {
-  return rows.map((o, i) => (
-    <Reveal key={`${o.name}${i}`} index={Math.min(i, 8)}>
-      <Card>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' }}>
-          <Text style={{ color: colors.fg, fontSize: 17, fontWeight: '700', flex: 1 }} numberOfLines={1}>{`${i + 1}. ${o.name}`}</Text>
-          <Text style={{ color: colors.fg, fontSize: 22, fontWeight: '800' }}>{big(o)}</Text>
-        </View>
-        {max ? <View style={{ height: 5, borderRadius: 3, backgroundColor: colors.line, marginTop: 6, overflow: 'hidden' }}><View style={{ width: `${Math.max(2, Math.min(100, (Math.abs(max(o)) / (rows.maxV || 1)) * 100))}%`, height: 5, backgroundColor: tint || colors.accent }} /></View> : null}
-        <Text style={{ color: colors.muted, fontSize: 13, marginTop: 4 }}>{sub(o)}</Text>
-      </Card>
-    </Reveal>));
+  return <StatList>{rows.map((o, i) => <StatRow key={`${o.name}${i}`} i={i} medal badge={i + 1} title={o.name} sub={sub(o)} value={big(o)} frac={max ? Math.abs(max(o)) / (rows.maxV || 1) : undefined} color={tint || colors.accent} />)}</StatList>;
 }
 function Wrap({ data, tabs, intro }) {
   const [t, setT] = useState(tabs[0][0]);
@@ -26,7 +16,7 @@ function Wrap({ data, tabs, intro }) {
   const tab = tabs.find((x) => x[0] === t) || tabs[0]; const rows = data[t] || []; rows.maxV = Math.max(1, ...rows.map((r) => Math.abs((tab[3] || ((x) => x.n))(r))));
   return (
     <Screen header={false}>
-      <Card><Eyebrow>{intro[0]}</Eyebrow><Note>{intro[1]}</Note></Card>
+      <StatHeader title={intro[0]} icon={intro[2] || 'podium'} note={intro[1]} />
       <Segmented value={t} items={tabs.map((x) => [x[0], x[1]])} onChange={setT} />
       {tab[4] ? <Text style={{ color: colors.muted, fontSize: 13 }}>{tab[4]}</Text> : null}
       <Rows rows={rows} big={tab[2][0]} sub={tab[2][1]} max={tab[3] || ((x) => x.n)} tint={tab[5]} />

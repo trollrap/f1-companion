@@ -788,7 +788,7 @@ export function draftRace(r) {
     const top = rows.slice(0, 6), mid = rows.slice(6, 12), low = all.filter((x) => !top.includes(x) && !mid.includes(x));
     const pick = [...take(top, 4), ...take(mid, 4), ...take(low, 4)]; if (pick.length < 12) continue;
     for (let i = pick.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [pick[i], pick[j]] = [pick[j], pick[i]]; }
-    return { race: `${rc[1]} ${y}`, pool: pick.map((x) => ({ idx: x[0], name: nameOfIdx(x[0]), team: H.t[x[1]][1], pts: Number(x[5]) || 0, pos: /^\d+$/.test(String(x[4])) ? Number(x[4]) : 0, grid: x[2] })) };
+    return { race: `${rc[1]} ${y}`, pool: pick.map((x) => ({ idx: x[0], name: nameOfIdx(x[0]), team: H.t[x[1]][1], tid: H.t[x[1]][0], pts: Number(x[5]) || 0, pos: /^\d+$/.test(String(x[4])) ? Number(x[4]) : 0, grid: x[2] })) };
   }
   return null;
 }
@@ -803,3 +803,18 @@ export function gridDuelCard(r) {
   return null;
 }
 export const gridFits = (a, b, idx) => { const f = driverFacts().find((x) => x.idx === idx); return !!f && bingoFits(a, f) && bingoFits(b, f); };
+
+// Season heatmap: one row per driver (best championship result first), one cell per round. pos is the classified finish (null when not classified),
+// out is true when the car did not finish (retired, disqualified, did not start), grid is the starting slot.
+export function seasonHeat(year) {
+  load(); const rs = H.r[String(year)]; if (!rs) return null; const by = {};
+  rs.forEach((rc, ri) => rc[4].forEach((r) => {
+    const o = (by[r[0]] ||= { idx: r[0], cells: Array(rs.length).fill(null), pts: 0, team: r[1] });
+    const num = Number(r[4]); const fin = Number.isFinite(num) && num > 0; o.team = r[1]; o.pts += r[5] || 0;
+    o.cells[ri] = { pos: fin ? num : null, out: !fin, grid: r[2] > 0 ? r[2] : null, pts: r[5] || 0, status: r[6] || '', fast: r[7] === 1 };
+  }));
+  const rank = {}, tot = {}; (H.ds[String(year)] || []).forEach((x) => { rank[x[0]] = x[1]; tot[x[0]] = x[2]; }); // official championship position and points (sprints included)
+  const rk = (o) => (rank[o.idx] !== undefined ? rank[o.idx] : 999);
+  const drivers = Object.values(by).sort((a, b) => rk(a) - rk(b) || b.pts - a.pts || a.idx - b.idx).map((o) => ({ ...o, pts: tot[o.idx] !== undefined ? tot[o.idx] : o.pts, name: `${H.d[o.idx][1]} ${H.d[o.idx][2]}`, code: H.d[o.idx][6] || H.d[o.idx][2].slice(0, 3).toUpperCase(), teamId: H.t[o.team][0], teamName: H.t[o.team][1] }));
+  return { rounds: rs.map((rc) => ({ round: rc[0], name: rc[1].replace(' Grand Prix', ''), country: rc[2] })), drivers };
+}

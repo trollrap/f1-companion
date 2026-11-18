@@ -3,6 +3,7 @@ import { View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Text } from '../components/Text';
 import Screen, { Card, Eyebrow, Note } from '../components/Screen';
+import { StatHeader } from '../components/StatRows';
 import { Btn } from '../components/FunBits';
 import Reveal from '../components/Reveal';
 import { colors } from '../theme';
@@ -15,7 +16,7 @@ export default function AlertsInboxScreen() {
   useFocusEffect(load);
   return (
     <Screen header={false}>
-      <Card><Eyebrow>Alerts inbox</Eyebrow><Note>What the app sent you recently, and what is queued. Result and news alerts are logged when they are shown. Session reminders are handed to Android in advance, so they appear under "Coming up".</Note></Card>
+      <StatHeader title="Alerts inbox" icon="notifications" note={`What the app sent you recently, and what is queued. Result and news alerts are logged when they are shown. Session reminders are handed to Android in advance, so they appear under "Coming up".`} />
       <Eyebrow>Sent</Eyebrow>
       {log && !log.length ? <Note>Nothing sent yet. If you expected news or result alerts, open Settings > News alerts to see what the checks did.</Note> : null}
       {(log || []).map((x, i) => (

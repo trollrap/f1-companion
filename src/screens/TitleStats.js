@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { View } from 'react-native';
 import { Text } from '../components/Text';
 import Screen, { Card, Eyebrow, Note } from '../components/Screen';
+import { StatHeader } from '../components/StatRows';
 import Reveal from '../components/Reveal';
 import { Segmented } from '../components/Shared';
 import { colors, alpha } from '../theme';
@@ -20,7 +21,7 @@ export function GridOddsScreen() {
   const top = Math.max(0.01, ...slots.map(val));
   return (
     <Screen header={false}>
-      <Card><Eyebrow>Win odds by grid slot</Eyebrow><Note>How often a start position turned into a win or a podium. Counted from every race in the built-in history. Slots with fewer than 30 starts are hidden.</Note></Card>
+      <StatHeader title="Win odds by grid slot" icon="trophy" note="How often a start position turned into a win or a podium. Counted from every race in the built-in history. Slots with fewer than 30 starts are hidden." />
       <Segmented value={String(k)} items={d.map((e, i) => [String(i), e.label.replace(' to ', '-')])} onChange={(v) => setK(Number(v))} />
       <Segmented value={m} items={[['wins', 'Win'], ['pod', 'Podium']]} onChange={setM} />
       {slots.map((s, i) => (
@@ -55,7 +56,7 @@ export function LineupScreen() {
   const notes = { strongest: 'The two best scorers of a team, as a share of all points scored that season. A share makes different points systems comparable.', matched: 'Team-mates who finished closest on points. Teams with at least 8% of the season total.', lopsided: 'One driver scored far more than the other. Teams with at least 5% of the season total.', weakest: 'Smallest share of the season for a team\'s top two. Includes tiny teams in big grids.' };
   return (
     <Screen header={false}>
-      <Card><Eyebrow>Line-up strength</Eyebrow><Note>Each team's two top scorers of a season. Race points only. Sprint points and any dropped scores are not in these totals, so very old seasons may differ a little from the official tables.</Note></Card>
+      <StatHeader title="Line-up strength" icon="trophy" note="Each team's two top scorers of a season. Race points only. Sprint points and any dropped scores are not in these totals, so very old seasons may differ a little from the official tables." />
       <Segmented value={t} items={[['strongest', 'Strongest'], ['matched', 'Closest'], ['lopsided', 'Lopsided'], ['weakest', 'Weakest']]} onChange={setT} />
       <Text style={{ color: colors.muted, fontSize: 13 }}>{notes[t]}</Text>
       {d[t].map((o, i) => <Pair key={`${t}${o.year}${o.team}`} o={o} i={i} mode={t === 'lopsided' ? 'gap' : t === 'matched' ? 'close' : 'share'} />)}
@@ -84,7 +85,7 @@ export function TitleHistoryScreen() {
   const notes = { rows: 'Every drivers\' title, newest first. Clinch rounds are worked out only for 1991 to 2020 (a fixed scoring system, no sprints). Other years show the margin only.', closest: 'Smallest final margin as a share of the champion\'s points. Points systems differ, so the share is what compares.', biggest: 'Biggest final margin as a share of the champion\'s points.', early: '1991 to 2020: titles decided with the most races still to run. Maths assumes the best case for the chaser every round.', fewWins: 'Champions with the fewest wins in the year (seasons of 8 or more rounds).' };
   return (
     <Screen header={false}>
-      <Card><Eyebrow>Title history</Eyebrow><Note>{`How ${d.rows.length} championships were decided. ${d.lastRace.length} of the 1991 to 2020 titles went to the final round.`}</Note></Card>
+      <StatHeader title="Title history" icon="trophy" note={`How ${d.rows.length} championships were decided. ${d.lastRace.length} of the 1991 to 2020 titles went to the final round.`} />
       <Segmented value={t} items={[['rows', 'All'], ['closest', 'Closest'], ['biggest', 'Biggest'], ['early', 'Early'], ['fewWins', 'Few wins']]} onChange={setT} />
       <Text style={{ color: colors.muted, fontSize: 13 }}>{notes[t]}</Text>
       {rows.map((o, i) => <Title key={`${t}${o.year}`} o={o} i={i} extra={big(o)} />)}

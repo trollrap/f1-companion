@@ -5,6 +5,8 @@ import { Text } from '../components/Text';
 import Screen, { Card, Eyebrow, Note } from '../components/Screen';
 import { Btn } from '../components/FunBits';
 import ShareResult from '../components/ShareResult';
+import { GameHeader, ResultPanel, Hint } from '../components/GameKit';
+import { Ionicons } from '@expo/vector-icons';
 import { colors, alpha } from '../theme';
 import * as hap from '../lib/haptics';
 import { kvGet, kvSet } from '../lib/kv';
@@ -27,7 +29,7 @@ export function SlipstreamScreen() {
   const frame = (ts) => {
     const r = R.current; if (r.over) return; const dt = Math.min(0.05, r.last ? (ts - r.last) / 1000 : 0.016); r.last = ts; r.t += dt;
     const speed = 200 + Math.min(260, r.dist * 0.35); r.dist += (speed * dt) / 12;
-    r.spawn -= dt; if (r.spawn <= 0) { const n = Math.random() < Math.min(0.45, 0.1 + r.dist / 1500) ? 2 : 1; const free = Math.floor(Math.random() * LANES); const ls = [0, 1, 2].filter((x) => x !== free); const use = n === 2 ? ls : [ls[Math.floor(Math.random() * 2)]]; use.forEach((l) => { r.cars.push({ id: r.id++, lane: l, y: -CAR_H - 10, c: [colors.accent, colors.gold, colors.good, colors.purple][r.id % 4] }); }); r.spawn = Math.max(0.42, 1.0 - r.dist / 900); }
+    r.spawn -= dt; if (r.spawn <= 0) { const n = Math.random() < Math.min(0.45, 0.1 + r.dist / 1500) ? 2 : 1; const free = Math.floor(Math.random() * LANES); const ls = [0, 1, 2].filter((x) => x !== free); const use = n === 2 ? ls : [ls[Math.floor(Math.random() * 2)]]; use.forEach((l) => { r.cars.push({ id: r.id++, lane: l, y: -CAR_H - 10, c: ['#f5c400', colors.good, colors.purple, '#4da3ff', '#ff8c42'][r.id % 5] }); }); r.spawn = Math.max(0.42, 1.0 - r.dist / 900); }
     r.cars.forEach((c) => { c.y += speed * dt; }); r.cars = r.cars.filter((c) => c.y < H + 10);
     if (r.cars.some((c) => c.lane === r.lane && c.y + CAR_H - 6 > PY + 6 && c.y + 6 < PY + CAR_H)) { tick((x) => x + 1); end(); return; }
     tick((x) => x + 1); r.raf = requestAnimationFrame(frame);
@@ -35,20 +37,28 @@ export function SlipstreamScreen() {
   const start = () => { const r = R.current; cancelAnimationFrame(r.raf); Object.assign(r, { cars: [], lane: 1, dist: 0, t: 0, spawn: 0.6, last: 0, over: false }); setLaneS(1); setPhase('run'); r.raf = requestAnimationFrame(frame); };
   const pan = useRef(PanResponder.create({ onStartShouldSetPanResponder: () => true, onPanResponderRelease: (_e, g) => { if (Math.abs(g.dx) > 24) setLane(R.current.lane + (g.dx > 0 ? 1 : -1)); else setLane(R.current.lane + (g.x0 > winW.current / 2 ? 1 : -1)); } })).current;
   const r = R.current; const d = Math.floor(r.dist);
+  const off = (r.dist * 7) % 60;
+  const Car = ({ c, me, x, y }) => (
+    <View style={{ position: 'absolute', left: x, top: y, width: CAR_W, height: CAR_H, borderRadius: 10, backgroundColor: c, borderWidth: me ? 3 : 0, borderColor: colors.accent, shadowColor: '#000', shadowOpacity: 0.5, shadowRadius: 4, elevation: 4 }}>
+      <View style={{ position: 'absolute', left: 5, right: 5, top: me ? 12 : 30, height: 14, borderRadius: 4, backgroundColor: alpha('#000', 0.55) }} />
+      <View style={{ position: 'absolute', left: 3, top: me ? 2 : CAR_H - 6, width: 8, height: 4, borderRadius: 2, backgroundColor: me ? '#fff6c8' : '#ff3b3b' }} />
+      <View style={{ position: 'absolute', right: 3, top: me ? 2 : CAR_H - 6, width: 8, height: 4, borderRadius: 2, backgroundColor: me ? '#fff6c8' : '#ff3b3b' }} />
+    </View>);
   return (
     <Screen header={false}>
-      <Card><Eyebrow>Slipstream dodge</Eyebrow><Note>{`Swipe or tap left and right of the screen to change lane. Do not touch the other cars. Best distance ${best} m (saved).`}</Note></Card>
+      <GameHeader cat="arcade" icon="speedometer" title="Slipstream dodge" hint="Swipe or tap the left and right half of the screen to change lane. Do not touch the other cars. The run is real time, so your best distance is what gets saved." stats={[['Distance', `${d} m`], ['Best', `${Math.max(best, d)} m`]]} />
       <View style={{ alignItems: 'center' }}>
-        <View {...pan.panHandlers} style={{ width: W, height: H, backgroundColor: '#1b1d22', borderRadius: 14, overflow: 'hidden', borderWidth: 1, borderColor: colors.line }}>
-          {[1, 2].map((k) => <View key={k} style={{ position: 'absolute', left: k * LW - 1, top: 0, bottom: 0, width: 2, backgroundColor: alpha(colors.fg, 0.15) }} />)}
-          {r.cars.map((c) => <View key={c.id} style={{ position: 'absolute', left: c.lane * LW + (LW - CAR_W) / 2, top: c.y, width: CAR_W, height: CAR_H, borderRadius: 8, backgroundColor: c.c, opacity: 0.9 }} />)}
-          <View style={{ position: 'absolute', left: lane * LW + (LW - CAR_W) / 2, top: PY, width: CAR_W, height: CAR_H, borderRadius: 8, backgroundColor: colors.fg, borderWidth: 3, borderColor: colors.accent }} />
-          <Text style={{ position: 'absolute', left: 10, top: 8, color: colors.fg, fontSize: 18, fontWeight: '800' }}>{`${d} m`}</Text>
-          {phase === 'ready' ? <View style={{ position: 'absolute', left: 0, right: 0, top: H / 2 - 30, alignItems: 'center' }}><Text style={{ color: colors.fg, fontSize: 16 }}>Tap Start</Text></View> : null}
+        <View {...pan.panHandlers} style={{ width: W, height: H, backgroundColor: '#17181c', borderRadius: 18, overflow: 'hidden', borderWidth: 1, borderColor: colors.line }}>
+          {Array.from({ length: Math.ceil(H / 30) + 2 }, (_, k) => (<View key={`k${k}`} style={{ position: 'absolute', left: 0, top: k * 30 - 30 + (off % 30), width: 8, height: 15, backgroundColor: k % 2 ? '#e10600' : '#fff', opacity: 0.85 }} />))}
+          {Array.from({ length: Math.ceil(H / 30) + 2 }, (_, k) => (<View key={`r${k}`} style={{ position: 'absolute', right: 0, top: k * 30 - 30 + (off % 30), width: 8, height: 15, backgroundColor: k % 2 ? '#e10600' : '#fff', opacity: 0.85 }} />))}
+          {[1, 2].map((k) => Array.from({ length: Math.ceil(H / 60) + 2 }, (_, j) => (<View key={`${k}-${j}`} style={{ position: 'absolute', left: k * LW - 2, top: j * 60 - 60 + off, width: 4, height: 30, borderRadius: 2, backgroundColor: alpha('#fff', 0.35) }} />)))}
+          {r.cars.map((c) => <Car key={c.id} c={c.c} x={c.lane * LW + (LW - CAR_W) / 2} y={c.y} />)}
+          <Car me c="#f4f4f6" x={lane * LW + (LW - CAR_W) / 2} y={PY} />
+          {phase === 'ready' ? <View style={{ position: 'absolute', left: 0, right: 0, top: H / 2 - 40, alignItems: 'center', gap: 6 }}><Ionicons name="swap-horizontal" size={40} color={colors.fg} /><Text style={{ color: colors.fg, fontSize: 16, fontWeight: '800' }}>Swipe to change lane</Text></View> : null}
         </View>
       </View>
-      {phase === 'over' ? <ShareResult text={`F1 Companion slipstream dodge: ${d} m${d >= best ? ' (new best)' : ''}`}><Card><Eyebrow>Crashed</Eyebrow><Text style={{ color: colors.fg, fontSize: 30, fontWeight: '800' }}>{`${d} m`}</Text><Note>{`Best ${Math.max(best, d)} m.`}</Note></Card></ShareResult> : null}
-      {phase !== 'run' ? <Btn tone="solid" onPress={start}>{phase === 'over' ? 'Go again' : 'Start'}</Btn> : null}
+      {phase === 'over' ? <ShareResult text={`F1 Companion slipstream dodge: ${d} m${d >= best ? ' (new best)' : ''}`}><ResultPanel cat="arcade" win={false} icon="car-sport" kicker="Crashed" big={`${d} m`} sub={`Best ${Math.max(best, d)} m`} best={d > 0 && d >= best} /></ShareResult> : null}
+      {phase !== 'run' ? <Btn tone="solid" icon={phase === 'over' ? 'refresh' : 'play'} onPress={start}>{phase === 'over' ? 'Go again' : 'Start'}</Btn> : <Hint>Swipe or tap left and right to dodge.</Hint>}
     </Screen>);
 }
 
@@ -81,30 +91,29 @@ export function SweeperScreen() {
   const done = g.state !== 'play';
   return (
     <Screen header={false}>
-      <Card><Eyebrow>Safety car sweeper</Eyebrow><Note>{`Clear every tile that has no debris. A number says how many of the 8 tiles around it hold debris. ${MINES} pieces of debris. Best ${best ? `${best} s` : '—'}.`}</Note>
-        <Text style={{ color: colors.fg, fontSize: 18, fontWeight: '800', marginTop: 4 }}>{`🚩 ${MINES - flags}    ⏱ ${secs}s`}</Text></Card>
+      <GameHeader cat="arcade" icon="warning" title="Safety car sweeper" hint={`Clear every tile that has no debris. A number says how many of the 8 tiles around it hold debris. There are ${MINES} pieces. Tap to clear, switch to Flag (or long-press) to mark debris. Saved as you go.`} stats={[['Flags left', MINES - flags], ['Time', `${secs}s`], ['Best', best ? `${best}s` : '—']]} />
       <Segmented2 value={flagMode} onChange={setFlagMode} />
-      <View style={{ alignSelf: 'center', gap: 3 }}>
+      <View style={{ alignSelf: 'center', gap: 3, padding: 6, borderRadius: 16, backgroundColor: alpha('#000', 0.35), borderWidth: 1, borderColor: colors.line }}>
         {Array.from({ length: N }, (_, r) => (
           <View key={r} style={{ flexDirection: 'row', gap: 3 }}>
             {Array.from({ length: N }, (_, c) => { const i = r * N + c; const o = g.open[i]; const m = g.mines && g.mines[i]; const show = o || (done && m); const n = g.mines && o && !m ? around(g.mines, i) : 0;
-              return (<Pressable key={c} accessibilityRole="button" accessibilityLabel={`Row ${r + 1} column ${c + 1}${o ? (m ? ', debris' : `, ${n}`) : g.flag[i] ? ', flagged' : ', hidden'}`} onPress={() => !done && tap(i)} onLongPress={() => !done && toggleFlag(i)} style={{ width: S, height: S, borderRadius: 6, alignItems: 'center', justifyContent: 'center', backgroundColor: show ? (m ? alpha(colors.accent, 0.5) : colors.card) : alpha(colors.fg, 0.14), borderWidth: 1, borderColor: colors.line }}>
-                <Text style={{ fontSize: S * 0.5, fontWeight: '800', color: m ? colors.fg : COUNT_COL[n] }}>{show ? (m ? '✹' : n || '') : g.flag[i] ? '🚩' : ''}</Text></Pressable>); })}
+              return (<Pressable key={c} accessibilityRole="button" accessibilityLabel={`Row ${r + 1} column ${c + 1}${o ? (m ? ', debris' : `, ${n}`) : g.flag[i] ? ', flagged' : ', hidden'}`} onPress={() => !done && tap(i)} onLongPress={() => !done && toggleFlag(i)} style={{ width: S, height: S, borderRadius: 7, alignItems: 'center', justifyContent: 'center', backgroundColor: show ? (m ? alpha(colors.accent, 0.7) : alpha(colors.fg, 0.05)) : alpha(colors.fg, 0.2), borderWidth: 1, borderTopColor: show ? colors.line : alpha('#fff', 0.28), borderLeftColor: show ? colors.line : alpha('#fff', 0.2), borderRightColor: show ? colors.line : alpha('#000', 0.4), borderBottomColor: show ? colors.line : alpha('#000', 0.5) }}>
+                {show ? (m ? <Ionicons name="flame" size={S * 0.55} color="#fff" /> : <Text style={{ fontSize: S * 0.52, fontWeight: '800', color: COUNT_COL[n] }}>{n || ''}</Text>) : g.flag[i] ? <Ionicons name="flag" size={S * 0.5} color={colors.accent} /> : null}</Pressable>); })}
           </View>))}
       </View>
-      {done ? <ShareResult text={`F1 Companion safety car sweeper: ${g.state === 'won' ? `cleared in ${secs}s` : 'hit debris'}`}><Card><Eyebrow>{g.state === 'won' ? 'Track clear' : 'Debris hit'}</Eyebrow><Text style={{ color: colors.fg, fontSize: 28, fontWeight: '800' }}>{g.state === 'won' ? `${secs} seconds` : 'Safety car out'}</Text></Card></ShareResult> : <Note>Tap to clear a tile. Use the Flag switch above, or long-press, to mark debris.</Note>}
-      {done ? <Btn tone="solid" onPress={restart}>New track</Btn> : null}
+      {done ? <ShareResult text={`F1 Companion safety car sweeper: ${g.state === 'won' ? `cleared in ${secs}s` : 'hit debris'}`}><ResultPanel cat="arcade" win={g.state === 'won'} icon={g.state === 'won' ? 'checkmark-done' : 'flame'} kicker={g.state === 'won' ? 'Track clear' : 'Debris hit'} big={g.state === 'won' ? `${secs} s` : 'Safety car out'} best={g.state === 'won' && secs <= best} /></ShareResult> : <Hint>Tap to clear. Flag mode or long-press marks debris.</Hint>}
+      {done ? <Btn tone="solid" icon="refresh" onPress={restart}>New track</Btn> : null}
     </Screen>);
 }
 function Segmented2({ value, onChange }) {
   return (
     <View style={{ flexDirection: 'row', gap: 8 }}>
-      {[[false, 'Clear'], [true, 'Flag']].map(([v, l]) => (<Pressable key={l} accessibilityRole="button" onPress={() => onChange(v)} style={{ flex: 1, padding: 12, borderRadius: 12, alignItems: 'center', backgroundColor: value === v ? colors.accent : colors.card, borderWidth: 1, borderColor: colors.line }}><Text style={{ color: value === v ? '#fff' : colors.fg, fontWeight: '800' }}>{l}</Text></Pressable>))}
+      {[[false, 'Clear', 'hand-left'], [true, 'Flag', 'flag']].map(([v, l, ic]) => (<Pressable key={l} accessibilityRole="button" onPress={() => onChange(v)} style={{ flex: 1, flexDirection: 'row', gap: 8, padding: 12, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: value === v ? colors.accent : colors.card, borderWidth: 1, borderColor: value === v ? colors.accent : colors.line }}><Ionicons name={ic} size={16} color={value === v ? '#fff' : colors.muted} /><Text style={{ color: value === v ? '#fff' : colors.fg, fontWeight: '800' }}>{l}</Text></Pressable>))}
     </View>);
 }
 
 // ---------- Points 2048: slide and merge. Swipe the board or use the arrows. Progress is saved. ----------
-const TILE = { 0: 'transparent', 2: '#3b4252', 4: '#4c566a', 8: '#e8a33d', 16: '#ff8c42', 32: '#ff5a4d', 64: '#e10600', 128: '#9b6bff', 256: '#4da3ff', 512: '#2bc4c4', 1024: '#3fcf8e', 2048: '#ffd24d' };
+const TILE = { 0: 'transparent', 2: '#454c5e', 4: '#58627a', 8: '#e8a33d', 16: '#ff8c42', 32: '#ff5a4d', 64: '#e10600', 128: '#9b6bff', 256: '#4da3ff', 512: '#22c9b8', 1024: '#3fcf8e', 2048: '#ffd24d' };
 function slideRow(row) { const a = row.filter(Boolean); let gain = 0; for (let i = 0; i < a.length - 1; i++) { if (a[i] === a[i + 1]) { a[i] *= 2; gain += a[i]; a.splice(i + 1, 1); } } while (a.length < 4) a.push(0); return [a, gain]; }
 export function move(b, dir) {
   const get = (i, k) => { const r = dir === 'left' ? [i, k] : dir === 'right' ? [i, 3 - k] : dir === 'up' ? [k, i] : [3 - k, i]; return r[0] * 4 + r[1]; };
@@ -125,15 +134,16 @@ export function Points2048Screen() {
   const hi = Math.max(...g.b);
   return (
     <Screen header={false}>
-      <Card><Eyebrow>Points 2048</Eyebrow><Note>{`Swipe the board to slide the tiles. Equal tiles merge. Reach 512 to win, then carry on. Score ${g.score}, best ${best}. Saved as you go.`}</Note></Card>
+      <GameHeader cat="puzzle" icon="apps" title="Points 2048" hint="Swipe the board to slide every tile. Equal tiles merge into one. Reach 512 to win, then carry on for a higher score. Saved as you go." stats={[['Score', g.score], ['Best', Math.max(best, g.score)], ['Top tile', hi]]} />
       <View style={{ alignItems: 'center' }}>
-        <View {...pan.panHandlers} style={{ padding: 8, borderRadius: 14, backgroundColor: colors.card, gap: 8, borderWidth: 1, borderColor: colors.line }}>
-          {[0, 1, 2, 3].map((r) => (<View key={r} style={{ flexDirection: 'row', gap: 8 }}>{[0, 1, 2, 3].map((c) => { const v = g.b[r * 4 + c]; return (<View key={c} accessible accessibilityLabel={v ? `${v}` : 'empty'} style={{ width: S, height: S, borderRadius: 10, backgroundColor: v ? (TILE[v] || '#ffd24d') : alpha(colors.fg, 0.08), alignItems: 'center', justifyContent: 'center' }}>{v ? <Text style={{ color: '#fff', fontWeight: '800', fontSize: v >= 1024 ? S * 0.3 : v >= 128 ? S * 0.36 : S * 0.44 }}>{v}</Text> : null}</View>); })}</View>))}
+        <View {...pan.panHandlers} style={{ padding: 8, borderRadius: 20, backgroundColor: alpha('#000', 0.4), gap: 8, borderWidth: 1, borderColor: colors.line }}>
+          {[0, 1, 2, 3].map((r) => (<View key={r} style={{ flexDirection: 'row', gap: 8 }}>{[0, 1, 2, 3].map((c) => { const v = g.b[r * 4 + c]; const col = v ? (TILE[v] || '#ffd24d') : 'transparent';
+            return (<View key={c} accessible accessibilityLabel={v ? `${v}` : 'empty'} style={{ width: S, height: S, borderRadius: 12, backgroundColor: v ? col : alpha(colors.fg, 0.06), alignItems: 'center', justifyContent: 'center', borderWidth: v ? 1 : 0, borderColor: alpha('#fff', 0.25), shadowColor: col, shadowOpacity: v >= 64 ? 0.7 : 0, shadowRadius: 10, elevation: v >= 64 ? 6 : 0 }}>{v ? <Text style={{ color: v <= 4 ? colors.fg : '#fff', fontFamily: 'display', fontWeight: '800', fontSize: v >= 1024 ? S * 0.3 : v >= 128 ? S * 0.36 : S * 0.46 }}>{v}</Text> : null}</View>); })}</View>))}
         </View>
       </View>
-      <View style={{ flexDirection: 'row', gap: 8, justifyContent: 'center' }}>{[['left', '←'], ['up', '↑'], ['down', '↓'], ['right', '→']].map(([d, l]) => (<Pressable key={d} accessibilityRole="button" accessibilityLabel={`Slide ${d}`} onPress={() => go(d)} style={{ width: 64, height: 48, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.card, borderWidth: 1, borderColor: colors.line }}><Text style={{ color: colors.fg, fontSize: 22, fontWeight: '800' }}>{l}</Text></Pressable>))}</View>
-      {g.won && !g.over ? <Note>You reached 512. Keep going for a higher score.</Note> : null}
-      {g.over ? <ShareResult text={`F1 Companion Points 2048: score ${g.score}, top tile ${hi}`}><Card><Eyebrow>No moves left</Eyebrow><Text style={{ color: colors.fg, fontSize: 30, fontWeight: '800' }}>{`${g.score} points`}</Text><Note>{`Top tile ${hi}. Best ${Math.max(best, g.score)}.`}</Note></Card></ShareResult> : null}
-      <Btn tone={g.over ? 'solid' : undefined} onPress={restart}>New game</Btn>
+      <View style={{ flexDirection: 'row', gap: 8, justifyContent: 'center' }}>{[['left', 'arrow-back'], ['up', 'arrow-up'], ['down', 'arrow-down'], ['right', 'arrow-forward']].map(([d, ic]) => (<Pressable key={d} accessibilityRole="button" accessibilityLabel={`Slide ${d}`} onPress={() => go(d)} style={({ pressed }) => ({ width: 64, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: pressed ? alpha(colors.accent, 0.3) : colors.card, borderWidth: 1, borderColor: colors.line })}><Ionicons name={ic} size={22} color={colors.fg} /></Pressable>))}</View>
+      {g.won && !g.over ? <Hint>You reached 512. Keep going for a higher score.</Hint> : null}
+      {g.over ? <ShareResult text={`F1 Companion Points 2048: score ${g.score}, top tile ${hi}`}><ResultPanel cat="puzzle" win={g.won} icon="apps" kicker="No moves left" big={`${g.score}`} sub={`Top tile ${hi}. Best ${Math.max(best, g.score)}.`} best={g.score > 0 && g.score >= best} /></ShareResult> : null}
+      <Btn tone={g.over ? 'solid' : undefined} icon="refresh" onPress={restart}>New game</Btn>
     </Screen>);
 }

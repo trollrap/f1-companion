@@ -26,7 +26,7 @@ export async function checkNews({ force = false } = {}) {
         if (rec.sent >= 3) break;
         if (x.date && Date.now() - x.date > 36 * 3600e3) continue;
         if (favOnly && !matchesFav(x, terms)) continue;
-        if (await notifyNow(s.name, x.title)) { sent++; rec.sent++; }
+        if (await notifyNow(s.name, x.title, { item: { id: x.id, source: x.source, sourceName: x.sourceName, title: x.title, link: x.link, date: x.date, image: x.image, summary: x.summary } })) { sent++; rec.sent++; }
       }
     } catch (e) { rec.err = String((e && e.message) || e).slice(0, 90); }
     log.src.push(rec);

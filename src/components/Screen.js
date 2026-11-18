@@ -41,7 +41,7 @@ function OfflineBanner() {
 const flat = (ch, pre = '') => React.Children.toArray(ch).flatMap((c) => (c && c.type === React.Fragment ? flat(c.props.children, `${pre}${c.key}/`) : [{ el: c, k: `${pre}${c && c.key != null ? c.key : ''}` }]));
 export default function Screen({ children, header = true, refreshable = true, scrollRef, swipe, footer, revealKey }) {
   const route = React.useContext(NavigationRouteContext); const canShare = !!route && SHARE_ROUTES.has(route.name); const own = useRef(null); const sref = scrollRef || own;
-  const doShare = async () => { const r = await shareScreenImage(sref); if (r === 'unavailable' || r === 'error') { try { await Share.share({ message: `F1 Companion: ${route?.name || ''}` }); } catch {} } };
+  const doShare = async (whole) => { const r = await shareScreenImage(sref, whole === true); if (r === 'unavailable' || r === 'error') { try { await Share.share({ message: `F1 Companion: ${route?.name || ''}` }); } catch {} } };
   // A screen pushed on the stack already has the native header, so it never draws a second header or a second top margin.
   const navType = useNavigationState((st) => st?.type); if (navType === 'stack') header = false;
   const [refreshing, setRefreshing] = useState(false); const { prefs: pp } = usePrefs(); const canPull = refreshable && pp.opts.pullRefresh === true;
@@ -69,7 +69,7 @@ export default function Screen({ children, header = true, refreshable = true, sc
       )}
       </Animated.View>
       {ghosts.length ? <View pointerEvents="box-none" style={{ position: 'absolute', left: 16, right: 16, bottom: 92 }}>{ghosts.map((c, i) => <React.Fragment key={c.k || i}>{c.el}</React.Fragment>)}</View> : null}
-      {canShare ? <Pressable accessibilityRole="button" accessibilityLabel="Share this screen as a picture" onPress={doShare} style={({ pressed }) => [{ position: 'absolute', right: 16, bottom: 22, width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.accent, elevation: 6 }, pressed && { opacity: 0.8 }]}><Ionicons name="share-outline" size={22} color="#fff" /></Pressable> : null}
+      {canShare ? <Pressable accessibilityRole="button" accessibilityLabel="Share what is on screen as a picture. Press and hold for the whole page." onPress={() => doShare(false)} onLongPress={() => doShare(true)} delayLongPress={600} style={({ pressed }) => [{ position: 'absolute', right: 16, bottom: 22, width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.accent, elevation: 6 }, pressed && { opacity: 0.8 }]}><Ionicons name="share-outline" size={22} color="#fff" /></Pressable> : null}
       {footer || null}
     </SafeAreaView>
   );

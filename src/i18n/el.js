@@ -171,4 +171,11 @@ Object.assign(DICT, {
   'New track': 'Νέα πίστα', 'New battle': 'Νέα μάχη', 'New race': 'Νέος αγώνας', 'New grid': 'Νέο πλέγμα', 'Go again': 'Ξανά', 'Start': 'Έναρξη', 'Clear': 'Καθάρισμα', 'Flag': 'Σημαία',
   'Enemy waters': 'Εχθρικά νερά', 'Your fleet': 'Ο στόλος σου', 'World champions': 'Παγκόσμιοι πρωταθλητές', 'Most wins': 'Περισσότερες νίκες', 'Closest title': 'Πιο κοντινός τίτλος',
 });
+Object.assign(DICT, {
+  'Games': 'Παιχνίδια', 'Surprise me': 'Εκπλήξτε με', 'Search games': 'Αναζήτηση παιχνιδιών', 'Continue': 'Συνέχεια', 'Pinned': 'Καρφιτσωμένα', 'See all': 'Όλα', 'Daily puzzle': 'Καθημερινό παζλ',
+  'Quizzes': 'Κουίζ', 'Puzzles and memory': 'Παζλ και μνήμη', 'Arcade': 'Arcade', 'Two players': 'Δύο παίκτες', 'Predict and collect': 'Προβλέψεις και συλλογή', 'What if': 'Τι θα γινόταν αν', 'Daily': 'Καθημερινά', 'All': 'Όλα',
+  'No game matches that. Try another word.': 'Κανένα παιχνίδι δεν ταιριάζει. Δοκίμασε άλλη λέξη.', 'Rematch': 'Ρεβάνς', 'Play again': 'Ξανά',
+});
+Object.assign(DICT, { 'Lap chart': 'Διάγραμμα γύρων', 'Games stats': 'Στατιστικά παιχνιδιών', 'Connect four': 'Τέσσερα στη σειρά', 'Blackjack 21': 'Μπλάκτζακ 21', 'Play again': 'Ξανά', 'Statistics': 'Στατιστικά' });
+Object.assign(DICT, { 'Search settings': 'Αναζήτηση ρυθμίσεων', 'Season heatmap': 'Θερμικός χάρτης σεζόν', 'Team-mate battles': 'Μάχες συναθλητών', 'Countdown card': 'Κάρτα αντίστροφης μέτρησης', 'Daily challenges': 'Καθημερινές προκλήσεις', 'Achievements': 'Επιτεύγματα', 'Snake (DRS trail)': 'Φιδάκι (DRS)', 'Checkers': 'Ντάμα', 'Allow background use (battery)': 'Άδεια χρήσης στο παρασκήνιο (μπαταρία)' });
 

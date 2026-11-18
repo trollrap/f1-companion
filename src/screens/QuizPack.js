@@ -5,6 +5,7 @@ import Screen, { Card, Eyebrow, Note } from '../components/Screen';
 import { Btn } from '../components/FunBits';
 import Reveal from '../components/Reveal';
 import ShareResult from '../components/ShareResult';
+import { Answer } from '../components/GameKit';
 import { colors, alpha } from '../theme';
 import * as hap from '../lib/haptics';
 import { kvGet, kvSet, rngOf, seedOf } from '../lib/kv';
@@ -13,7 +14,7 @@ import { useRun, useGameSave, useLeaveGuard, useTimers } from '../lib/gameSave';
 import { makeSeasonQ, makeCareerQ, makePairs, makeShowdown } from '../lib/quizPack';
 
 const N = 10;
-const Opt = ({ text, state, onPress, i }) => (<Reveal index={i}><Pressable accessibilityRole="button" onPress={onPress} style={{ padding: 16, borderRadius: 14, borderWidth: 1.5, borderColor: state === 'right' ? colors.good : state === 'wrong' ? colors.accent : colors.line, backgroundColor: state === 'right' ? alpha(colors.good, 0.2) : state === 'wrong' ? alpha(colors.accent, 0.18) : colors.card }}><Text style={{ color: colors.fg, fontSize: 17, fontWeight: '600' }}>{text}</Text></Pressable></Reveal>);
+const Opt = ({ text, state, onPress, i }) => <Answer letter={'ABCD'[i]} label={text} state={state} onPress={onPress} />;
 
 // Shared shell for the ten-round multiple-choice games. `render(q)` draws the question card, `explain(q)` the line after answering.
 function Rounds({ id, title, make, render, explain, packKey, packAt }) {

@@ -478,3 +478,26 @@ Expo Go (SDK 53+) does not include the `expo-notifications` native module; impor
 - Fun menu: new row "Arcade and two players". Pages, StatsHub, share routes updated.
 - Unverified on device: all of it, especially swipe gestures (Slipstream and 2048), Slipstream frame rate, and Sweeper long-press.
 
+## V1.56.0 (JS-only): UI overhaul of Fun and the newer screens
+- `lib/gameCatalog.js`: CATS (7 categories with colours) and GAMES (54 entries: route r, name n, sub s, icon i, category c, save key k, best key b, format f, two, nw). Add every new game here, plus a Main.js route and a pages.js entry; the Games hub and Fun menu are generated from it.
+- `screens/GamesHub.js`: hub with search, chips, daily banner, Continue (reads `game:<k>` saves; `run:` keys need i > 0), Pinned (kv `pins:games`), per-category horizontal strips, Surprise me; exports `usePins`, `useGameStatus`, `DailyBanner`, `ContinueRow`, `PinnedRow`, `GameTile`. `FunScreens.js` (Fun home) and `FunHubs.js` (FunGames) use it. GAME_ROWS and GameRows are gone.
+- `components/GameKit.js`: GameHeader (stats and a how-to-play toggle), Lives, Prompt, Answer (right pulses, wrong shakes), Feedback, ResultPanel, TurnBanner, Hint. Used by Games153, Arcade155, Party155; the local `Opt` in QuizPack and TriviaGames now renders Answer.
+- `components/StatRows.js`: StatHeader, StatRow (badge, medal, bar), StatList, SectionLabel; used by Stats153, Stats155, Report.
+- Screenshot harness (scratchpad `ui/shot.js`, `b58` web export with react-native-web installed there only, not in the project) was used to check the layouts; all checked screens rendered without page errors. Not seen: a phone, swipe gestures, long-press.
+
+## V1.57.0 (JS-only)
+- `screens/Table157.js`: ConnectFourScreen (kv game:c4, `c4:best` = wins vs computer; pure `fourOf/drop/cpuMove` alpha-beta depth 4) and BlackjackScreen (kv game:bj, `bj:best` = peak bankroll; `handTotal`). Both in `lib/gameCatalog.js` (nw tag moved to them), Main.js, pages.js.
+- `screens/Laps157.js` LapChart: `raceLaps(year, round)` in `api/jolpica.js` pages Jolpica `/laps.json` (100 rows a page, up to 20 pages) and merges by lap number. NOT verified against the live API (sandbox cannot reach it): check page size and the Timings shape if the chart is empty.
+- `screens/GameStats.js`: streaks from kv `playDays`, bests from the catalogue via `useGameStatus`.
+- StatsHub rows have icons (ICONS map) and counts; RankLists, SeasonStats(Passing) and the intro cards of many older stat screens use StatHeader/StatRow; GuessDriver, GridGames and RaceBingo intros are GameHeader with a how-to toggle.
+
+## V1.58.0 (JS-only)
+- Removed: Home weekend mode (HomeScreen always uses `homeOrder`), `weekendMode` setting, fantasy rumours UI (`FantasyRumours.js` deleted; `g.rumours` data left alone).
+- News alerts: `notifyNow(title, body, data)` carries `{ item }`; `AlertScheduler` listens (`addNotificationResponseReceivedListener` plus `getLastNotificationResponseAsync` for a tap that launched the app, deduped with AsyncStorage `lastTapId`) and navigates to `Article` through `lib/navRef.js` (ref on NavigationContainer in Main.js). Background checks are Android WorkManager via expo-background-task (about every 15 min at best, often later; killed by battery savers). Truly reliable pushes need a server and FCM: native build.
+- Share button (Screen.js): `shareScreenImage(ref, whole)` captures only the visible viewport by default; long press gives the old whole-page capture.
+- Settings search: module variable `FIND` set at render; `Section` hides itself when `textOf(children)` has no match.
+- `lib/kv.js` records which game keys were written today (`touched` in AsyncStorage); `lib/challenges.js` picks 3 games per day from the catalogue (seed `challenge:<day>`), done = a save/best written today; `challengeDays` lists perfect days. `screens/Challenges158.js`: ChallengeCard, DailyChallengesScreen, AchievementsScreen (ACHIEVEMENTS list).
+- `screens/Arcade158.js`: Snake (kv game:snake, `snake:best`; pure `stepSnake`) and Checkers (kv game:chk, `chk:best` = wins vs CPU; pure `genMoves/applyMove/aiMove`, forced captures, multi-jump, depth-5 alpha-beta).
+- `screens/Stats158.js`: SeasonHeatmap (offline `seasonHeat(year)` in history.js, up to 2025) and QualiBattles (`teamBattles(year)` in jolpica.js, needs network, NOT verified live). `screens/CountdownCard.js` (ShareCard).
+- Not verified on device: swipe steering in Snake, notification taps, Jolpica qualifying calls.
+

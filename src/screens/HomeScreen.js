@@ -42,7 +42,7 @@ export function targetOf(next, sessions, now) {
 }
 export default function HomeScreen({ navigation }) {
   const spoil = useSpoilerHidden('home');
-  const season = useSeason(); const now = useNow(); const [showAll, setShowAll] = useState(false);
+  const season = useSeason(); const now = useNow();
   const favs = useFavs(); const tc = useTeamColor();
   const stand = useAsync(() => driverStandings(YEAR), []);
   const tstand = useAsync(() => constructorStandings(YEAR), []);
@@ -176,16 +176,12 @@ export default function HomeScreen({ navigation }) {
     ),
   };
   ['rivalry', 'mine', 'last', 'recap', 'standings'].forEach((k) => { if (P[k]) P[k] = <SpoilerGuard id="home" label="Results hidden">{P[k]}</SpoilerGuard>; });
-  // Weekend mode: from three days before the first session until half a day after the last one, Home shows just the weekend (next session first).
-  const wk = Array.isArray(sessions) && sessions.length ? { a: Date.parse(sessions[0].date_start) - 3 * 864e5, b: Date.parse(sessions[sessions.length - 1].date_end) + 12 * 36e5 } : null;
-  const weekend = prefs.opts.weekendMode !== false && !!wk && now >= wk.a && now <= wk.b && !showAll;
-  const full = homeOrder(prefs.opts.homeLayout); const order = weekend ? ['pins', 'next', 'last', 'mine', 'recap'].filter((k) => full.includes(k)).sort((x, y) => (x === 'next' ? -1 : y === 'next' ? 1 : 0)) : full;
+  const order = homeOrder(prefs.opts.homeLayout);
   return (
     <Screen>
       <UpdateBanner />
       <BackupNudge />
       {prefs.opts.name ? <Text style={{ color: colors.muted, fontSize: 17 }}>{`Hi, ${prefs.opts.name} 👋`}</Text> : null}
-      {weekend ? <Pressable accessibilityRole="button" onPress={() => setShowAll(true)}><Text style={{ color: colors.muted, fontSize: 13 }}>Race weekend view. Tap to show everything.</Text></Pressable> : showAll && wk && now >= wk.a && now <= wk.b ? <Pressable accessibilityRole="button" onPress={() => setShowAll(false)}><Text style={{ color: colors.muted, fontSize: 13 }}>Back to the race weekend view</Text></Pressable> : null}
       {order.map((k, i) => (P[k] && !(k === 'mine' && !mine.length && !mineT.length) ? <Reveal key={k} index={Math.min(i, 5)}>{P[k]}</Reveal> : null))}
     </Screen>
   );

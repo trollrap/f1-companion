@@ -23,7 +23,6 @@ import { TeamPrincipal, Rivalries } from './FantasyTP';
 import { RULE_POINTS, RULE_REL, makeGrid, nextStep, runStep, runWeekend, runSeason, sessionsOf, standings, freeNumber, randomDriver, TEAM_COLORS, DRIVER_ATTRS, TEAM_ATTRS, A, TA, ovr, makeDriverAttrs, simulateTransfers } from '../fun/sim';
 import { attrsFor } from '../fun/talent';
 import { hallOfFame } from '../fun/legends';
-import FantasyRumours from './FantasyRumours';
 import { driverPic, teamPic, viewOf, seasonList, seasonNo, careerOf, numberClash, closeSeason, isDone, allTime, seasonSummary, titleStatus } from '../fun/look';
 import { buildNews } from '../fun/articles';
 import { loadRealGrid } from '../fun/realGrid';
@@ -296,7 +295,6 @@ export function Fantasy({ route, navigation }) {
         teamPodium={st.teams.slice(0, 3).map((t) => ({ name: t.name, logo: teamPic(t), color: t.color, points: t.points }))} onClose={() => setShw(null)} />
       {shown === 'home' && (<>
         {banner(ts)}
-        {isCur && !ended && !off && !complete ? <FantasyRumours f={f} onPick={(rid, k, v) => fun.update(id, (g) => { const cur = { ...((g.rumours || {})[rid] || {}) }; if (v) cur[k] = v; else delete cur[k]; return { ...g, rumours: { ...(g.rumours || {}), [rid]: cur } }; })} /> : null}
         {ended ? (
           <Card>
             <Eyebrow>Save ended</Eyebrow>

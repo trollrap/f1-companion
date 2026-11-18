@@ -2,6 +2,7 @@ import React from 'react';
 import { View } from 'react-native';
 import { Text } from '../components/Text';
 import Screen, { Card, Eyebrow, Note, ErrorNote } from '../components/Screen';
+import { StatHeader } from '../components/StatRows';
 import Reveal from '../components/Reveal';
 import Skeleton from '../components/Skeleton';
 import { useAsync } from '../hooks/useAsync';
@@ -13,7 +14,7 @@ export default function FavDigestScreen() {
   const q = useAsync(buildDigest, []); const d = q.v;
   return (
     <Screen header={false}>
-      <Card><Eyebrow>Favourites digest</Eyebrow><Note>How your favourite drivers and teams did in the latest race, and where they stand in the championships. Result alerts for races now list your drivers too.</Note></Card>
+      <StatHeader title="Favourites digest" icon="star" note="How your favourite drivers and teams did in the latest race, and where they stand in the championships. Result alerts for races now list your drivers too." />
       {q.loading ? <Skeleton rows={4} /> : null}
       {q.error ? <ErrorNote error={q.error} onRetry={q.reload} /> : null}
       {d && d.empty ? <Note>Favourite some drivers or teams in the Paddock and they will show up here.</Note> : null}

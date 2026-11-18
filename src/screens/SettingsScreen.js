@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Switch, Pressable, StyleSheet, Linking, LayoutAnimation, Animated, Easing } from 'react-native';
+import { View, Switch, Pressable, StyleSheet, Linking, TextInput, LayoutAnimation, Animated, Easing } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Text } from '../components/Text';
@@ -60,8 +60,17 @@ function NewsStatus({ tick }) {
       {(log?.src || []).map((x) => <Text key={x.name} style={s.hint}>{`${x.ok ? '✓' : '✗'} ${x.name}: ${x.ok ? `${x.count} stories, ${x.fresh} new${x.baseline ? ' (first look, no alert)' : ''}` : x.err || 'failed'}`}</Text>)}
     </View>);
 }
+// Settings search: the box at the top sets this; every section reads all the text inside it (titles, labels, hints) and hides itself when nothing matches.
+let FIND = ''; // set on every render of the screen, so sections can stay direct children of it (keeps the page spacing)
+const textOf = (n) => { if (n == null || typeof n === 'boolean') return ''; if (typeof n === 'string' || typeof n === 'number') return String(n); if (Array.isArray(n)) return n.map(textOf).join(' '); const p = n.props || {}; return [p.label, p.hint, p.title, p.placeholder, textOf(p.children)].filter(Boolean).join(' '); };
+const Group = ({ children }) => (FIND.trim() ? null : <Text style={s.group}>{children}</Text>);
 function Section({ icon, title, summary, children, start = false }) {
-  const [open, setOpen] = useState(start); const rot = React.useRef(new Animated.Value(start ? 1 : 0)).current;
+  const q = FIND.trim().toLowerCase();
+  if (q && !`${title} ${summary || ''} ${textOf(children)}`.toLowerCase().includes(q)) return null;
+  return <SectionBody icon={icon} title={title} summary={summary} start={start || !!q} forceOpen={!!q}>{children}</SectionBody>;
+}
+function SectionBody({ icon, title, summary, children, start = false, forceOpen }) {
+  const [open0, setOpen] = useState(start); const open = open0 || forceOpen; const rot = React.useRef(new Animated.Value(start ? 1 : 0)).current;
   const flip = () => { LayoutAnimation.configureNext(LayoutAnimation.create(220, 'easeInEaseOut', 'opacity')); Animated.timing(rot, { toValue: open ? 0 : 1, duration: 200, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start(); setOpen(!open); };
   return (
     <View style={s.sec}>
@@ -82,7 +91,7 @@ const TEAM_NAMES = { red_bull: 'Red Bull', rb: 'Racing Bulls', aston_martin: 'As
 export default function SettingsScreen() {
   const { prefs, toggle, toggleResults, setOpt, setOpts } = usePrefs(); const o = prefs.opts;
   const [results, setResults] = useState([]); const [running, setRunning] = useState(false); const [msg, setMsg] = useState(''); const [upd, setUpd] = useState('');
-  const [msgT, setMsgT] = useState(''); const [bk, setBk] = useState('');
+  const [find, setFind] = useState(''); FIND = find; const [msgT, setMsgT] = useState(''); const [bk, setBk] = useState('');
   // Secret: five quick taps on About, then the code, open the developer menu.
   const nav = useNavigation(); const taps = useRef({ n: 0, t: 0 }); const [codeOpen, setCodeOpen] = useState(false);
   const aboutTap = () => { const now = Date.now(); const k = taps.current; k.n = now - k.t < 1500 ? k.n + 1 : 1; k.t = now; if (k.n >= 5) { k.n = 0; setCodeOpen(true); } };
@@ -92,7 +101,12 @@ export default function SettingsScreen() {
   const applyColour = async (hex) => { setMsg('Saving the colour…'); await setOpt('accent', hex).catch(() => {}); setMsg('Colour saved. The app restarts to use it everywhere. If it does not, close it completely and open it again.'); setTimeout(async () => { const r = await restartApp(); if (!r) setMsg('Colour saved. Close the app completely (swipe it away) and open it again to see it everywhere.'); }, 900); };
   return (
     <Screen header={false}>
-      <Text style={s.group}>Look and feel</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, borderRadius: 14, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.line }}>
+        <Ionicons name="search" size={18} color={colors.muted} />
+        <TextInput value={find} onChangeText={setFind} placeholder="Search settings" placeholderTextColor={colors.muted} accessibilityLabel="Search settings" autoCorrect={false} style={{ flex: 1, color: colors.fg, fontSize: 16, paddingVertical: 12 }} />
+        {find ? <Pressable accessibilityRole="button" accessibilityLabel="Clear search" hitSlop={10} onPress={() => setFind('')}><Ionicons name="close-circle" size={18} color={colors.muted} /></Pressable> : null}
+      </View>
+      <Group>Look and feel</Group>
       <Section icon="contrast-outline" title="Theme" summary={o.theme === 'light' ? 'White' : o.theme === 'amoled' ? 'AMOLED black' : 'Dark'}>
         {[['dark', 'Dark', 'The default look.'], ['amoled', 'AMOLED black', 'Pure black background. Saves battery on OLED screens.'], ['light', 'White', 'A light theme. Some screens with photos are still tuned for dark.']].map(([k, label, hint]) => { const on = (o.theme || 'dark') === k; return (
           <Pressable key={k} onPress={async () => { if (on) return; setMsgT('Saving the theme…'); await setOpt('theme', k === 'dark' ? null : k).catch(() => {}); setMsgT('Theme saved. The app restarts to use it everywhere.'); setTimeout(async () => { await restartApp(); }, 900); }} style={({ pressed }) => [{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12 }, pressed && { opacity: 0.7 }]}>
@@ -138,7 +152,7 @@ export default function SettingsScreen() {
         <Note>Swaps the red and green used for good and bad news (gains, losses, retirements) for blue and orange, which stay distinct for red-green colour blindness. The app restarts to apply it.</Note>
         <Segmented value={o.colorblind ? 'on' : 'off'} onChange={async (v) => { await setOpt('colorblind', v === 'on'); setTimeout(() => { restartApp().catch(() => {}); }, 700); }} items={[['off', 'Off'], ['on', 'On']]} />
       </Section>
-      <Text style={s.group}>Home and content</Text>
+      <Group>Home and content</Group>
       <Section icon="reorder-three-outline" title="Home layout" summary="Reorder or hide the cards on Home">
         {homeLayout(o.homeLayout).map((x, i, arr) => { const label = (HOME_CARDS.find(([k]) => k === x.k) || [])[1]; const move = (d) => { const n = [...arr]; const j = i + d; if (j < 0 || j >= n.length) return; [n[i], n[j]] = [n[j], n[i]]; LayoutAnimation.configureNext(LayoutAnimation.create(200, 'easeInEaseOut', 'opacity')); setOpt('homeLayout', n); };
           return (<View key={x.k} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 6 }}>
@@ -166,7 +180,7 @@ export default function SettingsScreen() {
         <Sw label="Hide results until tapped" hint="For watching races on delay. Hides Home results, the race recap, standings, race results and calendar winners until you tap them. Live timing is not hidden. Taps are forgotten when the app closes." value={!!o.spoiler} onChange={(v) => { setOpt('spoiler', v); hideAll(); }} />
         {o.spoiler ? <Btn onPress={hideAll}>Hide everything again</Btn> : null}
       </Section>
-      <Text style={s.group}>Alerts</Text>
+      <Group>Alerts</Group>
       <Section icon="notifications-outline" title="Notifications" summary={`${on} sessions · ${prefs.results ? 'results on' : 'results off'}`}>
         {!notificationsAvailable() && <Note>Alerts only work in the installed app, not in Expo Go.</Note>}
         <Text style={s.hint}>Tap the sessions you want an alert for.</Text>
@@ -179,7 +193,6 @@ export default function SettingsScreen() {
         </View>
         <View style={{ marginTop: 10 }}><NotifPrefs title="Remind me before" /></View>
         <Sw label="Birthdays and win anniversaries" hint="At 9:00 on a favourite driver's birthday and on the anniversary of their first win." value={!!o.bdays} onChange={(v) => setOpt('bdays', v)} />
-        <Sw label="Race weekend view on Home" hint="From three days before a race weekend until it ends, Home shows only the next session, the last result and your drivers." value={o.weekendMode !== false} onChange={(v) => setOpt('weekendMode', v)} />
         <Sw label="Race morning reminder" hint="At 8:00 on the day of a race or sprint, with the start time." value={!!o.raceMorning} onChange={(v) => setOpt('raceMorning', v)} />
         <Sw label="Monday recap" hint="On Monday from 9:00, one notification about the latest race and your favourite drivers and teams. Runs when the app opens, and in the background when result alerts are on." value={!!o.mondayRecap} onChange={(v) => setOpt('mondayRecap', v)} />
         <Sw label="Results: only when my drivers are in it" hint="Race, sprint and qualifying result alerts are skipped unless one of the drivers below is in the results. The alert then lists their finishes." value={!!o.resultsFavOnly} onChange={(v) => setOpt('resultsFavOnly', v)} />
@@ -197,21 +210,22 @@ export default function SettingsScreen() {
         {msg ? <Note>{msg}</Note> : null}
       </Section>
       <Section icon="newspaper-outline" title="News alerts" summary={`${SOURCES.filter((x) => (o.newsAlerts || {})[x.id]).length} sources on`}>
-        <Note>Get a notification when a source you pick publishes a new story. Android decides the exact timing, so it can be a few minutes late. Off by default.</Note>
+        <Note>Get a notification when a source you pick publishes a new story. Android decides when the background check runs, so alerts can be late, and some phones only run it when the app is allowed to use the battery freely (button below). Tapping an alert opens the story in the app. Off by default.</Note>
         {SOURCES.map((x) => <Sw key={x.id} label={x.name} value={(o.newsAlerts || {})[x.id]} onChange={async (v) => { if (v) await ensurePermission(); setOpt('newsAlerts', { ...(o.newsAlerts || {}), [x.id]: v }); }} />)}
         <Btn onPress={async () => { const n = await checkNews({ force: true }); setMsg(n ? `Sent ${n} news alert${n > 1 ? 's' : ''}.` : 'No new stories from your sources right now.'); }}>Check news now</Btn>
         <Sw label="Only my favourite drivers and teams" value={o.newsFavOnly} onChange={(v) => setOpt('newsFavOnly', v)} />
         <NewsStatus tick={msg} />
         <Note>If checks never run in the background, Android is limiting the app. Set Battery to Unrestricted for this app, then leave it a few hours.</Note>
         <Btn icon="notifications-outline" onPress={() => nav.navigate('AlertsInbox')}>Open the alerts inbox</Btn>
-        <Btn icon="battery-charging-outline" onPress={() => Linking.openSettings()}>Open app settings</Btn>
+        <Btn icon="battery-charging-outline" onPress={async () => { try { await require('expo-intent-launcher').startActivityAsync('android.settings.IGNORE_BATTERY_OPTIMIZATION_SETTINGS'); } catch { Linking.openSettings(); } }}>Allow background use (battery)</Btn>
+        <Btn icon="settings-outline" onPress={() => Linking.openSettings()}>Open app settings</Btn>
         {msg ? <Note>{msg}</Note> : null}
       </Section>
       <Section icon="phone-portrait-outline" title="Haptics" summary={o.haptics === false ? 'Off' : 'On'}>
         <Sw label="Vibration on key moments" hint="A short buzz at lights out, when a card pack opens, on right and wrong answers in games and on steward calls." value={o.haptics !== false} onChange={(v) => setOpt('haptics', v)} />
         <Note>Sound effects are not included: custom sounds need a new app build.</Note>
       </Section>
-      <Text style={s.group}>Language and speed</Text>
+      <Group>Language and speed</Group>
       <Section icon="language-outline" title="Language" summary={o.lang === 'el' ? 'Ελληνικά · Beta' : 'English'}>
         {[['en', 'English', null], ['el', 'Ελληνικά', 'BETA']].map(([k, label, tag]) => {
           const on = (o.lang === 'el' ? 'el' : 'en') === k;
@@ -235,7 +249,7 @@ export default function SettingsScreen() {
       <Section icon="airplane-outline" title="Offline mode" summary={o.offline ? 'On: saved data only' : 'Off'}>
         <Sw label="Use saved data only" hint="Nothing is downloaded. Screens show what the app saved earlier (the offline history always works). Good for saving data or flying. Screens with nothing saved show a message." value={!!o.offline} onChange={(v) => setOpt('offline', v)} />
       </Section>
-      <Text style={s.group}>Data and updates</Text>
+      <Group>Data and updates</Group>
       <Section icon="save-outline" title="Backup and restore" summary="Move everything to a new phone">
         <Note>A backup holds your fantasy saves, settings, predictions, friends and favourites in one file.</Note>
         <Btn tone="solid" icon="download-outline" onPress={async () => { setBk('Making the backup…'); try { setBk(await exportBackup()); } catch (e) { setBk(''); Alert.alert('Backup failed', String(e?.message || e)); } }}>Back up now</Btn>
@@ -261,7 +275,7 @@ export default function SettingsScreen() {
         <Btn onPress={() => { setOpts(Object.fromEntries(Object.entries(OPTS).filter(([k]) => !['lang', 'name', 'welcomed', 'accent', 'sport'].includes(k)))); setMsg('Display and performance settings were reset.'); }}>Reset display settings</Btn>
         {msg ? <Note>{msg}</Note> : null}
       </Section>
-      <Text style={s.group}>More</Text>
+      <Group>More</Group>
       <Card>
         <Btn icon="server-outline" onPress={() => nav.navigate('Storage')}>Storage and data</Btn>
         <Btn icon="bug-outline" onPress={() => nav.navigate('CrashLog')}>Crash log</Btn>

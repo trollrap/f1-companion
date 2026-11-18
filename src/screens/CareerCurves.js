@@ -3,6 +3,7 @@ import { View, Pressable, TextInput } from 'react-native';
 import Svg, { Line, Polyline, Circle, Text as SvgText } from 'react-native-svg';
 import { Text } from '../components/Text';
 import Screen, { Card, Eyebrow, Note } from '../components/Screen';
+import { StatHeader } from '../components/StatRows';
 import { Segmented } from '../components/Shared';
 import { colors, alpha } from '../theme';
 import { norm } from '../lib/names';
@@ -40,7 +41,7 @@ export default function CareerCurvesScreen() {
   const ticks = [0, 0.25, 0.5, 0.75, 1].map((f) => Math.round(top * f));
   return (
     <Screen header={false}>
-      <Card><Eyebrow>Career curves</Eyebrow><Note>Two careers on one chart: running total after each season, counted from each driver's debut year. Race results only, so sprint points are not included.</Note></Card>
+      <StatHeader title="Career curves" icon="trending-up" note="Two careers on one chart: running total after each season, counted from each driver's debut year. Race results only, so sprint points are not included." />
       <View style={{ flexDirection: 'row', gap: 10 }}>{[0, 1].map((i) => <Pick key={i} i={i} id={ids[i]} onPick={(id) => setIds((a) => a.map((x, k) => (k === i ? id : x)))} />)}</View>
       <Segmented value={m} items={METRICS} onChange={setM} />
       <View onLayout={(e) => setW(e.nativeEvent.layout.width)}>

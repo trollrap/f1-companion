@@ -9,7 +9,7 @@ import { Btn } from '../components/FunBits';
 import { useFun } from '../fun/store';
 import { sessionsOf, standings } from '../fun/sim';
 import { colors } from '../theme';
-import { GameRows } from './FunScreens';
+import { GamesHub } from './GamesHub';
 
 // Everything about fantasy seasons: the saves, a new season, presets and settings.
 export function FantasyHub({ navigation }) {
@@ -45,11 +45,4 @@ export function FantasyHub({ navigation }) {
     </Screen>);
 }
 
-export function FunGames({ navigation }) {
-  return (
-    <Screen>
-      <Text style={{ color: colors.fg, fontSize: 24, fontWeight: '800', fontStyle: 'italic' }}>Games</Text>
-      <Reveal index={0}><Note>Quizzes, puzzles and reflex games. Unfinished games are saved, so you can leave and come back.</Note></Reveal>
-      <GameRows navigation={navigation} />
-    </Screen>);
-}
+export function FunGames({ navigation }) { return <GamesHub navigation={navigation} />; }

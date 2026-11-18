@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { View, Pressable, TextInput } from 'react-native';
 import { Text } from '../components/Text';
 import Screen, { Card, Eyebrow, Note } from '../components/Screen';
+import { GameHeader } from '../components/GameKit';
 import { Btn } from '../components/FunBits';
 import Reveal from '../components/Reveal';
 import { colors, alpha } from '../theme';
@@ -34,7 +35,7 @@ export default function GuessDriverScreen() {
   const again = () => { setGot(false); setQ(''); restart(); };
   return (
     <Screen header={false}>
-      <Card><Eyebrow>Driver wordle</Eyebrow><Note>{`Find the mystery driver in ${MAX} guesses. Green is a match. Yellow with an arrow means the answer is later (▲) or earlier (▼), or more (▲) or fewer (▼) wins. Drivers since 1995 with 40+ starts.`}</Note></Card>
+      <GameHeader cat="daily" icon="grid" title="Driver wordle" hint={`Find the mystery driver in ${MAX} guesses. Green is a match. Yellow with an arrow means the answer is later (▲) or earlier (▼), or more (▲) or fewer (▼) wins. Drivers since 1995 with 40+ starts.`} />
       <View style={{ flexDirection: 'row', gap: 4 }}>{COLS.map(([k, l]) => <Text key={k} style={{ flex: 1, color: colors.muted, fontSize: 10, textAlign: 'center' }}>{l}</Text>)}</View>
       {guesses.map((p) => { const c = compare(p, secret); return (
         <View key={p.id} style={{ gap: 3 }}>
