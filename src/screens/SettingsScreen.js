@@ -20,7 +20,6 @@ import Reveal from '../components/Reveal';
 import ColorPicker from '../components/ColorPicker';
 import { restartApp } from '../lib/reload';
 import { homeLayout, HOME_CARDS } from '../lib/homeLayout';
-import { PAGES } from '../lib/pages';
 import { hideAll } from '../lib/spoiler';
 import { Segmented } from '../components/Shared';
 import { exportBackup, findBackups, restoreFrom } from '../lib/backup';
@@ -164,13 +163,8 @@ export default function SettingsScreen() {
         <Btn onPress={() => setOpt('homeLayout', null)}>Reset the order</Btn>
       </Section>
       <Section icon="pin-outline" title="Pinned pages" summary={`${(o.pins || []).length} pinned`}>
-        <Note>Pinned pages get a shortcut strip at the top of Home. Up to 8.</Note>
-        {PAGES.map(([route, title]) => { const on = (o.pins || []).includes(route); return (
-          <View key={route} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 4 }}>
-            <Switch value={on} onValueChange={(v) => { const cur = o.pins || []; if (v && cur.length >= 8) return; setOpt('pins', v ? [...cur, route] : cur.filter((x) => x !== route)); }} trackColor={{ true: colors.accent }} />
-            <Text style={{ color: on ? colors.fg : colors.muted, fontSize: 16, flex: 1 }}>{title}</Text>
-          </View>); })}
-        {(o.pins || []).length ? <Btn onPress={() => setOpt('pins', [])}>Unpin all</Btn> : null}
+        <Note>Pinned pages get a shortcut strip at the top of Home. Up to 8. Choose and reorder them on their own screen.</Note>
+        <Btn icon="pin-outline" onPress={() => nav.navigate('PinnedPages')}>Choose pinned pages</Btn>
       </Section>
       <Section icon="person-outline" title="Driver names" summary={{ full: 'First and last', surname: 'Surname only', code: 'Three-letter code' }[o.nameStyle || 'full']}>
         <Segmented value={o.nameStyle || 'full'} onChange={(v) => setOpt('nameStyle', v)} items={[['full', 'Full'], ['surname', 'Surname'], ['code', 'Code']]} />

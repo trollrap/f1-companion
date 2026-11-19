@@ -1,5 +1,5 @@
 export const colors = {
-  bg: '#0A0506', surface: '#140B0D', surface2: '#1E1215', line: '#2E1B20', fg: '#F7F1F2', muted: '#9E8D92',
+  bg: '#0A0506', surface: '#140B0D', card: '#140B0D', surface2: '#1E1215', line: '#2E1B20', fg: '#F7F1F2', muted: '#9E8D92',
   accent: '#F0141E', accentSoft: '#3B0C11', cardA: '#2A1318', cardB: '#160C0F', cardC: '#34121A', deep: '#0A0506', red: '#F0141E', good: '#22C55E', gold: '#F5C400', purple: '#B26BFF', sprint: '#FF2D87', onSoft: 'rgba(255,255,255,0.75)', isLight: false,
 };
 // Constructor colours by Jolpica constructorId. These are fallbacks: the app overrides them at runtime with the colours OpenF1
@@ -37,9 +37,9 @@ export function applyTheme(mode) {
   if (mode !== 'amoled' && mode !== 'light') return false;
   const base = rgb(colors.accent) || [240, 20, 30]; const h = hueOf(base); const neutral = Math.max(...base) - Math.min(...base) < 30;
   if (mode === 'amoled') {
-    Object.assign(colors, { bg: '#000000', deep: '#000000', surface: '#0B0B0C', surface2: '#151517', line: '#232326', cardA: '#121214', cardB: '#08080A', cardC: '#1A1A1D', muted: '#9A9AA2', isLight: false });
+    Object.assign(colors, { bg: '#000000', deep: '#000000', surface: '#0B0B0C', card: '#0B0B0C', surface2: '#151517', line: '#232326', cardA: '#121214', cardB: '#08080A', cardC: '#1A1A1D', muted: '#9A9AA2', isLight: false });
   } else {
-    Object.assign(colors, { bg: '#F3F4F7', deep: '#0B0C10', surface: '#FFFFFF', surface2: '#E9EBF0', line: '#D5D9E1', fg: '#13151A', muted: '#5B6372', cardA: '#FFFFFF', cardB: '#F6F7FA', cardC: '#EEF0F5', accentSoft: hsl(h, neutral ? 6 : 80, 90), onSoft: 'rgba(19,21,26,0.72)', good: '#15803D', gold: '#B7791F', isLight: true });
+    Object.assign(colors, { bg: '#F3F4F7', deep: '#0B0C10', surface: '#FFFFFF', card: '#FFFFFF', surface2: '#E9EBF0', line: '#D5D9E1', fg: '#13151A', muted: '#5B6372', cardA: '#FFFFFF', cardB: '#F6F7FA', cardC: '#EEF0F5', accentSoft: hsl(h, neutral ? 6 : 80, 90), onSoft: 'rgba(19,21,26,0.72)', good: '#15803D', gold: '#B7791F', isLight: true });
   }
   return true;
 }

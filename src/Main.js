@@ -250,6 +250,9 @@ function Shell() {
               <Stack.Screen name="SeasonHeatmap" getComponent={() => guardScreen(require('./screens/Stats158').SeasonHeatmapScreen, 'SeasonHeatmapScreen')} options={{ title: 'Season heatmap' }} />
               <Stack.Screen name="QualiBattles" getComponent={() => guardScreen(require('./screens/Stats158').QualiBattlesScreen, 'QualiBattlesScreen')} options={{ title: 'Team-mate battles' }} />
               <Stack.Screen name="CountdownCard" getComponent={() => guardScreen(require('./screens/CountdownCard').default, 'default')} options={{ title: 'Countdown card' }} />
+              <Stack.Screen name="NumberHistory" getComponent={() => guardScreen(require('./screens/Numbers159').NumberHistoryScreen, 'NumberHistoryScreen')} options={{ title: 'Number history' }} />
+              <Stack.Screen name="SprintStats" getComponent={() => guardScreen(require('./screens/Numbers159').SprintStatsScreen, 'SprintStatsScreen')} options={{ title: 'Sprint weekends' }} />
+              <Stack.Screen name="PinnedPages" getComponent={() => guardScreen(require('./screens/Pins159').default, 'default')} options={{ title: 'Pinned pages' }} />
               <Stack.Screen name="Streaks" getComponent={() => guardScreen(require('./screens/Streaks').default, 'default')} options={{ title: 'Streaks' }} />
               <Stack.Screen name="CareerCurves" getComponent={() => guardScreen(require('./screens/CareerCurves').default, 'default')} options={{ title: 'Career curves' }} />
               <Stack.Screen name="CompareSeasons" getComponent={() => guardScreen(require('./screens/SeasonStats').CompareSeasonsScreen, 'CompareSeasonsScreen')} options={{ title: 'Compare seasons' }} />

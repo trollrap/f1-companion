@@ -501,3 +501,8 @@ Expo Go (SDK 53+) does not include the `expo-notifications` native module; impor
 - `screens/Stats158.js`: SeasonHeatmap (offline `seasonHeat(year)` in history.js, up to 2025) and QualiBattles (`teamBattles(year)` in jolpica.js, needs network, NOT verified live). `screens/CountdownCard.js` (ShareCard).
 - Not verified on device: swipe steering in Snake, notification taps, Jolpica qualifying calls.
 
+## V1.59.0 (JS-only)
+- `lib/statsGroups.js` now holds the Statistics hub GROUPS and `STAT_ORDER`; `components/Screen.js` adds a sideways `Swipe` to any screen whose route is in STAT_ORDER (uses `navigation.replace`, so Back returns to the hub; an explicit `swipe` prop still wins).
+- `screens/Pins159.js` (route PinnedPages): edits `prefs.opts.pins` (max 8) through a ref, so fast taps never use a stale list; Settings keeps only a button. The old switch list had stale-closure toggles.
+- `screens/Numbers159.js`: NumberHistory (`numberBoard()` pages Jolpica `/drivers.json`, permanentNumber; seasons and wins from the offline history) and SprintStats (`sprintSeason/sprintAll` from `/year/sprint.json` and `/year/results/1.json`). Both NOT verified against the live API.
+

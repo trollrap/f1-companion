@@ -3,7 +3,8 @@ import { ScrollView, View, Pressable, RefreshControl, Animated, Easing, StyleShe
 import { Text } from './Text';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigationState, NavigationRouteContext } from '@react-navigation/native';
+import { useNavigationState, NavigationRouteContext, NavigationContext } from '@react-navigation/native';
+import { STAT_ORDER } from '../lib/statsGroups';
 import { Share } from 'react-native';
 import { SHARE_ROUTES } from '../lib/shareRoutes';
 import { shareScreenImage } from '../lib/exportImage';
@@ -39,8 +40,11 @@ function OfflineBanner() {
 // Children inside <>...</> are lifted out so every block gets the same gap.
 // Every block keeps a key that is unique and stable (prefixed by the fragment it came from), so a block appearing or disappearing never remounts or re-animates its neighbours.
 const flat = (ch, pre = '') => React.Children.toArray(ch).flatMap((c) => (c && c.type === React.Fragment ? flat(c.props.children, `${pre}${c.key}/`) : [{ el: c, k: `${pre}${c && c.key != null ? c.key : ''}` }]));
-export default function Screen({ children, header = true, refreshable = true, scrollRef, swipe, footer, revealKey }) {
-  const route = React.useContext(NavigationRouteContext); const canShare = !!route && SHARE_ROUTES.has(route.name); const own = useRef(null); const sref = scrollRef || own;
+export default function Screen({ children, header = true, refreshable = true, scrollRef, swipe: swipeProp, footer, revealKey }) {
+  const nav0 = React.useContext(NavigationContext); const route = React.useContext(NavigationRouteContext);
+  // Statistics screens swipe sideways to the previous or next one in the Statistics list.
+  const si = route && !swipeProp ? STAT_ORDER.indexOf(route.name) : -1;
+  const swipe = swipeProp || (si >= 0 && nav0 ? { index: si, count: STAT_ORDER.length, onIndex: (i) => nav0.replace(STAT_ORDER[i]) } : null); const canShare = !!route && SHARE_ROUTES.has(route.name); const own = useRef(null); const sref = scrollRef || own;
   const doShare = async (whole) => { const r = await shareScreenImage(sref, whole === true); if (r === 'unavailable' || r === 'error') { try { await Share.share({ message: `F1 Companion: ${route?.name || ''}` }); } catch {} } };
   // A screen pushed on the stack already has the native header, so it never draws a second header or a second top margin.
   const navType = useNavigationState((st) => st?.type); if (navType === 'stack') header = false;

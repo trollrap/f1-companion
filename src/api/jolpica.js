@@ -341,3 +341,30 @@ export async function teamBattles(year) {
   }).filter(Boolean).sort((m, n) => (n.qa + n.qb + n.ra + n.rb) - (m.qa + m.qb + m.ra + m.rb) || m.name.localeCompare(n.name));
   return { rounds: per.map((p) => ({ round: p.round, name: p.name })), teams: out };
 }
+
+// Career numbers since drivers were allowed to pick one: number -> drivers who registered it (Jolpica lists a permanent number for each driver that had one).
+export async function numberBoard() {
+  const rows = await pageAll('/drivers.json', (d) => d.DriverTable.Drivers, 30 * DAY, 12); const by = {};
+  rows.forEach((d) => { const n = Number(d.permanentNumber); if (!(n > 0)) return; (by[n] ||= []).push({ id: d.driverId, name: `${d.givenName} ${d.familyName}`, last: d.familyName, nat: d.nationality, code: d.code }); });
+  return by;
+}
+// Sprint results of one season (2021 on) with the winner of each Grand Prix, summarised per weekend and per driver.
+export async function sprintSeason(year) {
+  const [spr, win] = await Promise.all([pageAll(`/${year}/sprint.json`, sprintRows, ttlFor(year, 30 * MIN), 4), pageAll(`/${year}/results/1.json`, resultRows, ttlFor(year, 30 * MIN), 2).catch(() => [])]);
+  const raceWin = {}; win.forEach((x) => { raceWin[x.race.round] = { id: x.r.Driver.driverId, name: `${x.r.Driver.givenName} ${x.r.Driver.familyName}` }; });
+  const wk = {}, dr = {};
+  spr.forEach(({ race, r }) => {
+    const w = (wk[race.round] ||= { year, round: Number(race.round), name: race.raceName.replace(' Grand Prix', ''), date: race.date, win: null, raceWin: raceWin[race.round] || null });
+    const id = r.Driver.driverId; const pos = Number(r.position), grid = Number(r.grid);
+    const d = (dr[id] ||= { id, name: `${r.Driver.givenName} ${r.Driver.familyName}`, last: r.Driver.familyName, teamId: r.Constructor.constructorId, n: 0, wins: 0, podiums: 0, pts: 0, gain: 0, gainN: 0 });
+    d.n++; d.pts += Number(r.points) || 0; d.teamId = r.Constructor.constructorId; if (pos === 1) { d.wins++; w.win = { id, name: d.name }; } if (pos >= 1 && pos <= 3) d.podiums++;
+    if (pos > 0 && grid > 0) { d.gain += grid - pos; d.gainN++; }
+  });
+  return { weekends: Object.values(wk).sort((a, b) => a.round - b.round), drivers: Object.values(dr) };
+}
+export async function sprintAll(fromYear, toYear) {
+  const years = []; for (let y = fromYear; y <= toYear; y++) years.push(y);
+  const per = await Promise.all(years.map((y) => sprintSeason(y).catch(() => ({ weekends: [], drivers: [] }))));
+  const dr = {}; per.forEach((p) => p.drivers.forEach((d) => { const o = (dr[d.id] ||= { ...d, n: 0, wins: 0, podiums: 0, pts: 0, gain: 0, gainN: 0 }); o.n += d.n; o.wins += d.wins; o.podiums += d.podiums; o.pts += d.pts; o.gain += d.gain; o.gainN += d.gainN; o.teamId = d.teamId; }));
+  return { weekends: per.flatMap((p) => p.weekends), drivers: Object.values(dr) };
+}

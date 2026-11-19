@@ -178,4 +178,5 @@ Object.assign(DICT, {
 });
 Object.assign(DICT, { 'Lap chart': 'Διάγραμμα γύρων', 'Games stats': 'Στατιστικά παιχνιδιών', 'Connect four': 'Τέσσερα στη σειρά', 'Blackjack 21': 'Μπλάκτζακ 21', 'Play again': 'Ξανά', 'Statistics': 'Στατιστικά' });
 Object.assign(DICT, { 'Search settings': 'Αναζήτηση ρυθμίσεων', 'Season heatmap': 'Θερμικός χάρτης σεζόν', 'Team-mate battles': 'Μάχες συναθλητών', 'Countdown card': 'Κάρτα αντίστροφης μέτρησης', 'Daily challenges': 'Καθημερινές προκλήσεις', 'Achievements': 'Επιτεύγματα', 'Snake (DRS trail)': 'Φιδάκι (DRS)', 'Checkers': 'Ντάμα', 'Allow background use (battery)': 'Άδεια χρήσης στο παρασκήνιο (μπαταρία)' });
+Object.assign(DICT, { 'Number history': 'Ιστορικό αριθμών', 'Sprint weekends': 'Σαββατοκύριακα Sprint', 'Pinned pages': 'Καρφιτσωμένες σελίδες', 'Choose pinned pages': 'Επιλογή καρφιτσωμένων σελίδων', 'Search pages': 'Αναζήτηση σελίδων', 'Unpin all': 'Ξεκαρφίτσωμα όλων' });
 
