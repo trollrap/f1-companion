@@ -8,7 +8,7 @@ import { refreshAll } from './lib/net';
 import { useFonts } from 'expo-font';
 import { Rajdhani_400Regular, Rajdhani_500Medium, Rajdhani_600SemiBold, Rajdhani_700Bold } from '@expo-google-fonts/rajdhani';
 import { ChakraPetch_500Medium, ChakraPetch_600SemiBold, ChakraPetch_700Bold } from '@expo-google-fonts/chakra-petch';
-import { Exo2_700Bold, Exo2_800ExtraBold, Exo2_700Bold_Italic, Exo2_800ExtraBold_Italic } from '@expo-google-fonts/exo-2';
+import { Exo2_400Regular, Exo2_500Medium, Exo2_600SemiBold, Exo2_700Bold, Exo2_800ExtraBold, Exo2_700Bold_Italic, Exo2_800ExtraBold_Italic } from '@expo-google-fonts/exo-2';
 import { RobotoCondensed_400Regular, RobotoCondensed_500Medium, RobotoCondensed_600SemiBold, RobotoCondensed_700Bold, RobotoCondensed_800ExtraBold } from '@expo-google-fonts/roboto-condensed';
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
@@ -59,7 +59,7 @@ function MotoTabs() {
     <MTab.Navigator tabBar={(p) => <NavBar {...p} icons={MICONS} />} screenOptions={({ route }) => ({
       headerShown: false, animation: 'fade', tabBarActiveTintColor: colors.accent, tabBarInactiveTintColor: colors.muted,
       
-      tabBarLabelStyle: { fontFamily: ui.lang === 'el' ? 'RobotoCondensed_600SemiBold' : 'Rajdhani_600SemiBold', fontSize: 13 },
+      tabBarLabelStyle: { fontFamily: ui.lang === 'el' ? 'RobotoCondensed_600SemiBold' : ui.font === 'classic' ? 'Rajdhani_600SemiBold' : 'Exo2_600SemiBold', fontSize: 13 },
       tabBarLabel: tr(route.name), tabBarIcon: ({ color, size }) => <Ionicons name={MICONS[route.name]} size={size} color={color} />,
     })}>
       <MTab.Screen name="Home" getComponent={() => guardScreen(require('./screens/MotoScreens').MotoHome, 'MotoHome')} />
@@ -75,7 +75,7 @@ function FootTabs() {
     <FTab.Navigator tabBar={(p) => <NavBar {...p} icons={{ Scores: 'football', Tables: 'list' }} />} screenOptions={({ route }) => ({
       headerShown: false, animation: 'fade', tabBarActiveTintColor: colors.accent, tabBarInactiveTintColor: colors.muted,
       
-      tabBarLabelStyle: { fontFamily: ui.lang === 'el' ? 'RobotoCondensed_600SemiBold' : 'Rajdhani_600SemiBold', fontSize: 13 },
+      tabBarLabelStyle: { fontFamily: ui.lang === 'el' ? 'RobotoCondensed_600SemiBold' : ui.font === 'classic' ? 'Rajdhani_600SemiBold' : 'Exo2_600SemiBold', fontSize: 13 },
       tabBarLabel: tr(route.name), tabBarIcon: ({ color, size }) => <Ionicons name={route.name === 'Scores' ? 'football' : 'list'} size={size} color={color} />,
     })}>
       <FTab.Screen name="Scores" getComponent={() => guardScreen(require('./screens/FootScreens').FootScores, 'FootScores')} />
@@ -88,7 +88,7 @@ function Tabs() {
     <Tab.Navigator tabBar={(p) => <NavBar {...p} icons={ICONS} />} screenOptions={({ route }) => ({
       headerShown: false, animation: 'fade', tabBarActiveTintColor: colors.accent, tabBarInactiveTintColor: colors.muted,
       
-      tabBarLabelStyle: { fontFamily: ui.lang === 'el' ? 'RobotoCondensed_600SemiBold' : 'Rajdhani_600SemiBold', fontSize: 13 },
+      tabBarLabelStyle: { fontFamily: ui.lang === 'el' ? 'RobotoCondensed_600SemiBold' : ui.font === 'classic' ? 'Rajdhani_600SemiBold' : 'Exo2_600SemiBold', fontSize: 13 },
       tabBarLabel: tr(route.name),
       tabBarIcon: ({ color, size }) => <Ionicons name={ICONS[route.name]} size={size} color={color} />,
     })}>
@@ -302,7 +302,7 @@ function Shell() {
   );
 }
 export default function App() {
-  const [fontsLoaded, fontError] = useFonts({ Rajdhani_400Regular, Rajdhani_500Medium, Rajdhani_600SemiBold, Rajdhani_700Bold, ChakraPetch_500Medium, ChakraPetch_600SemiBold, ChakraPetch_700Bold, Exo2_700Bold, Exo2_800ExtraBold, Exo2_700Bold_Italic, Exo2_800ExtraBold_Italic, RobotoCondensed_400Regular, RobotoCondensed_500Medium, RobotoCondensed_600SemiBold, RobotoCondensed_700Bold, RobotoCondensed_800ExtraBold });
+  const [fontsLoaded, fontError] = useFonts({ Exo2_400Regular, Exo2_500Medium, Exo2_600SemiBold, Rajdhani_400Regular, Rajdhani_500Medium, Rajdhani_600SemiBold, Rajdhani_700Bold, ChakraPetch_500Medium, ChakraPetch_600SemiBold, ChakraPetch_700Bold, Exo2_700Bold, Exo2_800ExtraBold, Exo2_700Bold_Italic, Exo2_800ExtraBold_Italic, RobotoCondensed_400Regular, RobotoCondensed_500Medium, RobotoCondensed_600SemiBold, RobotoCondensed_700Bold, RobotoCondensed_800ExtraBold });
   if (!fontsLoaded && !fontError) return <View style={{ flex: 1, backgroundColor: colors.bg }} />; // brief blank while fonts load; a font error falls back to system fonts
   return (
     <ErrorBoundary>

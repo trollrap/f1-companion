@@ -40,7 +40,7 @@ export function TriviaLadderScreen() {
     later(() => { setPick(null); if (ok) upd({ n: n + 1, score: score + 1 }); else { const l = lives - 1; upd({ lives: l, n: n + 1, over: l <= 0 }); if (l <= 0) finish(score); } }, 1700); };
   return (
     <Screen header={false}>
-      <Card><Eyebrow>{`Trivia ladder · level ${level} · ${q.kind}`}</Eyebrow><Text style={{ color: colors.fg, fontSize: 17, fontWeight: '600', marginTop: 6 }}>{q.q}</Text><Note>{`${'❤️'.repeat(lives)}${'🖤'.repeat(3 - lives)}   Best ${best}`}</Note></Card>
+      <Card hero><Eyebrow>{`Trivia ladder · level ${level} · ${q.kind}`}</Eyebrow><Text style={{ color: colors.fg, fontSize: 17, fontWeight: '600', marginTop: 6 }}>{q.q}</Text><Note>{`${'❤️'.repeat(lives)}${'🖤'.repeat(3 - lives)}   Best ${best}`}</Note></Card>
       {q.options.map((o, k) => <Opt key={`${n}${k}`} i={k} text={o} onPress={() => choose(k)} state={pick === null ? '' : k === q.answer ? 'right' : pick === k ? 'wrong' : ''} />)}
       {pick !== null ? <Note>{`${pick === q.answer ? 'Correct. ' : 'Not quite. '}${q.why}`}</Note> : null}
     </Screen>);
@@ -73,7 +73,7 @@ export function DailyPuzzleScreen() {
     later(async () => { setPick(null); const ns = { day, a: [...a, k] }; save(ns); if (ns.a.length >= qs.length) { const s = await kvGet('daily:puzzleStreak', { last: '', n: 0 }); const n = s.last === day ? s.n : s.last === dayBefore(day) ? s.n + 1 : 1; await kvSet('daily:puzzleStreak', { last: day, n }); setStreak(n); } }, 1500); };
   return (
     <Screen header={false}>
-      <Card><Eyebrow>{`Daily puzzle · ${i + 1} of 5 · ${q.kind}`}</Eyebrow><Text style={{ color: colors.fg, fontSize: 17, fontWeight: '600', marginTop: 6 }}>{q.q}</Text><Note>Everyone gets these same five today. One go each.</Note></Card>
+      <Card hero><Eyebrow>{`Daily puzzle · ${i + 1} of 5 · ${q.kind}`}</Eyebrow><Text style={{ color: colors.fg, fontSize: 17, fontWeight: '600', marginTop: 6 }}>{q.q}</Text><Note>Everyone gets these same five today. One go each.</Note></Card>
       {q.options.map((o, k) => <Opt key={`${i}${k}`} i={k} text={o} onPress={() => choose(k)} state={pick === null ? '' : k === q.answer ? 'right' : pick === k ? 'wrong' : ''} />)}
       {pick !== null ? <Note>{`${pick === q.answer ? 'Correct. ' : 'Not quite. '}${q.why}`}</Note> : null}
     </Screen>);
@@ -112,7 +112,7 @@ export function WordSearchScreen() {
     </Card>);
   return (
     <Screen header={false}>
-      <Card><Eyebrow>Word search</Eyebrow><Note>{start ? 'Now tap the last letter.' : 'Tap the first letter of a word, then its last letter. Words can run in any direction.'}</Note>{msg ? <Text style={{ color: colors.fg, fontWeight: '700', marginTop: 4 }}>{msg}</Text> : null}</Card>
+      <Card hero><Eyebrow>Word search</Eyebrow><Note>{start ? 'Now tap the last letter.' : 'Tap the first letter of a word, then its last letter. Words can run in any direction.'}</Note>{msg ? <Text style={{ color: colors.fg, fontWeight: '700', marginTop: 4 }}>{msg}</Text> : null}</Card>
       {won ? <ShareResult text={txt}>{board}</ShareResult> : board}
       <Card>
         <Eyebrow>{`Find ${puz.words.length - found.length} more`}</Eyebrow>

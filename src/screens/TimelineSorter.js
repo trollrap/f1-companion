@@ -26,7 +26,7 @@ export default function TimelineSorterScreen() {
   const next = async () => { const last = i + 1 >= total; const sc = score; setOrder([]); setShown(false); if (last) { run.finish(); if (sc > best) { setBest(sc); kvSet('tl:best', sc); } if (sc >= total * 4) setGot(await awardPack('tl:great')); } run.setI(i + 1); };
   return (
     <Screen header={false}>
-      <Card><Eyebrow>{`Timeline sorter · board ${i + 1} of ${total}`}</Eyebrow><Note>Tap the events from earliest to latest. Tap a placed one to take it back.</Note></Card>
+      <Card hero><Eyebrow>{`Timeline sorter · board ${i + 1} of ${total}`}</Eyebrow><Note>Tap the events from earliest to latest. Tap a placed one to take it back.</Note></Card>
       {ev.map((e, k) => { const p = order.indexOf(k); const ok = shown && want[p] === k; const bg = shown ? (ok ? alpha(colors.good, 0.25) : alpha(colors.accent, 0.2)) : p >= 0 ? alpha(colors.accent, 0.18) : colors.card;
         return (<Reveal key={`${i}${k}`} index={k}><Pressable accessibilityRole="button" accessibilityLabel={`${e.text}${p >= 0 ? `, position ${p + 1}` : ''}`} onPress={() => tap(k)} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderRadius: 14, borderWidth: 1, borderColor: p >= 0 ? colors.accent : colors.line, backgroundColor: bg }}>
           <View style={{ width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center', backgroundColor: p >= 0 ? colors.accent : colors.line }}><Text style={{ color: '#fff', fontWeight: '800' }}>{p >= 0 ? p + 1 : ''}</Text></View>

@@ -130,8 +130,8 @@ export default function SettingsScreen() {
         <Note>Tints the whole app with a team's colour instead of your accent colour. Pick a team, or follow your first favourite team (star a team in the Paddock). Change it any time, for example each race weekend. The app restarts to apply it.</Note>
         <Dropdown value={o.teamTheme || 'off'} options={[['off', 'Off, use my accent colour'], ['fav', 'My first favourite team'], ...Object.keys(teamColors).map((k) => [k, TEAM_NAMES[k] || k])]} onChange={async (v) => { await setOpt('teamTheme', v); setTimeout(() => { restartApp().catch(() => {}); }, 700); }} prefix="Team" />
       </Section>
-      <Section icon="text-outline" title="Font and text size" summary={`${o.font === 'system' ? 'Phone font' : 'App font'} · ${Math.round((Number(o.textScale) || 1) * 100)}%`}>
-        <Segmented value={o.font === 'system' ? 'system' : 'default'} onChange={(v) => setOpt('font', v)} items={[['default', 'App font'], ['system', 'Phone font']]} />
+      <Section icon="text-outline" title="Font and text size" summary={`${o.font === 'system' ? 'Phone font' : o.font === 'classic' ? 'Classic font' : 'App font'} · ${Math.round((Number(o.textScale) || 1) * 100)}%`}>
+        <Segmented value={o.font === 'system' ? 'system' : o.font === 'classic' ? 'classic' : 'default'} onChange={(v) => setOpt('font', v)} items={[['default', 'App font'], ['classic', 'Classic'], ['system', 'Phone']]} />
         <Segmented value={String(Number(o.textScale) || 1)} onChange={(v) => setOpt('textScale', Number(v))} items={[['0.9', 'S'], ['1', 'M'], ['1.1', 'L'], ['1.2', 'XL'], ['1.3', 'XXL']]} />
         <Text style={{ color: colors.fg, fontSize: 17 }}>This is how normal text looks with your choice. Lap 52 of 71, P4, +3.2s.</Text>
         <Note>Changes show as screens redraw. Restart the app if something still looks old.</Note>

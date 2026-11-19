@@ -45,7 +45,7 @@ export function HigherLowerScreen() {
     </Screen>);
   return (
     <Screen header={false}>
-      <Card><Eyebrow>{`Higher or lower · streak ${n} · best ${best}`}</Eyebrow><Note>{`Career ${cur.label}, counted in the built-in history.`}</Note></Card>
+      <Card hero><Eyebrow>{`Higher or lower · streak ${n} · best ${best}`}</Eyebrow><Note>{`Career ${cur.label}, counted in the built-in history.`}</Note></Card>
       <Card><Text style={{ color: colors.muted, textAlign: 'center' }}>{cur.name}</Text><Big>{cur.v}</Big></Card>
       <Card><Text style={{ color: colors.muted, textAlign: 'center' }}>{nxt.name}</Text><Big color={shown != null ? colors.gold : colors.muted}>{shown != null ? shown : '?'}</Big></Card>
       <View style={{ flexDirection: 'row', gap: 10 }}>
@@ -91,7 +91,7 @@ export function BracketScreen() {
     </Pressable></Reveal>); };
   return (
     <Screen header={false}>
-      <Card><Eyebrow>{`${ROUNDS[r]} · match ${k + 1} of ${8 / 2 ** r} · career ${b.label}`}</Eyebrow><Note>Pick the driver with the bigger number. The real winner always moves on, so every match is scored on its own.</Note></Card>
+      <Card hero><Eyebrow>{`${ROUNDS[r]} · match ${k + 1} of ${8 / 2 ** r} · career ${b.label}`}</Eyebrow><Note>Pick the driver with the bigger number. The real winner always moves on, so every match is scored on its own.</Note></Card>
       {side(A)}<Text style={{ color: colors.muted, textAlign: 'center', fontWeight: '800' }}>vs</Text>{side(B)}
       <Note>{`${m} of 15 played${wins ? ` · ${wins} bracket${wins === 1 ? '' : 's'} finished` : ''}`}</Note>
     </Screen>);
@@ -122,7 +122,7 @@ export function ScrambleScreen() {
   const typed = used.map((x) => w.tiles[x]).join('');
   return (
     <Screen header={false}>
-      <Card><Eyebrow>{`Season scramble · ${i + 1} of ${ROUND_N} · ${w.cat}`}</Eyebrow><Text style={{ color: left <= 5 ? colors.accent : colors.fg, fontSize: 28, fontWeight: '800' }}>{`${left}s`}</Text><Note>Tap the letters in order to spell the name.</Note></Card>
+      <Card hero><Eyebrow>{`Season scramble · ${i + 1} of ${ROUND_N} · ${w.cat}`}</Eyebrow><Text style={{ color: left <= 5 ? colors.accent : colors.fg, fontSize: 28, fontWeight: '800' }}>{`${left}s`}</Text><Note>Tap the letters in order to spell the name.</Note></Card>
       <Card>
         <Text style={{ color: res === 'ok' ? colors.good : res === 'miss' ? colors.accent : colors.fg, fontSize: 28, fontWeight: '800', letterSpacing: 3, textAlign: 'center', minHeight: 36 }}>{res === 'miss' ? w.text : typed}</Text>
         {res === 'miss' ? <Note>{left <= 0 ? 'Out of time.' : 'Not quite.'}</Note> : null}

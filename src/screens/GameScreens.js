@@ -95,7 +95,7 @@ export function MysteryDriverScreen() {
   if (!ready) return <Screen header={false}><Note>Loading…</Note></Screen>;
   return (
     <Screen header={false}>
-      <Card>
+      <Card hero>
         <Eyebrow>Mystery driver</Eyebrow>
         <Text style={{ color: colors.muted, fontSize: 14, marginTop: 6 }}>{`A new driver every day. You have ${MAX} guesses. Green is a match, yellow is close, and the arrows say whether the mystery driver is higher or lower.`}</Text>
         {!over ? (<View style={{ marginTop: 10 }}><TextInput value={q} onChangeText={setQ} placeholder="Type a driver name" placeholderTextColor={colors.muted} accessibilityLabel="Guess a driver" style={{ color: colors.fg, fontSize: 17, paddingVertical: 10, paddingHorizontal: 12, borderRadius: 12, backgroundColor: colors.surface }} />

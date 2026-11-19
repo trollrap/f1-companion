@@ -19,7 +19,7 @@ export default function ReliabilityScreen() {
   const q = useAsync(() => seasonStatuses(year), [year]); const R = useMemo(() => (q.v && q.v.length ? reliability(q.v) : null), [q.v]);
   return (
     <Screen header={false}>
-      <Card>
+      <Card hero>
         <Eyebrow>Reliability report</Eyebrow>
         <View style={{ marginTop: 10 }}><Dropdown value={year} options={years.map((y) => [y, String(y)])} onChange={(v) => { setYear(Number(v)); setOpen(null); }} prefix="Season" /></View>
         <Note>Every race a car did not finish, sorted by the status the result gives: mechanical (engine, gearbox, hydraulics and so on), accident (collisions, spins, damage) or other.</Note>

@@ -20,7 +20,7 @@ export default function GridDropsScreen() {
   const bar = (id) => <View style={{ width: 4, alignSelf: 'stretch', borderRadius: 2, backgroundColor: teamColor(id) }} />;
   return (
     <Screen header={false}>
-      <Card>
+      <Card hero>
         <Eyebrow>Grid penalties tracker</Eyebrow>
         <View style={{ marginTop: 10 }}><Dropdown value={year} options={years.map((y) => [y, String(y)])} onChange={(v) => setYear(Number(v))} prefix="Season" /></View>
         <View style={{ marginTop: 10 }}><Segmented value={tab} onChange={setTab} items={[['race', 'By race'], ['driver', 'By driver'], ['team', 'By team']]} /></View>

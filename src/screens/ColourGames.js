@@ -39,7 +39,7 @@ export function LiveryScreen() {
     later(() => { setPick(null); run.setI((x) => x + 1); if (i + 1 >= rounds.length) { run.finish(); if (sc > best) { setBest(sc); kvSet('livery:best', sc); } } }, 1500); };
   return (
     <Screen header={false}>
-      <Card><Eyebrow>{`Team colours · ${i + 1} of ${rounds.length}`}</Eyebrow><View style={{ height: 120, borderRadius: 16, backgroundColor: q.c, marginTop: 8 }} /><Note>Which team does the app show in this colour? These are the app's own team colours, not exact liveries.</Note></Card>
+      <Card hero><Eyebrow>{`Team colours · ${i + 1} of ${rounds.length}`}</Eyebrow><View style={{ height: 120, borderRadius: 16, backgroundColor: q.c, marginTop: 8 }} /><Note>Which team does the app show in this colour? These are the app's own team colours, not exact liveries.</Note></Card>
       {q.options.map((o, k) => (<Reveal key={`${i}${k}`} index={k}><Pressable accessibilityRole="button" onPress={() => choose(k)} style={{ padding: 16, borderRadius: 14, borderWidth: 1.5, borderColor: pick === null ? colors.line : k === q.answer ? colors.good : pick === k ? colors.accent : colors.line, backgroundColor: pick === null ? colors.card : k === q.answer ? alpha(colors.good, 0.2) : pick === k ? alpha(colors.accent, 0.18) : colors.card }}><Text style={{ color: colors.fg, fontSize: 17, fontWeight: '600' }}>{o}</Text></Pressable></Reveal>))}
     </Screen>);
 }
@@ -65,7 +65,7 @@ export function SpeedRoundScreen() {
   if (!stmt) return <Loading />;
   return (
     <Screen header={false}>
-      <Card><Eyebrow>{`Speed round · ${right} right`}</Eyebrow><Text style={{ color: left <= 10 ? colors.accent : colors.fg, fontSize: 30, fontWeight: '800' }}>{`${Math.max(0, left)}s`}</Text></Card>
+      <Card hero><Eyebrow>{`Speed round · ${right} right`}</Eyebrow><Text style={{ color: left <= 10 ? colors.accent : colors.fg, fontSize: 30, fontWeight: '800' }}>{`${Math.max(0, left)}s`}</Text></Card>
       <Card style={flash ? { borderColor: flash === 'good' ? colors.good : colors.accent } : null}>
         <Eyebrow>{stmt.kind}</Eyebrow><Text style={{ color: colors.fg, fontSize: 15 }}>{stmt.q}</Text><Text style={{ color: colors.fg, fontSize: 20, fontWeight: '800', marginTop: 10 }}>{`Answer: ${stmt.claim}`}</Text>
       </Card>

@@ -25,7 +25,7 @@ export function TravelScreen() {
   const fmt = (n) => Math.round(n).toLocaleString('en-US');
   return (
     <Screen header={false}>
-      <Card><Eyebrow>Season travel</Eyebrow><View style={{ marginTop: 10 }}><Dropdown value={year} options={years.map((y) => [y, String(y)])} onChange={(v) => setYear(Number(v))} prefix="Season" /></View>
+      <Card hero><Eyebrow>Season travel</Eyebrow><View style={{ marginTop: 10 }}><Dropdown value={year} options={years.map((y) => [y, String(y)])} onChange={(v) => setYear(Number(v))} prefix="Season" /></View>
         <Note>Straight-line (great-circle) distance from each round to the next, using the circuit coordinates. Real routes are longer, and the teams sometimes fly home between races, so this is a lower bound.</Note></Card>
       {q.loading ? <Skeleton rows={5} /> : null}
       {q.error ? <ErrorNote error={q.error} onRetry={q.reload} /> : null}
@@ -51,7 +51,7 @@ export function TitleSwingScreen() {
   const arrow = (r) => (r.posBefore == null ? '' : r.posAfter < r.posBefore ? `▲${r.posBefore - r.posAfter}` : r.posAfter > r.posBefore ? `▼${r.posAfter - r.posBefore}` : '–');
   return (
     <Screen header={false}>
-      <Card><Eyebrow>Title picture</Eyebrow>
+      <Card hero><Eyebrow>Title picture</Eyebrow>
         <View style={{ marginTop: 10, gap: 8 }}><Dropdown value={year} options={years.map((y) => [y, String(y)])} onChange={(v) => { setYear(Number(v)); setRd(null); }} prefix="Season" />
           {sp && sp.rounds.length ? <Dropdown value={idx} options={sp.rounds.map((r, i) => [i, `R${r.round} ${r.name}`.trim()])} onChange={(v) => setRd(Number(v))} prefix="After" /> : null}</View>
         <Note>Driver standings before and after the chosen race, and how the gap to the leader moved. Seasons before the live one use offline race points (sprint points are only included in the live season).</Note></Card>
@@ -87,7 +87,7 @@ export function TeamMateScreen() {
   const Bar = ({ a, b, label }) => { const t = a + b; return (<View style={{ marginTop: 6 }}><View style={{ flexDirection: 'row', justifyContent: 'space-between' }}><Text style={{ color: colors.fg, fontWeight: '800' }}>{a}</Text><Text style={{ color: colors.muted, fontSize: 12 }}>{label}</Text><Text style={{ color: colors.fg, fontWeight: '800' }}>{b}</Text></View><View style={{ flexDirection: 'row', height: 7, borderRadius: 4, overflow: 'hidden', backgroundColor: alpha(colors.fg, 0.1), marginTop: 3 }}>{t ? <><View style={{ flex: a, backgroundColor: colors.accent }} /><View style={{ flex: b, backgroundColor: colors.muted }} /></> : null}</View></View>); };
   return (
     <Screen header={false}>
-      <Card><Eyebrow>Team-mate battles</Eyebrow>
+      <Card hero><Eyebrow>Team-mate battles</Eyebrow>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8, borderBottomWidth: 1, borderBottomColor: colors.line }}><Ionicons name="search" size={18} color={colors.muted} />
           <TextInput value={text} onChangeText={(t) => { setText(t); setPick(null); setOpen(null); }} placeholder="Type a driver's name" placeholderTextColor={colors.muted} accessibilityLabel="Search a driver" style={{ flex: 1, color: colors.fg, fontSize: 17, paddingVertical: 8 }} /></View>
         {!pick ? found.map((d) => (<Pressable key={d.driverId} accessibilityRole="button" onPress={() => { setPick(d); setText(d.name); }} style={({ pressed }) => [{ paddingVertical: 10, borderTopWidth: 1, borderTopColor: colors.line }, pressed && { opacity: 0.7 }]}><Text style={{ color: colors.fg, fontWeight: '800', fontSize: 16 }}>{d.name}</Text><Text style={{ color: colors.muted, fontSize: 12 }}>{`${d.first_year || ''} to ${d.last_year || ''}`}</Text></Pressable>)) : null}

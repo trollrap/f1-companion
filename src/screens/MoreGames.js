@@ -75,7 +75,7 @@ export function NumberQuizScreen() {
   if (done) return (<Screen header={false}><Card><Eyebrow>Number quiz</Eyebrow><Text style={{ color: colors.fg, fontSize: 44, fontWeight: '900', marginTop: 6 }}>{score} / {total}</Text><Text style={{ color: colors.muted, marginTop: 4 }}>Best: {Math.max(best, score)}</Text><View style={{ marginTop: 14 }}><Btn onPress={again}>Play again</Btn></View></Card>{got ? <Note>You earned a card pack. Open it in Cards.</Note> : null}<Note>Miss at most one to earn a card pack.</Note></Screen>);
   return (
     <Screen header={false}>
-      <Card><Eyebrow>{`Question ${i + 1} of ${total}  ·  score ${score}`}</Eyebrow><Text style={{ color: colors.fg, fontSize: 21, fontWeight: '800', marginTop: 10 }}>{cur.ask}</Text></Card>
+      <Card hero><Eyebrow>{`Question ${i + 1} of ${total}  ·  score ${score}`}</Eyebrow><Text style={{ color: colors.fg, fontSize: 21, fontWeight: '800', marginTop: 10 }}>{cur.ask}</Text></Card>
       {cur.opts.map((o) => <Pressable key={o} accessibilityRole="button" onPress={() => answer(o)} style={({ pressed }) => [optStyle(pick && o === cur.ans, pick === o && o !== cur.ans), pressed && { opacity: 0.8 }]}><Text style={{ color: colors.fg, fontSize: 17, fontWeight: '700' }}>{o}</Text></Pressable>)}
     </Screen>);
 }
@@ -111,7 +111,7 @@ export function CareerDuelScreen() {
     return (<Pressable key={k} accessibilityRole="button" onPress={() => choose(k)} style={({ pressed }) => [optStyle(right, wrong), { alignItems: 'center', paddingVertical: 24 }, pressed && { opacity: 0.8 }]}><Text style={{ color: colors.fg, fontSize: 21, fontWeight: '900' }}>{d.name}</Text><Text style={{ color: colors.muted, fontSize: 13 }}>{`${d.first_year} to ${d.last_year}`}</Text>{shown ? <Text style={{ color: colors.fg, fontSize: 32, fontWeight: '900', marginTop: 8 }}>{d.v}</Text> : null}</Pressable>); };
   return (
     <Screen header={false}>
-      <Card><Eyebrow>{`Streak ${streak}  ·  best ${best}`}</Eyebrow><Text style={{ color: colors.fg, fontSize: 19, fontWeight: '800', marginTop: 8 }}>{`Who has more ${duel.label} in their career?`}</Text></Card>
+      <Card hero><Eyebrow>{`Streak ${streak}  ·  best ${best}`}</Eyebrow><Text style={{ color: colors.fg, fontSize: 19, fontWeight: '800', marginTop: 8 }}>{`Who has more ${duel.label} in their career?`}</Text></Card>
       {side('a')}{side('b')}
       {got ? <Note>You earned a card pack. Open it in Cards.</Note> : null}
     </Screen>);
@@ -135,7 +135,7 @@ export function BuildGridScreen() {
   const nameOf = (id) => pool.find((d) => d.driverId === id)?.last || id;
   return (
     <Screen header={false}>
-      <Card><Eyebrow>Build the grid</Eyebrow>
+      <Card hero><Eyebrow>Build the grid</Eyebrow>
         <View style={{ marginTop: 10 }}><Dropdown value={year} options={GRID_YEARS.map((y) => [y, String(y)])} onChange={(v) => setYear(Number(v))} prefix="Season" /></View>
         <Note>Pick a driver, then tap a seat in the team they raced for most that season. Tap a placed driver to take them back.</Note></Card>
       {!teams.length ? <Note>No grid data for this season.</Note> : null}
@@ -181,7 +181,7 @@ export function WinnerGuessScreen() {
   if (done) return (<Screen header={false}><Card><Eyebrow>Winner guess</Eyebrow><Text style={{ color: colors.fg, fontSize: 44, fontWeight: '900', marginTop: 6 }}>{score} / {total}</Text><Text style={{ color: colors.muted, marginTop: 4 }}>Best: {Math.max(best, score)}</Text><View style={{ marginTop: 14 }}><Btn onPress={again}>Play again</Btn></View></Card>{got ? <Note>You earned a card pack. Open it in Cards.</Note> : null}<Note>Score 7 or more once to earn a card pack. Using the team clue halves a point.</Note></Screen>);
   return (
     <Screen header={false}>
-      <Card><Eyebrow>{`Race ${i + 1} of ${total}  ·  score ${score}`}</Eyebrow><Text style={{ color: colors.fg, fontSize: 24, fontWeight: '900', marginTop: 10 }}>{`${cur.y} ${cur.race}`}</Text><Text style={{ color: colors.muted, marginTop: 4 }}>Who won?</Text>
+      <Card hero><Eyebrow>{`Race ${i + 1} of ${total}  ·  score ${score}`}</Eyebrow><Text style={{ color: colors.fg, fontSize: 24, fontWeight: '900', marginTop: 10 }}>{`${cur.y} ${cur.race}`}</Text><Text style={{ color: colors.muted, marginTop: 4 }}>Who won?</Text>
         {hint ? <Text style={{ color: colors.gold, marginTop: 8, fontWeight: '700' }}>{`Clue: the winner drove for ${cur.team}.`}</Text> : !pick ? <Pressable accessibilityRole="button" onPress={() => setHint(true)} style={{ marginTop: 8 }}><Text style={{ color: colors.accent, fontWeight: '800' }}>Show the team clue (half a point)</Text></Pressable> : null}</Card>
       {cur.opts.map((o) => <Pressable key={o} accessibilityRole="button" onPress={() => answer(o)} style={({ pressed }) => [optStyle(pick && o === cur.ans, pick === o && o !== cur.ans), pressed && { opacity: 0.8 }]}><Text style={{ color: colors.fg, fontSize: 17, fontWeight: '700' }}>{o}</Text></Pressable>)}
       {pick ? <Note>{`${cur.ans} won it, starting from P${cur.grid}.`}</Note> : null}
@@ -214,7 +214,7 @@ export function ClosestNumberScreen() {
   if (done) return (<Screen header={false}><Card><Eyebrow>Closest number</Eyebrow><Text style={{ color: colors.fg, fontSize: 44, fontWeight: '900', marginTop: 6 }}>{`${total} / ${n * 100}`}</Text><Text style={{ color: colors.muted, marginTop: 4 }}>{`Best: ${Math.max(best, total)}`}</Text><View style={{ marginTop: 14 }}><Btn onPress={again}>Play again</Btn></View></Card>{got ? <Note>You earned a card pack. Open it in Cards.</Note> : null}<Note>350 points or more earns a card pack.</Note></Screen>);
   return (
     <Screen header={false}>
-      <Card><Eyebrow>{`Driver ${i + 1} of ${n}  ·  ${total} points`}</Eyebrow><Text style={{ color: colors.fg, fontSize: 22, fontWeight: '900', marginTop: 10 }}>{cur.d.name}</Text><Text style={{ color: colors.muted, marginTop: 4 }}>{`How many ${cur.label} in his F1 career?`}</Text>
+      <Card hero><Eyebrow>{`Driver ${i + 1} of ${n}  ·  ${total} points`}</Eyebrow><Text style={{ color: colors.fg, fontSize: 22, fontWeight: '900', marginTop: 10 }}>{cur.d.name}</Text><Text style={{ color: colors.muted, marginTop: 4 }}>{`How many ${cur.label} in his F1 career?`}</Text>
         <Text style={{ color: colors.fg, fontSize: 48, fontWeight: '900', textAlign: 'center', marginTop: 14 }}>{g}</Text>
         <View onLayout={(e) => setW(e.nativeEvent.layout.width)} onStartShouldSetResponder={() => !res} onMoveShouldSetResponder={() => !res} onResponderGrant={(e) => w && set((e.nativeEvent.locationX / w) * cur.max)} onResponderMove={(e) => w && set((e.nativeEvent.locationX / w) * cur.max)} accessibilityRole="adjustable" accessibilityLabel="Guess" style={{ height: 44, justifyContent: 'center' }}>
           <View pointerEvents="none" style={{ height: 8, borderRadius: 4, backgroundColor: alpha(colors.fg, 0.15) }}><View style={{ width: `${(g / cur.max) * 100}%`, height: 8, borderRadius: 4, backgroundColor: colors.accent }} /></View>
@@ -248,7 +248,7 @@ export function LapTapperScreen() {
   const rec = secOf(c.lapRecord.time); const tx = anim.interpolate({ inputRange: [0, 1], outputRange: [0, Math.max(0, w - 14)] });
   return (
     <Screen header={false}>
-      <Card><Eyebrow>Lap tapper</Eyebrow><View style={{ marginTop: 10 }}><Dropdown value={key} options={circuits.map((x) => [x.key, x.name])} onChange={(v) => { setKey(v); setCorner(-1); setLost(0); setLast(null); if (loop.current) loop.current.stop(); }} prefix="Circuit" /></View>
+      <Card hero><Eyebrow>Lap tapper</Eyebrow><View style={{ marginTop: 10 }}><Dropdown value={key} options={circuits.map((x) => [x.key, x.name])} onChange={(v) => { setKey(v); setCorner(-1); setLost(0); setLast(null); if (loop.current) loop.current.stop(); }} prefix="Circuit" /></View>
         <Note>{`${c.name}: ${turns} corners. Tap when the marker is inside the green apex zone. Every miss costs time on top of the lap record (${c.lapRecord.time}, ${c.lapRecord.driver}, ${c.lapRecord.year}).`}</Note></Card>
       <Card>
         {corner >= 0 && corner < turns ? (<>

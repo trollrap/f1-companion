@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Pressable } from 'react-native';
 import { Text } from '../components/Text';
 import Screen, { Card, Eyebrow, Note, ErrorNote } from '../components/Screen';
+import { StatHeader } from '../components/StatRows';
 import { Btn } from '../components/FunBits';
 import RivalryCard from '../components/RivalryCard';
 import { useAsync } from '../hooks/useAsync';
@@ -17,7 +18,7 @@ export default function RivalryScreen({ navigation }) {
   const save = () => { if (pick.length === 2) { setOpt('rivalry', pick); setPick([]); } };
   return (
     <Screen header={false}>
-      <Card><Eyebrow>Rivalry</Eyebrow><Note>Pin two drivers and Home shows their season head-to-head, live. Turn the card on or off in Settings, Home layout.</Note></Card>
+      <StatHeader title="Rivalry" icon="flame" note={`Pin two drivers and Home shows their season head-to-head, live. Turn the card on or off in Settings, Home layout.`} />
       {pair ? <RivalryCard pair={pair} rows={rows} onPress={() => {}} /> : null}
       {pair ? <Btn onPress={() => setOpt('rivalry', null)}>Remove the pinned rivalry</Btn> : null}
       <Eyebrow>{pick.length === 2 ? 'Ready to pin' : `Pick two drivers (${pick.length} of 2)`}</Eyebrow>

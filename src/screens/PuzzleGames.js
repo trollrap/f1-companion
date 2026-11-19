@@ -32,7 +32,7 @@ export function ConnectionsScreen() {
   const reveal = over ? puz.groups.filter((g) => !solved.includes(g)) : [];
   return (
     <Screen header={false}>
-      <Card><Eyebrow>{`Connections  ·  mistakes left ${Math.max(0, lives)}  ·  puzzles solved ${wins}`}</Eyebrow><Text style={{ color: colors.muted, marginTop: 6 }}>Twelve drivers, three hidden groups of four. Each driver fits only one group.</Text></Card>
+      <Card hero><Eyebrow>{`Connections  ·  mistakes left ${Math.max(0, lives)}  ·  puzzles solved ${wins}`}</Eyebrow><Text style={{ color: colors.muted, marginTop: 6 }}>Twelve drivers, three hidden groups of four. Each driver fits only one group.</Text></Card>
       {[...solved, ...reveal].map((g, i) => (<View key={g.label} style={{ padding: 14, borderRadius: 14, backgroundColor: alpha(TINTS[puz.groups.indexOf(g)], 0.25), borderWidth: 1, borderColor: TINTS[puz.groups.indexOf(g)] }}><Text style={{ color: colors.fg, fontWeight: '900' }}>{g.label}</Text><Text style={{ color: colors.fg, marginTop: 2 }}>{g.items.join(', ')}</Text></View>))}
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
         {left.filter(() => !over).map((n) => { const on = sel.includes(n); return (<Pressable key={n} accessibilityRole="button" accessibilityState={{ selected: on }} onPress={() => toggle(n)} style={({ pressed }) => [{ width: '31.5%', minHeight: 56, borderRadius: 12, alignItems: 'center', justifyContent: 'center', padding: 6, borderWidth: 1, borderColor: on ? colors.accent : colors.line, backgroundColor: on ? alpha(colors.accent, 0.22) : colors.card }, pressed && { opacity: 0.75 }]}><Text style={{ color: colors.fg, fontWeight: '800', fontSize: 13, textAlign: 'center' }}>{n}</Text></Pressable>); })}
@@ -62,7 +62,7 @@ export function HangmanScreen() {
   const shown = w.word.split('').map((ch, i) => { const L = w.letters[i]; return /[A-Z]/.test(L) ? (got.includes(L) || lost ? ch.toUpperCase() : '_') : ch; }).join(' ');
   return (
     <Screen header={false}>
-      <Card><Eyebrow>{`Hangman  ·  ${w.cat}  ·  streak ${streak}  ·  best ${best}`}</Eyebrow>
+      <Card hero><Eyebrow>{`Hangman  ·  ${w.cat}  ·  streak ${streak}  ·  best ${best}`}</Eyebrow>
         <Text style={{ color: lost ? colors.red : won ? colors.good : colors.fg, fontSize: 30, fontWeight: '900', letterSpacing: 2, marginTop: 14, textAlign: 'center' }}>{shown}</Text>
         <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 6, marginTop: 14 }}>{Array.from({ length: LIVES }).map((_, i) => <View key={i} style={{ width: 16, height: 16, borderRadius: 8, backgroundColor: i < LIVES - wrong ? colors.good : alpha(colors.fg, 0.15) }} />)}</View>
         <Text style={{ color: colors.muted, textAlign: 'center', marginTop: 8 }}>{won ? 'Solved.' : lost ? 'Out of tyres. The answer is shown above.' : `${LIVES - wrong} tyres left`}</Text></Card>

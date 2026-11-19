@@ -31,7 +31,7 @@ export function MilestonesScreen() {
   const closest = useMemo(() => items.flatMap((x) => x.ms.filter((m) => m.togo <= 5 && !(m.k !== 'races' && m.target === 1 && m.v > 0)).map((m) => ({ ...m, d: x.d }))).sort((a, b) => a.togo - b.togo || b.target - a.target).slice(0, 10), [items]);
   return (
     <Screen header={false}>
-      <Card><Eyebrow>Driver milestones</Eyebrow><Note>The next round-number career milestone for each driver on this season's grid. Counts come from the built-in history plus this season's races; sprint races are not counted as starts. Needs a connection the first time, then the last result is kept for offline use.</Note>{cached ? <Note>{`Showing saved numbers from ${new Date(cached).toLocaleDateString()}, because the live data could not be loaded.`}</Note> : null}</Card>
+      <Card hero><Eyebrow>Driver milestones</Eyebrow><Note>The next round-number career milestone for each driver on this season's grid. Counts come from the built-in history plus this season's races; sprint races are not counted as starts. Needs a connection the first time, then the last result is kept for offline use.</Note>{cached ? <Note>{`Showing saved numbers from ${new Date(cached).toLocaleDateString()}, because the live data could not be loaded.`}</Note> : null}</Card>
       {q.loading ? <Skeleton rows={6} /> : null}
       {q.error ? <ErrorNote error={q.error} onRetry={q.reload} /> : null}
       {closest.length ? (
@@ -57,7 +57,7 @@ export function HomeHeroesScreen() {
   }, [all, tab, country]);
   return (
     <Screen header={false}>
-      <Card><Eyebrow>Home-race heroes</Eyebrow>
+      <Card hero><Eyebrow>Home-race heroes</Eyebrow>
         <View style={{ marginTop: 10, gap: 10 }}><Segmented value={tab} onChange={setTab} items={[['wins', 'Home wins'], ['podiums', 'Home podiums'], ['country', 'By country']]} />{tab === 'country' ? <Dropdown value={country} options={countries.map((c) => [c, c])} onChange={setCountry} prefix="Country" /> : null}</View>
         <Note>A driver's home race is any Grand Prix held in their own country, so Italians count Monza and Imola, and Americans count every US race (the 1950s Indianapolis 500 is left out). Pole means the grid slot P1, which can differ slightly from official qualifying poles. Offline history.</Note></Card>
       <ShareCard title="Home-race heroes">
@@ -77,7 +77,7 @@ export function PodiumPairsScreen() {
   const unit = tab === 'podium' ? 'shared podiums' : tab === 'onetwo' ? '1-2 finishes' : 'front rows';
   return (
     <Screen header={false}>
-      <Card><Eyebrow>Podium pairs</Eyebrow>
+      <Card hero><Eyebrow>Podium pairs</Eyebrow>
         <View style={{ marginTop: 10, gap: 10 }}><Segmented value={tab} onChange={setTab} items={[['podium', 'Shared podiums'], ['onetwo', '1-2 finishes'], ['front', 'Front rows']]} /><Dropdown value={era} options={[['1950', 'All time'], ['2000', 'Since 2000'], ['2010', 'Since 2010']]} onChange={setEra} prefix="Era" /></View>
         <Note>Which two drivers appeared together most often. "As team-mates" says how many of those were for the same team. Front row is the first two grid slots. Offline history.</Note></Card>
       <ShareCard title={`Most ${unit}`}>
@@ -95,7 +95,7 @@ export function ComebacksScreen() {
   const rows = C ? C[tab] : [];
   return (
     <Screen header={false}>
-      <Card><Eyebrow>Biggest comebacks</Eyebrow>
+      <Card hero><Eyebrow>Biggest comebacks</Eyebrow>
         <View style={{ marginTop: 10, gap: 10 }}><Segmented value={tab} onChange={setTab} items={[['wins', 'Wins'], ['podiums', 'Podiums']]} /><Dropdown value={era} options={[['1950', 'All time'], ['1990', 'Since 1990'], ['2010', 'Since 2010']]} onChange={setEra} prefix="Era" /></View>
         <Note>Ranked by the grid slot the driver started from. Starts from the pit lane are not counted, and a grid slot can come from penalties as well as qualifying. Offline history.</Note></Card>
       <ShareCard title={`Biggest comeback ${tab}`}>

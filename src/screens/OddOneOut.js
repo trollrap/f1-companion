@@ -25,7 +25,7 @@ export default function OddOneOutScreen() {
     later(async () => { setPick(null); run.setI((x) => x + 1); if (i + 1 >= total) { run.finish(); if (sc > best) { setBest(sc); kvSet('odd:best', sc); } if (sc >= 9) setGot(await awardPack('odd:9')); } }, 1600); };
   return (
     <Screen header={false}>
-      <Card><Eyebrow>{`Odd one out · ${i + 1} of ${total}`}</Eyebrow><Text style={{ color: colors.fg, fontSize: 19, fontWeight: '700', marginTop: 4 }}>{cur.q}</Text></Card>
+      <Card hero><Eyebrow>{`Odd one out · ${i + 1} of ${total}`}</Eyebrow><Text style={{ color: colors.fg, fontSize: 19, fontWeight: '700', marginTop: 4 }}>{cur.q}</Text></Card>
       {cur.options.map((o, k) => { const right = pick !== null && k === cur.odd, wrong = pick === k && k !== cur.odd;
         return (<Reveal key={`${i}${k}`} index={k}><Pressable accessibilityRole="button" onPress={() => choose(k)} style={{ padding: 16, borderRadius: 14, borderWidth: 1.5, borderColor: right ? colors.good : wrong ? colors.accent : colors.line, backgroundColor: right ? alpha(colors.good, 0.2) : wrong ? alpha(colors.accent, 0.18) : colors.card }}><Text style={{ color: colors.fg, fontSize: 17, fontWeight: '600' }}>{o}</Text></Pressable></Reveal>); })}
       {pick !== null ? <Note>{`${pick === cur.odd ? 'Correct. ' : 'Not quite. '}${cur.why}`}</Note> : null}

@@ -19,7 +19,7 @@ export function SeasonReviewScreen() {
   const F = useMemo(() => seasonFacts(year), [year]); const S = useMemo(() => seasonStory(year), [year]);
   return (
     <Screen header={false}>
-      <Card><Eyebrow>Season review</Eyebrow><View style={{ marginTop: 10 }}><Dropdown value={year} options={years.map((y) => [y, String(y)])} onChange={(v) => setYear(Number(v))} prefix="Season" /></View>
+      <Card hero><Eyebrow>Season review</Eyebrow><View style={{ marginTop: 10 }}><Dropdown value={year} options={years.map((y) => [y, String(y)])} onChange={(v) => setYear(Number(v))} prefix="Season" /></View>
         <Note>Built from the offline race history. The season in progress appears after the next history update.</Note></Card>
       {F && S ? (<>
         <ShareCard title={`${year} F1 season: ${S.champion} champion`}>
@@ -51,7 +51,7 @@ export function DebutsScreen() {
   const list = D ? (tab === 'debut' ? D.debuts : D.farewells) : [];
   return (
     <Screen header={false}>
-      <Card><Eyebrow>Debuts and farewells</Eyebrow>
+      <Card hero><Eyebrow>Debuts and farewells</Eyebrow>
         <View style={{ marginTop: 10, gap: 10 }}><Segmented value={tab} onChange={setTab} items={[['debut', 'Debuts'], ['far', 'Farewells']]} /><Dropdown value={year} options={years.map((y) => [y, String(y)])} onChange={(v) => setYear(Number(v))} prefix="Season" /></View>
         <Note>A debut is a driver's first season in the history, a farewell their last. Drivers still racing in the newest season are not listed as farewells. Early seasons include one-off entries such as drivers from the Indianapolis 500.</Note></Card>
       {D && tab === 'far' && year >= D.upTo ? <Note>The newest season has no farewells yet: nobody can be called finished until a later season is added.</Note> : null}
@@ -74,7 +74,7 @@ export function CircuitCompareScreen() {
   const rec = (c) => (c.lapRecord ? `${c.lapRecord.time}, ${c.lapRecord.driver} (${c.lapRecord.year})` : '-');
   return (
     <Screen header={false}>
-      <Card><Eyebrow>Circuit comparison</Eyebrow>
+      <Card hero><Eyebrow>Circuit comparison</Eyebrow>
         <View style={{ marginTop: 10, gap: 8 }}><Dropdown value={a} options={opts} onChange={setA} prefix="Circuit" /><Dropdown value={b} options={opts} onChange={setB} prefix="Versus" /></View></Card>
       {A && B ? (
         <ShareCard title={`${A.name} vs ${B.name}`}>

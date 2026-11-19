@@ -32,7 +32,7 @@ export function FlagQuizScreen() {
   const cur = rounds[Math.min(i, N - 1)];
   if (done) return (
     <Screen header={false}>
-      <Card><Eyebrow>Flag quiz</Eyebrow><Text style={{ color: colors.fg, fontSize: 44, fontWeight: '900', marginTop: 6 }}>{score} / {N}</Text>
+      <Card hero><Eyebrow>Flag quiz</Eyebrow><Text style={{ color: colors.fg, fontSize: 44, fontWeight: '900', marginTop: 6 }}>{score} / {N}</Text>
         <Text style={{ color: colors.muted, marginTop: 4 }}>{score === N ? 'Perfect. Every flag.' : score >= 8 ? 'Sharp eye.' : score >= 5 ? 'Solid, a few slipped by.' : 'Back to the atlas.'} Best: {Math.max(best, score)} / {N}</Text>
         <View style={{ marginTop: 14 }}><Btn onPress={again}>Play again</Btn></View></Card>
       {got ? <Note>You earned a card pack. Open it in Cards.</Note> : null}
@@ -109,7 +109,7 @@ export function TrueFalseScreen() {
   const tilt = x.interpolate({ inputRange: [-200, 0, 200], outputRange: ['-8deg', '0deg', '8deg'] });
   return (
     <Screen header={false}>
-      <Card><Eyebrow>{`Streak ${streak}  ·  best ${best}`}</Eyebrow><Text style={{ color: colors.muted, marginTop: 6 }}>Swipe the card right for true, left for false, or use the buttons.</Text></Card>
+      <Card hero><Eyebrow>{`Streak ${streak}  ·  best ${best}`}</Eyebrow><Text style={{ color: colors.muted, marginTop: 6 }}>Swipe the card right for true, left for false, or use the buttons.</Text></Card>
       <Animated.View {...pan.panHandlers} style={{ transform: [{ translateX: x }, { rotate: tilt }] }}>
         <Card><Text style={{ color: colors.fg, fontSize: 24, fontWeight: '800', lineHeight: 32, paddingVertical: 20 }}>{fact.text}</Text>
           {res ? <Text style={{ color: res.ok ? colors.good : colors.red, fontWeight: '800' }}>{res.ok ? 'Correct. ' : 'Wrong. '}<Text style={{ color: colors.muted, fontWeight: '500' }}>{fact.why}</Text></Text> : null}</Card>

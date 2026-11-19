@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { View, Pressable } from 'react-native';
 import { Text } from '../components/Text';
 import Screen, { Card, Eyebrow, Note, ErrorNote } from '../components/Screen';
+import { StatHeader } from '../components/StatRows';
 import Skeleton from '../components/Skeleton';
 import Reveal from '../components/Reveal';
 import { Segmented } from '../components/Shared';
@@ -24,7 +25,7 @@ export default function SeasonStripScreen() {
   }, [D]);
   return (
     <Screen header={false}>
-      <Card><Eyebrow>Season progress</Eyebrow><Note>Every round of the season as a strip. Filled means done, coloured by the winner's team. Tap a round for its name and winner.</Note></Card>
+      <StatHeader title="Season progress" icon="reorder-three" note={`Every round of the season as a strip. Filled means done, coloured by the winner's team. Tap a round for its name and winner.`} />
       <Segmented value={year} items={[[YEAR, String(YEAR)], [YEAR - 1, String(YEAR - 1)], [YEAR - 2, String(YEAR - 2)], [YEAR - 3, String(YEAR - 3)]]} onChange={(v) => { setYear(v); setSel(null); }} />
       {q.loading ? <Skeleton rows={4} /> : null}
       {q.error ? <ErrorNote error={q.error} onRetry={q.reload} /> : null}

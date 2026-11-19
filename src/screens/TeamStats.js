@@ -3,6 +3,7 @@ import { View, Pressable, TextInput } from 'react-native';
 import Svg, { Line, Polyline, Circle, Text as SvgText } from 'react-native-svg';
 import { Text } from '../components/Text';
 import Screen, { Card, Eyebrow, Note } from '../components/Screen';
+import { StatHeader } from '../components/StatRows';
 import Reveal from '../components/Reveal';
 import { Segmented } from '../components/Shared';
 import { colors, alpha } from '../theme';
@@ -39,7 +40,7 @@ export function TeamCurvesScreen() {
   const runs = (s) => { const out = []; let cur = []; (s || []).forEach((p) => { if (p.v === null) { if (cur.length) out.push(cur); cur = []; } else cur.push(p); }); if (cur.length) out.push(cur); return out; };
   return (
     <Screen header={false}>
-      <Card><Eyebrow>Team curves</Eyebrow><Note>Two teams over the years. Wins add up season by season. Share of points is the team's part of every point scored that season, so different points systems compare. Race points only. A team that was renamed counts as a new line.</Note></Card>
+      <StatHeader title="Team curves" icon="people" note={`Two teams over the years. Wins add up season by season. Share of points is the team's part of every point scored that season, so different points systems compare. Race points only. A team that was renamed counts as a new line.`} />
       <View style={{ flexDirection: 'row', gap: 10 }}>{[0, 1].map((i) => <TeamPick key={i} i={i} team={teams[i]} all={all} onPick={(id) => setIds((a) => a.map((v, k) => (k === i ? id : v)))} />)}</View>
       <Segmented value={m} items={[['wins', 'Total wins'], ['share', 'Share of points']]} onChange={setM} />
       <View onLayout={(e) => setW(e.nativeEvent.layout.width)}>
@@ -62,7 +63,7 @@ export function RematchScreen() {
   const n = norm(q); const hits = n.length >= 2 ? list.filter((x) => norm(x.name).includes(n)).slice(0, 8) : [];
   return (
     <Screen header={false}>
-      <Card><Eyebrow>Same-race rematches</Eyebrow><Note>Every edition of one Grand Prix, newest first: winner, pole sitter, and where the winner started. Races are matched by name, so a Grand Prix that moved circuits stays one list.</Note></Card>
+      <StatHeader title="Same-race rematches" icon="people" note={`Every edition of one Grand Prix, newest first: winner, pole sitter, and where the winner started. Races are matched by name, so a Grand Prix that moved circuits stays one list.`} />
       <TextInput value={q} onChangeText={setQ} placeholder="Find a Grand Prix" placeholderTextColor={colors.muted} accessibilityLabel="Find a Grand Prix" style={{ color: colors.fg, fontSize: 16, padding: 12, borderRadius: 12, backgroundColor: colors.card }} />
       {hits.map((h) => (<Pressable key={h.name} accessibilityRole="button" onPress={() => { setName(h.name); setQ(''); }} style={{ paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.line }}><Text style={{ color: colors.fg }}>{`${h.name} · ${h.editions} editions`}</Text></Pressable>))}
       <Card>

@@ -8,7 +8,16 @@ import { quietNow } from './quiet';
 import { loadFavTerms, matchesFav } from './favNews';
 
 const SEEN = 'newsSeen', LOG = 'newsLog';
-export async function checkNews({ force = false } = {}) {
+// Only one check runs at a time (the background task and the app can both start one). Callers that arrive meanwhile share the result.
+let running = null;
+export function checkNews(opts = {}) { if (running) return running; running = checkNewsOnce(opts).finally(() => { running = null; }); return running; }
+// A story counts as already told when its id or its address without any tracking query was recorded, so a feed that changes its ids cannot repeat it.
+const keyOf = (x) => `u:${String(x.link || x.title || x.id).split('?')[0].split('#')[0].toLowerCase()}`;
+async function saveSeen(have) {
+  const all = [...have]; const bases = all.filter((k) => k.startsWith('base:')); // the per-source markers must never be trimmed away, or the source would be treated as new again
+  await AsyncStorage.setItem(SEEN, JSON.stringify([...bases, ...all.filter((k) => !k.startsWith('base:')).slice(-600)])).catch(() => {});
+}
+async function checkNewsOnce({ force = false } = {}) {
   let prefs = {}; try { prefs = JSON.parse(await AsyncStorage.getItem('prefs')) || {}; } catch {}
   const on = prefs.opts?.newsAlerts || {}; const ids = Object.keys(on).filter((k) => on[k]); if (!ids.length) return 0;
   const favOnly = !!prefs.opts?.newsFavOnly; const terms = favOnly ? await loadFavTerms() : [];
@@ -20,10 +29,11 @@ export async function checkNews({ force = false } = {}) {
     try {
       const items = (await fetchFeed(s, { fresh: true })).slice(0, 10); const key = `base:${s.id}`; rec.ok = true; rec.count = items.length;
       const first = !have.has(key); have.add(key);
-      const fresh = items.filter((x) => !have.has(x.id)); fresh.forEach((x) => have.add(x.id)); rec.fresh = fresh.length;
+      const fresh = items.filter((x) => !have.has(x.id) && !have.has(keyOf(x))); fresh.forEach((x) => { have.add(x.id); have.add(keyOf(x)); }); rec.fresh = fresh.length;
+      await saveSeen(have); // saved before anything is sent, so a stopped background task can never tell the same story again
       if (first && !force) { rec.baseline = true; log.src.push(rec); continue; } // switching a source on only records what is already there
       for (const x of fresh) {
-        if (rec.sent >= 3) break;
+        if (rec.sent >= 2 || sent >= 3) break;
         if (x.date && Date.now() - x.date > 36 * 3600e3) continue;
         if (favOnly && !matchesFav(x, terms)) continue;
         if (await notifyNow(s.name, x.title, { item: { id: x.id, source: x.source, sourceName: x.sourceName, title: x.title, link: x.link, date: x.date, image: x.image, summary: x.summary } })) { sent++; rec.sent++; }
@@ -31,9 +41,8 @@ export async function checkNews({ force = false } = {}) {
     } catch (e) { rec.err = String((e && e.message) || e).slice(0, 90); }
     log.src.push(rec);
   }
-  const all = [...have]; const bases = all.filter((k) => k.startsWith('base:')); // the per-source markers must never be trimmed away, or the source would be treated as new again and stay silent
-  AsyncStorage.setItem(SEEN, JSON.stringify([...bases, ...all.filter((k) => !k.startsWith('base:')).slice(-400)])).catch(() => {});
-  log.sent = sent; AsyncStorage.setItem(LOG, JSON.stringify(log)).catch(() => {});
+  await saveSeen(have);
+  log.sent = sent; await AsyncStorage.setItem(LOG, JSON.stringify(log)).catch(() => {});
   return sent;
 }
 export async function readNewsLog() { try { return JSON.parse(await AsyncStorage.getItem(LOG)); } catch { return null; } }

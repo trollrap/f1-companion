@@ -818,3 +818,14 @@ export function seasonHeat(year) {
   const drivers = Object.values(by).sort((a, b) => rk(a) - rk(b) || b.pts - a.pts || a.idx - b.idx).map((o) => ({ ...o, pts: tot[o.idx] !== undefined ? tot[o.idx] : o.pts, name: `${H.d[o.idx][1]} ${H.d[o.idx][2]}`, code: H.d[o.idx][6] || H.d[o.idx][2].slice(0, 3).toUpperCase(), teamId: H.t[o.team][0], teamName: H.t[o.team][1] }));
   return { rounds: rs.map((rc) => ({ round: rc[0], name: rc[1].replace(' Grand Prix', ''), country: rc[2] })), drivers };
 }
+
+// Finds the driver or team a display name belongs to, so rows in any statistic can open the right page. Returns null when the name is not a driver or team.
+let _ent = null;
+export function entityByName(name) {
+  if (!name) return null; load();
+  if (!_ent) {
+    const dr = {}, tm = {}; H.d.forEach((d) => { const k = `${d[1]} ${d[2]}`.toLowerCase(); if (!dr[k]) dr[k] = { type: 'driver', driverId: d[0], name: `${d[1]} ${d[2]}`, first: d[1], last: d[2] }; });
+    H.t.forEach((t) => { const k = String(t[1]).toLowerCase(); if (!tm[k]) tm[k] = { type: 'team', teamId: t[0], name: t[1] }; }); _ent = { dr, tm };
+  }
+  const k = String(name).trim().toLowerCase(); return _ent.dr[k] || _ent.tm[k] || null;
+}

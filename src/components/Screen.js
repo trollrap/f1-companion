@@ -14,7 +14,7 @@ import Header from './Header';
 import Reveal from './Reveal';
 import Swipe from './Swipe';
 import { useTint } from '../lib/tint';
-import { colors } from '../theme';
+import { colors, alpha } from '../theme';
 import { refreshAll, useOffline } from '../lib/net';
 import { usePrefs } from '../hooks/usePrefs';
 import { up } from '../lib/i18n';
@@ -80,10 +80,12 @@ export default function Screen({ children, header = true, refreshable = true, sc
 }
 // Cards carry a soft red-tinted gradient instead of flat grey.
 const CARD_GRAD = [colors.cardA, colors.cardB];
-export function Card({ style, children, onPress }) {
-  const inner = (<><LinearGradient pointerEvents="none" colors={CARD_GRAD} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />{children}</>);
-  if (!onPress) return <View style={[s.card, style]}>{inner}</View>;
-  return <Press onPress={onPress} scale={0.98} style={[s.card, style]}>{inner}</Press>;
+export function Card({ style, children, onPress, hero }) {
+  const tint = useTint();
+  const inner = (<><LinearGradient pointerEvents="none" colors={hero ? [alpha(tint, 0.34), alpha(tint, 0.04)] : CARD_GRAD} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />{children}</>);
+  const st = hero ? [s.card, { borderColor: alpha(tint, 0.45), padding: 16 }, style] : [s.card, style];
+  if (!onPress) return <View style={st}>{inner}</View>;
+  return <Press onPress={onPress} scale={0.98} style={st}>{inner}</Press>;
 }
 export const Eyebrow = ({ children, right, color }) => { const tint = useTint(); return (
   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
@@ -92,7 +94,7 @@ export const Eyebrow = ({ children, right, color }) => { const tint = useTint();
     {right ? <View style={{ marginLeft: 'auto', flexDirection: 'row', alignItems: 'center' }}>{typeof right === 'string' ? <Text style={s.more}>{right}</Text> : right}<Ionicons name="chevron-forward" size={16} color={colors.muted} /></View> : null}
   </View>
 ); };
-const friendly = (e) => (/fetch|network|abort|timed? ?out/i.test(String(e)) ? 'the data server could not be reached. Check your connection.' : String(e));
+const friendly = (e) => { const t = String((e && e.message) || e || ''); return /fetch|network|abort|timed? ?out|failed/i.test(t) || !t || t === 'undefined' || t === 'null' ? 'the data server could not be reached. Check your connection and try again.' : t; };
 export function ErrorNote({ error, onRetry }) {
   return (
     <View style={{ marginTop: 10, gap: 8 }}>

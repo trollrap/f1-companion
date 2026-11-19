@@ -35,14 +35,14 @@ export function RadioGameScreen() {
   const again = () => { setPick(null); setGot(false); run.again(); };
   if (done) return (
     <Screen header={false}>
-      <Card><Eyebrow>Team radio</Eyebrow><Text style={{ color: colors.fg, fontSize: 44, fontWeight: '900', marginTop: 6 }}>{score} / {N}</Text>
+      <Card hero><Eyebrow>Team radio</Eyebrow><Text style={{ color: colors.fg, fontSize: 44, fontWeight: '900', marginTop: 6 }}>{score} / {N}</Text>
         <Text style={{ color: colors.muted, marginTop: 4 }}>Best: {Math.max(best, score)} / {N}</Text><View style={{ marginTop: 14 }}><Btn onPress={again}>Play again</Btn></View></Card>
       {got ? <Note>You earned a card pack. Open it in Cards.</Note> : null}
       <Note>Score 7 or more once to earn a card pack.</Note>
     </Screen>);
   return (
     <Screen header={false}>
-      <Card><Eyebrow>{`Radio ${i + 1} of ${N}  ·  score ${score}`}</Eyebrow><Text style={{ color: colors.fg, fontSize: 19, lineHeight: 27, marginTop: 10, fontStyle: 'italic' }}>{cur.q[0]}</Text><Text style={{ color: colors.muted, marginTop: 8 }}>Who was on the radio?</Text></Card>
+      <Card hero><Eyebrow>{`Radio ${i + 1} of ${N}  ·  score ${score}`}</Eyebrow><Text style={{ color: colors.fg, fontSize: 19, lineHeight: 27, marginTop: 10, fontStyle: 'italic' }}>{cur.q[0]}</Text><Text style={{ color: colors.muted, marginTop: 8 }}>Who was on the radio?</Text></Card>
       {cur.opts.map((o) => { const right = pick && o === cur.q[1]; const wrong = pick === o && o !== cur.q[1];
         return (<Pressable key={o} accessibilityRole="button" onPress={() => answer(o)} style={({ pressed }) => [{ padding: 16, borderRadius: 14, borderWidth: 1, borderColor: right ? colors.good : wrong ? colors.red : colors.line, backgroundColor: right ? alpha(colors.good, 0.18) : wrong ? alpha(colors.red, 0.18) : colors.card }, pressed && { opacity: 0.8 }]}>
           <Text style={{ color: colors.fg, fontSize: 17, fontWeight: '700' }}>{o}</Text></Pressable>); })}

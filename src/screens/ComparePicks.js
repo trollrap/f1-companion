@@ -33,7 +33,7 @@ export default function ComparePicksScreen() {
   const Stat = ({ k, v }) => (<View style={{ flex: 1, alignItems: 'center' }}><Text style={{ color: colors.fg, fontSize: 22, fontWeight: '800' }}>{v}</Text><Text style={{ color: colors.muted, fontSize: 12, textAlign: 'center' }}>{k}</Text></View>);
   return (
     <Screen header={false}>
-      <Card><Eyebrow>{`Your picks, ${YEAR}`}</Eyebrow>
+      <Card hero><Eyebrow>{`Your picks, ${YEAR}`}</Eyebrow>
         <View style={{ flexDirection: 'row', marginTop: 8 }}><Stat k="rounds" v={n} /><Stat k="points" v={total} /><Stat k="per round" v={(total / n).toFixed(1)} /></View>
         <View style={{ flexDirection: 'row', marginTop: 12 }}><Stat k="pole right" v={pct(poleHit, poleTried)} /><Stat k="exact podium slots" v={pct(exact, slots.length)} /><Stat k="picks on podium" v={pct(onPod, slots.length)} /></View>
         <Note>Accuracy counts pole and podium points out of 11 a round. Bonus questions and double-down are in the total but not in the accuracy.</Note></Card>

@@ -30,7 +30,7 @@ function Rounds({ id, title, make, render, explain, packKey, packAt }) {
     later(async () => { setPick(null); run.setI((x) => x + 1); if (i + 1 >= total) { run.finish(); if (sc > best) { setBest(sc); kvSet(`${id}:best`, sc); } if (sc >= packAt) setGot(await awardPack(packKey)); } }, 1800); };
   return (
     <Screen header={false}>
-      <Card><Eyebrow>{`${title} · ${i + 1} of ${total}`}</Eyebrow>{render(q)}</Card>
+      <Card hero><Eyebrow>{`${title} · ${i + 1} of ${total}`}</Eyebrow>{render(q)}</Card>
       {q.options.map((o, k) => <Opt key={`${i}${k}`} i={k} text={o} onPress={() => choose(k)} state={pick === null ? '' : k === q.answer ? 'right' : pick === k ? 'wrong' : ''} />)}
       {pick !== null ? <Note>{`${pick === q.answer ? 'Correct. ' : 'Not quite. '}${explain(q)}`}</Note> : null}
     </Screen>);
@@ -58,7 +58,7 @@ export function ShowdownScreen() {
   const names = [q.a, q.b]; const vals = [q.av, q.bv];
   return (
     <Screen header={false}>
-      <Card><Eyebrow>Stat showdown</Eyebrow><Text style={{ color: colors.fg, fontSize: 18, fontWeight: '700', marginTop: 4 }}>{`Who has more ${q.label}?`}</Text><Text style={{ color: colors.muted, marginTop: 4 }}>{`Streak ${g.streak} · ${'♥'.repeat(g.lives)}${'♡'.repeat(3 - g.lives)}`}</Text></Card>
+      <Card hero><Eyebrow>Stat showdown</Eyebrow><Text style={{ color: colors.fg, fontSize: 18, fontWeight: '700', marginTop: 4 }}>{`Who has more ${q.label}?`}</Text><Text style={{ color: colors.muted, marginTop: 4 }}>{`Streak ${g.streak} · ${'♥'.repeat(g.lives)}${'♡'.repeat(3 - g.lives)}`}</Text></Card>
       {names.map((n, k) => (<Opt key={`${g.streak}${k}`} i={k} text={pick !== null ? `${n}: ${vals[k]}` : n} onPress={() => choose(k)} state={pick === null ? '' : k === q.win ? 'right' : pick === k ? 'wrong' : ''} />))}
     </Screen>);
 }
@@ -77,7 +77,7 @@ export function MatchPairsScreen() {
     else later(() => { setOpen([]); lock.current = false; upd({ moves }); }, 900); };
   return (
     <Screen header={false}>
-      <Card><Eyebrow>Match pairs</Eyebrow><Note>Flip two cards: a driver and the team they raced most for. Fewer moves is better.</Note><Text style={{ color: colors.fg, fontWeight: '700' }}>{`Moves ${g.moves}${best ? ` · best ${best}` : ''}`}</Text></Card>
+      <Card hero><Eyebrow>Match pairs</Eyebrow><Note>Flip two cards: a driver and the team they raced most for. Fewer moves is better.</Note><Text style={{ color: colors.fg, fontWeight: '700' }}>{`Moves ${g.moves}${best ? ` · best ${best}` : ''}`}</Text></Card>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
         {g.cards.map((c) => { const up = done.includes(c.i) || open.includes(c.i); const ok = done.includes(c.i);
           return (<View key={c.i} style={{ width: '23.5%' }}><Pressable accessibilityRole="button" accessibilityLabel={up ? c.text : 'Hidden card'} onPress={() => flip(c)} style={{ aspectRatio: 0.8, borderRadius: 12, padding: 4, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: ok ? colors.good : up ? colors.accent : colors.line, backgroundColor: ok ? alpha(colors.good, 0.2) : up ? alpha(colors.accent, 0.15) : colors.card }}>{up ? <Text style={{ color: colors.fg, fontSize: 11, fontWeight: '700', textAlign: 'center' }}>{c.text}</Text> : <Text style={{ color: colors.muted, fontSize: 22 }}>?</Text>}</Pressable></View>); })}

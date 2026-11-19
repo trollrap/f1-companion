@@ -41,7 +41,7 @@ export function CompareSeasonsScreen() {
   ] : [];
   return (
     <Screen header={false}>
-      <Card><Eyebrow>Compare two seasons</Eyebrow>
+      <Card hero><Eyebrow>Compare two seasons</Eyebrow>
         <View style={{ marginTop: 10, gap: 8 }}><Dropdown value={a} options={years.map((y) => [y, String(y)])} onChange={(v) => setA(Number(v))} prefix="Season" /><Dropdown value={b} options={years.map((y) => [y, String(y)])} onChange={(v) => setB(Number(v))} prefix="Versus" /></View>
         <Note>Offline race history. Title points are as scored in each era (a win was worth 8, then 9, then 10, then 25 points), so compare margins, not totals.</Note></Card>
       {A && B ? (

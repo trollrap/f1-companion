@@ -27,7 +27,7 @@ export default function TrophyRoomScreen() {
   const n = have ? TROPHIES.filter((t) => have[t[0]]).length : 0;
   return (
     <Screen header={false}>
-      <Card><Eyebrow>Trophy room</Eyebrow><Text style={{ color: colors.fg, fontSize: 30, fontWeight: '800' }}>{`${n} / ${TROPHIES.length}`}</Text><Note>Earned in the games. Each one also gave you a card pack.</Note></Card>
+      <Card hero><Eyebrow>Trophy room</Eyebrow><Text style={{ color: colors.fg, fontSize: 30, fontWeight: '800' }}>{`${n} / ${TROPHIES.length}`}</Text><Note>Earned in the games. Each one also gave you a card pack.</Note></Card>
       <PlayCalendar />
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
         {TROPHIES.map(([k, name, how, icon], i) => { const got = !!(have && have[k]);

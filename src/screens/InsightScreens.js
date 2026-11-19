@@ -3,6 +3,7 @@ import { View, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Text } from '../components/Text';
 import Screen, { Card, Eyebrow, Note, ErrorNote } from '../components/Screen';
+import { StatHeader } from '../components/StatRows';
 import Skeleton from '../components/Skeleton';
 import ShareCard from '../components/ShareCard';
 import { Segmented } from '../components/Shared';
@@ -68,7 +69,7 @@ export function TeamTreesScreen({ navigation }) {
     </Card>);
   return (
     <Screen header={false}>
-      <Card><Eyebrow>Team family trees</Eyebrow><Note>Each team on today's grid with the names it raced under before. Renames and takeovers follow the app's lineage list (for example Minardi to Toro Rosso to AlphaTauri to Racing Bulls). Tap an era to open that team.</Note></Card>
+      <StatHeader title="Team family trees" icon="flame" note={`Each team on today's grid with the names it raced under before. Renames and takeovers follow the app's lineage list (for example Minardi to Toro Rosso to AlphaTauri to Racing Bulls). Tap an era to open that team.`} />
       <Eyebrow>On the grid today</Eyebrow>
       {today.map((f) => <Fam key={f.root} f={f} />)}
       <Eyebrow>Gone from the grid</Eyebrow>

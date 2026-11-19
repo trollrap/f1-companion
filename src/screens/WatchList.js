@@ -3,6 +3,7 @@ import { View, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Text } from '../components/Text';
 import Screen, { Card, Eyebrow, Note } from '../components/Screen';
+import { StatHeader } from '../components/StatRows';
 import Dropdown from '../components/Dropdown';
 import { Btn } from '../components/FunBits';
 import Reveal from '../components/Reveal';
@@ -35,7 +36,7 @@ export default function WatchListScreen({ navigation }) {
     </Reveal>);
   return (
     <Screen header={false}>
-      <Card><Eyebrow>Watch list</Eyebrow><Note>Save past races to watch later, tick them off when you have, and jump straight into the Time machine.</Note></Card>
+      <StatHeader title="Watch list" icon="bookmark" note={`Save past races to watch later, tick them off when you have, and jump straight into the Time machine.`} />
       <Dropdown value={year} options={years.map((y) => [y, String(y)])} onChange={(y) => setYear(Number(y))} prefix="Season" />
       <View style={{ gap: 6 }}>
         {rounds.map((r) => { const on = hasWatch(list, year, r.round); return (
