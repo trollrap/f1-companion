@@ -76,7 +76,21 @@ export async function scheduleSessionAlerts(meeting, sessions, prefs) {
 // Shows a notification straight away (used for session results).
 export const notificationsModule = () => mod();
 // `data` rides along with the notification so a tap can open the right screen (news alerts carry the story).
-export async function notifyNow(title, body, data) {
+// The same title and text is never shown twice within 12 hours, whatever asked for it (a stopped background task, two checks at once, a changed feed).
+let sentLock = Promise.resolve();
+async function isRepeat(title, body) {
+  const AS = require('@react-native-async-storage/async-storage').default; const key = `${title}|${body}`.slice(0, 200), now = Date.now();
+  let m = {}; try { m = JSON.parse(await AS.getItem('notifSent')) || {}; } catch {}
+  Object.keys(m).forEach((k) => { if (now - m[k] > 12 * 3600e3) delete m[k]; });
+  const dup = m[key] && now - m[key] < 12 * 3600e3;
+  if (!dup) { m[key] = now; await AS.setItem('notifSent', JSON.stringify(m)).catch(() => {}); }
+  return !!dup;
+}
+export function notifyNow(title, body, data) {
+  const run = sentLock.then(async () => { try { if (await isRepeat(title, body)) return false; } catch {} return notifyNowRaw(title, body, data); });
+  sentLock = run.catch(() => {}); return run;
+}
+async function notifyNowRaw(title, body, data) {
   const n = mod(); if (!n) return false;
   const L = require('./inbox').logAlert;
   if (await require('./quiet').quietNow()) { L(title, body, 'held by quiet hours'); return false; }

@@ -62,7 +62,8 @@ export const flagOf = (iso) => (/^[A-Za-z]{2}$/.test(iso || '') ? String.fromCod
 export const mgDate = (e) => { const a = new Date(e.start), b = new Date(e.end || e.start), mo = (d) => d.toLocaleString('en-GB', { month: 'short', timeZone: 'UTC' }); return a.getUTCMonth() === b.getUTCMonth() ? `${a.getUTCDate()}–${b.getUTCDate()} ${mo(a)}` : `${a.getUTCDate()} ${mo(a)} – ${b.getUTCDate()} ${mo(b)}`; };
 
 // Alerts: MotoGP-class sessions of one event in the shape the alert planner expects.
-const ALERT = { FP1: 'Practice 1', FP2: 'Practice 2', PR: 'Practice 1', Q2: 'Qualifying', NQ: 'Qualifying', SPR: 'Sprint', RAC: 'Race' };
+// Every MotoGP session has its own alert name now (before, Q1, the warm-up and the Friday practice had none, so they could not be switched on).
+const ALERT = { FP1: 'Practice 1', FP2: 'Practice 2', PR: 'Practice', Q1: 'Qualifying 1', Q2: 'Qualifying', NQ: 'Qualifying', SPR: 'Sprint', WUP: 'Warm up', RAC: 'Race' };
 export const alertName = (type) => ALERT[type] || null; // the alert type a MotoGP session belongs to (null: no alerts for it)
 export async function alertSessions(event, seasonId) {
   const top = (await categories(seasonId))[0]; if (!top) return [];

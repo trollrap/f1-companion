@@ -25,7 +25,10 @@ const SEEN = 'resultsSeen';
 async function prefsNow() { try { return JSON.parse(await AsyncStorage.getItem('prefs')) || {}; } catch { return {}; } }
 
 // Returns how many notifications were sent. `force` ignores the on/off switch (used by the Settings test button).
-export async function checkResults({ force = false } = {}) {
+// Only one check runs at a time: the background task, the app opening and the five-minute timer can all start one.
+let running = null;
+export function checkResults(opts = {}) { if (running) return running; running = checkResultsOnce(opts).finally(() => { running = null; }); return running; }
+async function checkResultsOnce({ force = false } = {}) {
   const prefs = await prefsNow(); setLang(prefs.opts?.lang === 'el' ? 'el' : 'en');
   let recap = 0; try { recap = await require('./weeklyRecap').maybeWeeklyRecap(prefs); } catch {}
   if (!force && !prefs.results) return recap;
@@ -39,7 +42,7 @@ export async function checkResults({ force = false } = {}) {
       if (!rows?.length) continue; // not published yet: try again next time
       const id = `${race.season}-${race.round}-${k.type}`;
       if (done.has(id)) continue;
-      done.add(id);
+      done.add(id); await AsyncStorage.setItem(SEEN, JSON.stringify([...done].slice(-60))).catch(() => {}); // saved before sending, so a stopped task can never repeat it
       if (baseline && !force) continue; // first run only records what already exists, so enabling the switch never spams old results
       if (prefs.types && prefs.types[k.type] === false) continue;
       let body = tr('Results are available.'); let dl = ''; try { dl = await require('./digest').digestLine(rows, prefs.opts?.alertDrivers); } catch {}
@@ -47,7 +50,7 @@ export async function checkResults({ force = false } = {}) {
       if (await notifyNow(`${tr(shortName(race.raceName))} · ${tr(k.label)}`, body)) sent++;
     } catch {}
   }
-  AsyncStorage.setItem(SEEN, JSON.stringify([...done].slice(-60))).catch(() => {});
+  await AsyncStorage.setItem(SEEN, JSON.stringify([...done].slice(-60))).catch(() => {});
   return sent;
 }
 
@@ -58,7 +61,7 @@ async function checkMotoResults(prefs, force) {
   try {
     const s = await currentSeason(); const r = s ? await lastRace(s.id, s.year) : null; if (!r) return 0;
     const id = `${s.year}-${r.event.id}`;
-    if (!done.has(id)) { done.add(id); if ((!baseline || force) && prefs.types?.Race !== false) { const w = r.rows[0]; if (await notifyNow(`${r.event.short || r.event.name} · ${tr('Race result')}`, w ? `${w.name} won. ${tr('Results are available.')}` : tr('Results are available.'))) sent++; } }
+    if (!done.has(id)) { done.add(id); await AsyncStorage.setItem('motoResultsSeen', JSON.stringify([...done].slice(-60))).catch(() => {}); if ((!baseline || force) && prefs.types?.Race !== false) { const w = r.rows[0]; if (await notifyNow(`${r.event.short || r.event.name} · ${tr('Race result')}`, w ? `${w.name} won. ${tr('Results are available.')}` : tr('Results are available.'))) sent++; } }
   } catch {}
   AsyncStorage.setItem('motoResultsSeen', JSON.stringify([...done].slice(-60))).catch(() => {});
   return sent;

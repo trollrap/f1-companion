@@ -829,3 +829,10 @@ export function entityByName(name) {
   }
   const k = String(name).trim().toLowerCase(); return _ent.dr[k] || _ent.tm[k] || null;
 }
+
+// Team-mate battles for a finished season, from the built-in history. The grid slot stands in for qualifying (a grid penalty can differ from the lap-time order).
+export function localBattles(year) {
+  load(); const rs = H.r[String(year)]; if (!rs) return null;
+  const per = rs.map((rc) => { const rows = rc[4].map((r) => { const d = H.d[r[0]]; return { driverId: d[0], driver: `${d[1]} ${d[2]}`, last: d[2], teamId: H.t[r[1]][0], team: H.t[r[1]][1], grid: r[2] > 0 ? r[2] : 99, position: /^\d+$/.test(String(r[4])) ? Number(r[4]) : 99 }; }); return { round: rc[0], name: rc[1], x: rows, q: rows.map((x) => ({ ...x, position: x.grid })) }; });
+  return per;
+}

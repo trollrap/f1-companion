@@ -11,6 +11,7 @@ import Grad from '../components/Grad';
 import SeasonSwitch from '../components/SeasonSwitch';
 import { Alert } from '../lib/dialog';
 import { shareCalendar } from '../lib/ics';
+import CalendarPicker from '../components/CalendarPicker';
 import TrackMap from '../components/TrackMap';
 import { useTeamColor } from '../hooks/useTeams';
 import { SprintBadge, Pill } from '../components/Badge';
@@ -27,6 +28,7 @@ const CARD = 72, LABEL = 18, INNER = 10, OUTER = 12, PAD = 16;
 // Season calendar. The current season opens on the last finished and the next race; earlier seasons show every winner.
 export default function CalendarScreen({ navigation }) {
   const spoil = useSpoilerHidden('calendar');
+  const [pickCal, setPickCal] = useState(false);
   const go = (k) => shareCalendar(k).catch((e) => Alert.alert('Could not make the calendar', String(e?.message || e)));
   const season = useSeason(); const now = useNow(60000); const tc = useTeamColor(); const scroller = useRef(null);
   const [year, setYear] = useState(YEAR); const cur = year === YEAR; useOutlinesVersion();
@@ -60,9 +62,9 @@ export default function CalendarScreen({ navigation }) {
   return (
     <Screen scrollRef={scroller}>
       {spoil ? <Pressable accessibilityRole="button" accessibilityLabel="Winners hidden. Tap to reveal." onPress={() => reveal('calendar')} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14, borderRadius: 14, borderWidth: 1, borderStyle: 'dashed', borderColor: colors.line, marginBottom: 8 }}><Ionicons name="eye-off-outline" size={20} color={colors.muted} /><Text style={{ color: colors.muted, fontWeight: '700', flex: 1 }}>Winners hidden. Tap to reveal.</Text></Pressable> : null}
+      <CalendarPicker visible={pickCal} onClose={() => setPickCal(false)} onDone={(k) => { setPickCal(false); go(k); }} />
       <SeasonSwitch year={year} onChange={setYear} max={YEAR + 1} />
-      {year === YEAR ? (<Pressable accessibilityRole="button" accessibilityLabel="Add upcoming sessions to your calendar" onPress={() => Alert.alert('Add to your calendar', 'Creates a calendar file of the sessions still to come, with a reminder 30 minutes before each. Times are saved in UTC, so your calendar shows them in your own time.', [
-        { text: 'Races and sprints', onPress: () => go('races') }, { text: 'Plus qualifying', onPress: () => go('quali') }, { text: 'Every session', onPress: () => go('all') }, { text: 'Cancel', style: 'cancel' }])} style={({ pressed }) => [{ flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-start', paddingVertical: 8, paddingHorizontal: 12, borderRadius: 18, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.line }, pressed && { opacity: 0.8 }]}><Ionicons name="calendar-outline" size={16} color={colors.accent} /><Text style={{ color: colors.fg, fontWeight: '700', fontSize: 13 }}>Add to my calendar</Text></Pressable>) : null}
+      {year === YEAR ? (<Pressable accessibilityRole="button" accessibilityLabel="Add upcoming sessions to your calendar" onPress={() => setPickCal(true)} style={({ pressed }) => [{ flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-start', paddingVertical: 8, paddingHorizontal: 12, borderRadius: 18, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.line }, pressed && { opacity: 0.8 }]}><Ionicons name="calendar-outline" size={16} color={colors.accent} /><Text style={{ color: colors.fg, fontWeight: '700', fontSize: 13 }}>Add to my calendar</Text></Pressable>) : null}
       {!cur && past.loading && <Skeleton rows={5} />}
       {!cur && past.error && <ErrorNote error={past.error} onRetry={past.reload} />}
       {months.map((g) => (

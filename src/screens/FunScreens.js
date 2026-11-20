@@ -54,7 +54,11 @@ export function FunHome({ navigation }) {
   if (cur) { const done = cur.races.filter((r) => sessionsOf(r).every((s) => cur.results?.[r.id]?.[s])).length; fInfo = `${live.length} saved season${live.length === 1 ? '' : 's'} · ${cur.name}: ${done}/${cur.races.length} races`; }
   return (
     <Screen>
-      <Reveal index={0}><Text style={{ color: colors.fg, fontSize: 24, fontWeight: '800', fontStyle: 'italic' }}>Fun</Text></Reveal>
+      <Reveal index={0}><Text style={{ color: colors.fg, fontSize: 24, fontWeight: '800', fontStyle: 'italic' }}>Other</Text></Reveal>
+      <Reveal index={1}><View style={{ flexDirection: 'row', gap: 10 }}>
+        <View style={{ flex: 1 }}><Hero i={1} color={colors.purple} icon="stats-chart" kicker="NUMBERS" title="Statistics" info="Records, streaks, odds, season reviews and more" onPress={() => navigation.navigate('StatsHub')} height={150} /></View>
+        <View style={{ flex: 1 }}><Hero i={1} color={colors.gold} icon="person-circle" kicker="YOU" title="My profile" info="Name, photo, favourites, number" onPress={() => navigation.navigate('Profile')} height={150} /></View>
+      </View></Reveal>
       <Reveal index={1}><DailyBanner navigation={navigation} st={st} /></Reveal>
       <Reveal index={1}><ChallengeCard navigation={navigation} /></Reveal>
       {st.resume.length ? <ContinueRow navigation={navigation} st={st} pins={pins} toggle={toggle} /> : null}

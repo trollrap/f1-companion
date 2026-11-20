@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { View, Pressable, useWindowDimensions } from 'react-native';
+import { useRoute } from '@react-navigation/native';
 import Svg, { Line, Polyline, Circle, Text as SvgText } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
 import { Text } from '../components/Text';
@@ -16,7 +17,7 @@ import { colors, alpha, teamColor } from '../theme';
 // Animated lap chart: every car's running order from the grid to the flag. Needs a connection the first time a race is opened; opened races are kept on the phone.
 const YEARS = Array.from({ length: YEAR - 2011 }, (_, i) => YEAR - i);
 export default function LapChartScreen() {
-  const { width } = useWindowDimensions(); const [year, setYear] = useState(YEAR); const [round, setRound] = useState(null);
+  const { width } = useWindowDimensions(); const rp = useRoute().params || {}; const [year, setYear] = useState(rp.year || YEAR); const [round, setRound] = useState(rp.round || null);
   const sch = useAsync(() => jolpicaSchedule(year), [year]);
   const done = useMemo(() => (sch.v || []).filter((r) => new Date(`${r.date}T23:59:59Z`) < new Date()), [sch.v]);
   useEffect(() => { if (done.length) setRound((r) => (r && done.some((x) => x.round === r) ? r : done[done.length - 1].round)); }, [done]);

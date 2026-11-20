@@ -2,44 +2,80 @@ import React, { useMemo, useState } from 'react';
 import { View } from 'react-native';
 import { Text } from '../components/Text';
 import Screen, { Card, Eyebrow, Note } from '../components/Screen';
+import { StatHeader, StatRow, StatList, SectionLabel } from '../components/StatRows';
+import Grad from '../components/Grad';
+import Press from '../components/Press';
+import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 import Dropdown from '../components/Dropdown';
 import ShareCard from '../components/ShareCard';
-import { Segmented } from '../components/Shared';
-import { seasonFacts, seasonStory, debutsOf, historyYears } from '../api/history';
+import { Segmented, HeadShot } from '../components/Shared';
+import { seasonFacts, seasonStory, debutsOf, historyYears, entityByName, HISTORY_UPTO } from '../api/history';
 import { CIRCUITS } from '../data/circuits';
-import { colors, alpha } from '../theme';
+import { colors, alpha, teamColor } from '../theme';
 
 const yrs = () => { try { return historyYears(); } catch { return []; } };
 const Line = ({ children, first }) => <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 7, borderTopWidth: first ? 0 : 1, borderTopColor: colors.line }}>{children}</View>;
 const Stat = ({ k, v, s }) => (<View style={{ flex: 1, minWidth: '45%', paddingVertical: 6 }}><Text style={{ color: colors.muted, fontSize: 10, fontWeight: '800' }}>{k}</Text><Text style={{ color: colors.fg, fontSize: 16, fontWeight: '900' }}>{v}</Text>{s ? <Text style={{ color: colors.muted, fontSize: 12 }} numberOfLines={2}>{s}</Text> : null}</View>);
 
 // ---------- Season review ----------
+const Tile = ({ icon, k, v, s, color = colors.accent, name }) => {
+  const nav = useNavigation(); const e = name ? entityByName(name) : null;
+  const go = e ? () => (e.type === 'driver' ? nav.navigate('Driver', { driverId: e.driverId, name: e.name, first: e.first, last: e.last }) : nav.navigate('Team', { teamId: e.teamId, name: e.name })) : null;
+  const W = go ? Press : View; const wp = go ? { onPress: go, scale: 0.97 } : {};
+  return (
+    <W {...wp} style={{ width: '48.5%', borderRadius: 16, padding: 12, gap: 4, backgroundColor: colors.card, borderWidth: 1, borderColor: alpha(color, 0.35) }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}><Ionicons name={icon} size={15} color={color} /><Text style={{ color: colors.muted, fontSize: 10, fontWeight: '800', letterSpacing: 1 }}>{k}</Text></View>
+      <Text style={{ color: colors.fg, fontSize: 16, fontWeight: '800' }} numberOfLines={2}>{v}</Text>
+      {s ? <Text style={{ color: colors.muted, fontSize: 12 }} numberOfLines={2}>{s}</Text> : null}
+    </W>);
+};
 export function SeasonReviewScreen() {
   const years = useMemo(yrs, []); const [year, setYear] = useState(years[0] || 2025);
   const F = useMemo(() => seasonFacts(year), [year]); const S = useMemo(() => seasonStory(year), [year]);
+  const partial = F && year > HISTORY_UPTO(); const ent = S && entityByName(S.champion);
+  const champTeam = S && S.winners.length ? (S.winners.filter((w) => w.winner === S.champion).pop() || S.winners[S.winners.length - 1]).team : null;
+  const tcol = (() => { try { const t = champTeam && entityByName(champTeam); return t && t.type === 'team' ? teamColor(t.teamId) : colors.accent; } catch { return colors.accent; } })();
+  const tally = useMemo(() => { const m = {}; (S?.winners || []).forEach((w) => { m[w.winner] = (m[w.winner] || 0) + 1; }); return Object.entries(m).sort((x, y) => y[1] - x[1]); }, [S]);
   return (
     <Screen header={false}>
-      <Card hero><Eyebrow>Season review</Eyebrow><View style={{ marginTop: 10 }}><Dropdown value={year} options={years.map((y) => [y, String(y)])} onChange={(v) => setYear(Number(v))} prefix="Season" /></View>
-        <Note>Built from the offline race history. The season in progress appears after the next history update.</Note></Card>
+      <StatHeader title="Season review" icon="ribbon" note="Every season in one page: the champion, the numbers, the title fight and every winner." />
+      <Dropdown value={year} options={years.map((y) => [y, String(y)])} onChange={(v) => setYear(Number(v))} prefix="Season" />
       {F && S ? (<>
-        <ShareCard title={`${year} F1 season: ${S.champion} champion`}>
-          <Card><Eyebrow>{`${year} in review`}</Eyebrow>
-            <Text style={{ color: colors.fg, fontSize: 26, fontWeight: '900', marginTop: 6 }}>{S.champion}</Text>
-            <Text style={{ color: colors.muted }}>{`World champion · ${F.champPts} points${F.secondPts != null ? `, ${F.champPts - F.secondPts} clear of second` : ''}`}</Text>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 10 }}>
-              <Stat k="RACES" v={F.races} s={`${F.winners} different winners`} />
-              <Stat k="MOST WINS" v={F.mostWins ? `${F.mostWins.name} (${F.mostWins.n})` : '-'} />
-              <Stat k="TOP TEAM" v={F.mostTeamWins ? `${F.mostTeamWins.name} (${F.mostTeamWins.n} wins)` : '-'} />
-              <Stat k="MOST POLES" v={F.mostPoles ? `${F.mostPoles.name} (${F.mostPoles.n})` : '-'} />
-              <Stat k="MOST PODIUMS" v={S.mostPodiums ? `${S.mostPodiums.name} (${S.mostPodiums.n})` : '-'} />
-              <Stat k="FINISH RATE" v={`${Math.round(F.finishRate * 100)}%`} s={`${F.avgCars.toFixed(0)} cars per race`} />
-            </View></Card>
+        <ShareCard title={`${year} F1 season: ${S.champion} ${partial ? 'leads' : 'champion'}`}>
+          <Grad color={tcol} from={0.6} to={0.08} radius={22} border style={{ padding: 18, overflow: 'hidden' }}>
+            <Text style={{ position: 'absolute', right: 10, top: -6, fontSize: 88, fontWeight: '900', color: alpha(colors.fg, 0.07) }}>{year}</Text>
+            <Text style={{ color: colors.onSoft, fontSize: 11, fontWeight: '800', letterSpacing: 2 }}>{partial ? `LEADING AFTER ${F.races} RACES` : 'WORLD CHAMPION'}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 10 }}>
+              {ent && ent.type === 'driver' ? <HeadShot id={ent.driverId} size={64} color={tcol} /> : null}
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: colors.fg, fontSize: 28, fontWeight: '900' }} numberOfLines={2}>{S.champion}</Text>
+                <Text style={{ color: colors.onSoft, fontSize: 14 }}>{champTeam || ''}{F.champPts != null ? ` · ${F.champPts} points${F.secondPts != null ? `, ${F.champPts - F.secondPts} clear of second` : ''}` : ''}</Text>
+              </View>
+            </View>
+          </Grad>
         </ShareCard>
-        <Card><Eyebrow>The title fight</Eyebrow>
-          <Text style={{ color: colors.fg, fontSize: 15, marginTop: 6, lineHeight: 22 }}>{S.leadChanges === 0 ? `${S.champion} led the championship from the first race to the last.` : `The championship lead changed hands ${S.leadChanges} time${S.leadChanges === 1 ? '' : 's'} between ${S.leadersSeen.length} drivers (${S.leadersSeen.join(', ')}). ${S.champion} took the lead for good in round ${S.leaderForGoodAfter}.`}</Text>
-          {S.comeback ? <Text style={{ color: colors.fg, fontSize: 15, marginTop: 10, lineHeight: 22 }}>{`Best comeback win: ${S.comeback.winner} won the ${S.comeback.name} from P${S.comeback.grid}.`}</Text> : null}</Card>
-        <Card><Eyebrow>Every winner</Eyebrow>
-          {S.winners.map((w, i) => (<Line key={w.round} first={i === 0}><Text style={{ width: 28, color: colors.muted, fontWeight: '800' }}>{`R${w.round}`}</Text><View style={{ flex: 1 }}><Text style={{ color: colors.fg, fontWeight: '800', fontSize: 14 }} numberOfLines={1}>{w.winner}</Text><Text style={{ color: colors.muted, fontSize: 12 }} numberOfLines={1}>{`${w.name} · ${w.team}`}</Text></View>{w.grid > 0 ? <Text style={{ color: colors.muted, fontSize: 12 }}>{`from P${w.grid}`}</Text> : null}</Line>))}</Card>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+          <Tile icon="flag" k="RACES" v={String(F.races)} s={`${F.winners} different winners`} color={colors.good} />
+          <Tile icon="trophy" k="MOST WINS" v={F.mostWins ? `${F.mostWins.name} (${F.mostWins.n})` : '-'} color={colors.gold} name={F.mostWins?.name} />
+          <Tile icon="shield" k="TOP TEAM" v={F.mostTeamWins ? `${F.mostTeamWins.name} (${F.mostTeamWins.n})` : '-'} color={tcol} name={F.mostTeamWins?.name} />
+          <Tile icon="flash" k="MOST POLES" v={F.mostPoles ? `${F.mostPoles.name} (${F.mostPoles.n})` : '-'} color={colors.accent} name={F.mostPoles?.name} />
+          <Tile icon="podium" k="MOST PODIUMS" v={S.mostPodiums ? `${S.mostPodiums.name} (${S.mostPodiums.n})` : '-'} color={colors.purple} name={S.mostPodiums?.name} />
+          <Tile icon="checkmark-done" k="FINISH RATE" v={`${Math.round(F.finishRate * 100)}%`} s={`${F.avgCars.toFixed(0)} cars per race`} color={colors.good} />
+        </View>
+        <SectionLabel>The title fight</SectionLabel>
+        <Card>
+          <Text style={{ color: colors.fg, fontSize: 15, lineHeight: 22 }}>{S.leadChanges === 0 ? `${S.champion} led the championship from the first race${partial ? ' so far' : ' to the last'}.` : `The championship lead changed hands ${S.leadChanges} time${S.leadChanges === 1 ? '' : 's'} between ${S.leadersSeen.length} drivers (${S.leadersSeen.join(', ')}). ${S.champion} took the lead for good in round ${S.leaderForGoodAfter}.`}</Text>
+          {S.comeback ? <Text style={{ color: colors.fg, fontSize: 15, marginTop: 10, lineHeight: 22 }}>{`Best comeback win: ${S.comeback.winner} won the ${S.comeback.name} from P${S.comeback.grid}.`}</Text> : null}
+        </Card>
+        <SectionLabel>Winners round by round</SectionLabel>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 5 }}>
+          {S.winners.map((w) => { const t = entityByName(w.team); const c = t && t.type === 'team' ? teamColor(t.teamId) : colors.muted; return (<View key={w.round} style={{ width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: alpha(c, 0.3), borderWidth: 1, borderColor: alpha(c, 0.7) }}><Text style={{ color: colors.fg, fontSize: 12, fontWeight: '800' }}>{w.round}</Text></View>); })}
+        </View>
+        <SectionLabel>Wins by driver</SectionLabel>
+        <StatList>{tally.map(([name, n], i) => <StatRow key={name} i={i} medal title={name} sub={`${n} win${n === 1 ? '' : 's'} of ${F.races}`} value={String(n)} frac={n / (tally[0]?.[1] || 1)} />)}</StatList>
+        <SectionLabel>Every winner</SectionLabel>
+        <StatList>{S.winners.map((w, i) => <StatRow key={w.round} i={i} badge={`R${w.round}`} title={w.winner} sub={`${w.name} · ${w.team}`} value={w.grid > 0 ? `P${w.grid}` : 'pit'} />)}</StatList>
       </>) : <Note>No data for this season.</Note>}
     </Screen>);
 }

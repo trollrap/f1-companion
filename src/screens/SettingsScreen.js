@@ -105,6 +105,8 @@ export default function SettingsScreen() {
         <TextInput value={find} onChangeText={setFind} placeholder="Search settings" placeholderTextColor={colors.muted} accessibilityLabel="Search settings" autoCorrect={false} style={{ flex: 1, color: colors.fg, fontSize: 16, paddingVertical: 12 }} />
         {find ? <Pressable accessibilityRole="button" accessibilityLabel="Clear search" hitSlop={10} onPress={() => setFind('')}><Ionicons name="close-circle" size={18} color={colors.muted} /></Pressable> : null}
       </View>
+      <Group>You</Group>
+      <Btn onPress={() => nav.navigate('Profile')}>My profile: name, photo, favourites and number</Btn>
       <Group>Look and feel</Group>
       <Section icon="contrast-outline" title="Theme" summary={o.theme === 'light' ? 'White' : o.theme === 'amoled' ? 'AMOLED black' : 'Dark'}>
         {[['dark', 'Dark', 'The default look.'], ['amoled', 'AMOLED black', 'Pure black background. Saves battery on OLED screens.'], ['light', 'White', 'A light theme. Some screens with photos are still tuned for dark.']].map(([k, label, hint]) => { const on = (o.theme || 'dark') === k; return (
@@ -130,9 +132,9 @@ export default function SettingsScreen() {
         <Note>Tints the whole app with a team's colour instead of your accent colour. Pick a team, or follow your first favourite team (star a team in the Paddock). Change it any time, for example each race weekend. The app restarts to apply it.</Note>
         <Dropdown value={o.teamTheme || 'off'} options={[['off', 'Off, use my accent colour'], ['fav', 'My first favourite team'], ...Object.keys(teamColors).map((k) => [k, TEAM_NAMES[k] || k])]} onChange={async (v) => { await setOpt('teamTheme', v); setTimeout(() => { restartApp().catch(() => {}); }, 700); }} prefix="Team" />
       </Section>
-      <Section icon="text-outline" title="Font and text size" summary={`${o.font === 'system' ? 'Phone font' : o.font === 'classic' ? 'Classic font' : 'App font'} · ${Math.round((Number(o.textScale) || 1) * 100)}%`}>
+      <Section icon="text-outline" title="Font and text size" summary={`${o.font === 'system' ? 'Phone font' : o.font === 'classic' ? 'Classic font' : 'App font'} · ${Math.round((Number(o.textScale) || 0.9) * 100)}%`}>
         <Segmented value={o.font === 'system' ? 'system' : o.font === 'classic' ? 'classic' : 'default'} onChange={(v) => setOpt('font', v)} items={[['default', 'App font'], ['classic', 'Classic'], ['system', 'Phone']]} />
-        <Segmented value={String(Number(o.textScale) || 1)} onChange={(v) => setOpt('textScale', Number(v))} items={[['0.9', 'S'], ['1', 'M'], ['1.1', 'L'], ['1.2', 'XL'], ['1.3', 'XXL']]} />
+        <Segmented value={String(Number(o.textScale) || 0.9)} onChange={(v) => setOpt('textScale', Number(v))} items={[['0.9', 'S'], ['1', 'M'], ['1.1', 'L'], ['1.2', 'XL'], ['1.3', 'XXL']]} />
         <Text style={{ color: colors.fg, fontSize: 17 }}>This is how normal text looks with your choice. Lap 52 of 71, P4, +3.2s.</Text>
         <Note>Changes show as screens redraw. Restart the app if something still looks old.</Note>
       </Section>
@@ -269,22 +271,18 @@ export default function SettingsScreen() {
         <Btn onPress={() => { setOpts(Object.fromEntries(Object.entries(OPTS).filter(([k]) => !['lang', 'name', 'welcomed', 'accent', 'sport'].includes(k)))); setMsg('Display and performance settings were reset.'); }}>Reset display settings</Btn>
         {msg ? <Note>{msg}</Note> : null}
       </Section>
-      <Group>More</Group>
-      <Card>
+      <Group>About</Group>
+      <Changelog />
+      <Section icon="information-circle-outline" title="About and data" summary={`F1 Companion v${currentVersion()}`}>
         <Btn icon="server-outline" onPress={() => nav.navigate('Storage')}>Storage and data</Btn>
         <Btn icon="bug-outline" onPress={() => nav.navigate('CrashLog')}>Crash log</Btn>
         <Btn icon="mail-outline" onPress={() => nav.navigate('Report')}>Send a report</Btn>
-      </Card>
-      <Changelog />
-      <Card>
-        <Btn icon="compass-outline" onPress={() => setOpt('tourDone', false)}>Show the app tour again</Btn>
-        <Pressable onPress={aboutTap} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+        <Pressable onPress={aboutTap} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 6 }}>
           <View style={s.ico}><Ionicons name="information-circle-outline" size={22} color={colors.accent} /></View>
           <View style={{ flex: 1 }}><Text style={s.secTitle}>About</Text><Text style={s.hint}>{`F1 Companion v${currentVersion()}`}</Text></View>
         </Pressable>
         <View style={s.bubble}><Text style={{ color: colors.fg, fontSize: 16, fontWeight: '600' }}>👋 Hi from trollrap!</Text><Text style={s.hint}>Every bug you find is a hidden feature. Probably.</Text></View>
-        <Text style={[s.hint, { marginTop: 10 }]}>Times follow your device's timezone unless a screen is switched to track time.</Text>
-      </Card>
+      </Section>
       <CodePrompt visible={codeOpen} title="Enter the code" onClose={() => setCodeOpen(false)} onSubmit={(c) => { if (c.toLowerCase() !== 'op81') return false; setCodeOpen(false); nav.navigate('Dev'); return true; }} />
     </Screen>
   );

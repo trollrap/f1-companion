@@ -1,6 +1,7 @@
 import React, { useCallback, useState } from 'react';
 import { View } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import Press from '../components/Press';
 import { Text } from '../components/Text';
 import Screen, { Card, Eyebrow, Note } from '../components/Screen';
 import Grad from '../components/Grad';
@@ -15,6 +16,7 @@ import { currentVersion } from '../lib/update';
 
 const nice = (id) => String(id || '').replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 export default function MyCardScreen() {
+  const nav = useNavigation();
   const favs = useFavs(); const [d, setD] = useState(null);
   useFocusEffect(useCallback(() => { let off = false;
     (async () => { const m = await loadCards().catch(() => ({ owned: {}, keys: {} })); const keys = m.keys || {};
@@ -41,5 +43,6 @@ export default function MyCardScreen() {
         </Grad>
       </ShareCard>
       {!did || !tid ? <Note>Pick a favourite driver and team (the star on their pages) and they show up here.</Note> : null}
+      <Press onPress={() => nav.navigate('Profile')} accessibilityLabel="Edit my profile"><View style={{ minHeight: 48, borderRadius: 14, borderWidth: 1, borderColor: colors.accent, alignItems: 'center', justifyContent: 'center' }}><Text style={{ color: colors.accent, fontWeight: '800' }}>Create or edit my profile</Text></View></Press>
     </Screen>);
 }

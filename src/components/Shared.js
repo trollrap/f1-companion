@@ -1,6 +1,6 @@
 import { up } from '../lib/i18n';
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Pressable, StyleSheet, Animated, Image, Easing, LayoutAnimation, PanResponder } from 'react-native';
+import { View, Pressable, StyleSheet, Animated, Image, Easing, LayoutAnimation, PanResponder, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Text } from './Text';
 import { Ionicons } from '@expo/vector-icons';
@@ -54,7 +54,23 @@ export function NotifPrefs({ title = 'Notifications' }) {
   return (<View><Eyebrow>{title}</Eyebrow><Text style={{ color: colors.muted, fontSize: 15, marginTop: 8 }}>Choose when to be alerted before a session. Pick as many as you like.</Text><Chips items={LEADS} value={prefs.leads} onChange={toggleLead} /></View>);
 }
 // Segmented control with a sliding indicator.
+// Many or long options do not fit one row, so they become pills that scroll sideways (the selected one scrolls into view).
 export function Segmented({ items, value, onChange }) {
+  const chars = items.reduce((n, [, l]) => n + String(l).length, 0);
+  if (items.length >= 5 || chars > 34 || (items.length === 4 && chars > 26)) return <PillRow items={items} value={value} onChange={onChange} />;
+  return <SegmentedBar items={items} value={value} onChange={onChange} />;
+}
+function PillRow({ items, value, onChange }) {
+  const tint = useTint();
+  return (
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingVertical: 2, paddingRight: 8 }} style={{ flexGrow: 0 }}>
+      {items.map(([v, l]) => { const on = v === value; return (
+        <Pressable key={String(v)} onPress={() => onChange(v)} accessibilityRole="button" accessibilityState={{ selected: on }} style={({ pressed }) => [{ paddingHorizontal: 16, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: on ? tint : colors.line, backgroundColor: on ? alpha(tint, 0.2) : colors.surface }, pressed && { opacity: 0.8 }]}>
+          <Text style={{ color: on ? colors.fg : colors.muted, fontWeight: on ? '700' : '600', fontSize: 15 }}>{l}</Text>
+        </Pressable>); })}
+    </ScrollView>);
+}
+function SegmentedBar({ items, value, onChange }) {
   const tint = useTint();
   const [w, setW] = useState(0); const x = useRef(new Animated.Value(0)).current; const idx = Math.max(0, items.findIndex(([v]) => v === value));
   const seg = w ? (w - 8) / items.length : 0; const live = useRef({}); live.current = { seg, idx, n: items.length, items, onChange };

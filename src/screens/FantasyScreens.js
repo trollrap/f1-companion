@@ -14,7 +14,7 @@ import { Segmented, StatGrid, ResultLine } from '../components/Shared';
 import ExportBar from '../components/ExportBar';
 import { demonymToCountry } from '../fun/juniors';
 import { BarView } from '../components/TabBar';
-import { Avatar, Cutout, Field, Stepper, Btn, Swatches, SessionCard, StandingsCard, SummaryCard, Slide, UndoChip } from '../components/FunBits';
+import { Avatar, Cutout, Field, Stepper, Btn, Swatches, SessionCard, StandingsCard, SummaryCard, Slide } from '../components/FunBits';
 import { TransferShow, ChampionShow, SessionShow } from '../components/Shows';
 import { flagOfPlace, flagOfCountry, countryNames } from '../fun/geo';
 import { useFun, pickImage, uid, canPickImage } from '../fun/store';
@@ -185,7 +185,7 @@ function NumField({ f, d, onSet }) {
 export function FantasyNew({ navigation }) {
   const fun = useFun(); const p = fun.profile;
   const [name, setName] = useState(`Fantasy ${fun.fantasies.length + 1}`); const [mode, setMode] = useState('real'); const [count, setCount] = useState(11);
-  const [races, setRaces] = useState(defaultRaces); const presets = fun.presets; const [presetId, setPresetId] = useState(null); const [me, setMe] = useState(false); const [meTeam, setMeTeam] = useState(0); const [seed, setSeed] = useState(0);
+  const [races, setRaces] = useState(defaultRaces); const presets = fun.presets; const [presetId, setPresetId] = useState(null); const [me, setMe] = useState(false); const [meTeam, setMeTeam] = useState(0); const [meSeat, setMeSeat] = useState(0); const [seed, setSeed] = useState(0);
   const real = useAsync(() => (mode === 'real' ? loadRealGrid([]) : Promise.resolve(null)), [mode]);
   const invented = useMemo(() => makeGrid(count, [p?.number].filter(Boolean)), [count, seed, p?.number]);
   const pre = presets.find((x) => x.id === presetId) || presets[0] || null;
@@ -196,7 +196,7 @@ export function FantasyNew({ navigation }) {
   const create = () => {
     if (!ok || !(races.length || (mode === 'preset' && usePresetRaces && pre?.races.length))) return;
     let f = { id: uid(), name: name.trim() || 'Fantasy season', created: Date.now(), mode, season: 1, history: [], teams: grid.teams, drivers: grid.drivers, races: mode === 'preset' && usePresetRaces ? pre.races.map((r) => ({ ...r, id: r.custom ? uid() : r.id })) : races, results: {} };
-    if (me && p) { const t = grid.teams[Math.min(meTeam, grid.teams.length - 1)], own = grid.drivers.filter((d) => d.teamId === t.id), mine = own[1] || own[0]; f = makeMe(f, p, mine.id); f = { ...f, drivers: f.drivers.map((d) => (d.me ? { ...d, skill: 76 } : d)) }; }
+    if (me && p) { const t = grid.teams[Math.min(meTeam, grid.teams.length - 1)], own = grid.drivers.filter((d) => d.teamId === t.id), mine = own[Math.min(meSeat, own.length - 1)] || own[0]; f = makeMe(f, p, mine.id); f = { ...f, drivers: f.drivers.map((d) => (d.me ? { ...d, skill: 76 } : d)) }; }
     fun.addFantasy(f); navigation.replace('Fantasy', { id: f.id });
   };
   return (
@@ -229,7 +229,8 @@ export function FantasyNew({ navigation }) {
           {p ? (<>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}><Avatar uri={p.photo} size={44} color={p.color} label={p.number} /><View style={{ flex: 1 }}><Text style={{ color: colors.fg, fontSize: 18, fontWeight: '700' }}>{p.name || 'Your driver'}</Text><Text style={{ color: colors.muted, fontSize: 14 }}>That is me: race as this driver</Text></View><Switch value={me} onValueChange={setMe} trackColor={{ true: colors.accent, false: colors.surface2 }} thumbColor="#fff" /></View>
             {me && grid ? <Dropdown value={meTeam} options={grid.teams.map((t, i) => [i, t.name])} onChange={setMeTeam} prefix="Team" /> : null}
-            {me ? <Note>You take the place of the team's second driver. Only one driver per season can be you.</Note> : null}
+            {me && grid ? (() => { const t = grid.teams[Math.min(meTeam, grid.teams.length - 1)]; const own = grid.drivers.filter((d) => d.teamId === t.id); return <Dropdown value={Math.min(meSeat, own.length - 1)} options={own.map((d, i) => [i, d.name])} onChange={setMeSeat} prefix="Replace" />; })() : null}
+            {me ? <Note>You take the seat of the driver you choose. Only one driver per season can be you.</Note> : null}
           </>) : <Note>Create your driver in Fun first to race as yourself.</Note>}
         </View>
       </Card>
@@ -246,7 +247,7 @@ const memo = (f, key, fn) => { let m = MEMO.get(f); if (!m) { m = {}; MEMO.set(f
 export function Fantasy({ route, navigation }) {
   const { id } = route.params; const fun = useFun(); const insets = useSafeAreaInsets(); const f = fun.get(id); const [tab, setTab] = useState(f?.ended ? 'stats' : 'home'); const [sub, setSub] = useState('drivers'); const [art, setArt] = useState(null); const [busy, setBusy] = useState(false); const [sel, setSel] = useState(null); const [exp, setExp] = useState(false); const [shw, setShw] = useState(null); const [live, setLive] = useState(null); const [pad, setPad] = useState('grid'); const shotD = useRef(null), shotT = useRef(null);
   useEffect(() => { if (f) navigation.setOptions({ title: f.name, headerRight: () => (
-    <HomeBtn><Pressable onPress={() => { setArt(null); setTab((t) => (t === 'settings' ? 'home' : 'settings')); }} hitSlop={12} accessibilityLabel="Fantasy settings" style={({ pressed }) => [{ width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center', marginRight: 4, backgroundColor: tab === 'settings' ? alpha(colors.accent, 0.3) : 'transparent' }, pressed && { opacity: 0.6 }]}><Ionicons name="settings-outline" size={22} color={colors.fg} /></Pressable></HomeBtn>) }); }, [f?.name, tab]);
+    <HomeBtn noHome><Pressable onPress={() => { setArt(null); setTab((t) => (t === 'settings' ? 'home' : 'settings')); }} hitSlop={12} accessibilityLabel="Fantasy settings" style={({ pressed }) => [{ width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center', marginRight: 4, backgroundColor: tab === 'settings' ? alpha(colors.accent, 0.3) : 'transparent' }, pressed && { opacity: 0.6 }]}><Ionicons name="settings-outline" size={22} color={colors.fg} /></Pressable></HomeBtn>) }); }, [f?.name, tab]);
   // Back (button or swipe) from an article or from another tab lands on this fantasy's Home, and only from Home leaves the fantasy.
   const sref = useRef(null); useEffect(() => { sref.current?.scrollTo?.({ y: 0, animated: false }); }, [tab, art]);
   const nav = useRef({ art, tab, leave: false }); nav.current.art = art; nav.current.tab = tab;
@@ -285,7 +286,6 @@ export function Fantasy({ route, navigation }) {
   return (
     <Screen header={false} scrollRef={sref} revealKey={`${shown}:${sub}`} footer={bar} swipe={{ index: Math.min(5, tabs.indexOf(tab)), count: 6, onIndex: (i) => { setArt(null); setTab(tabs[i]); } }}>
       {seasonList(f).length > 1 ? <Dropdown value={n} options={seasonList(f).map((k) => [k, k === cur ? `Season ${k} · ${off ? 'transfers' : 'current'}` : `Season ${k}`])} onChange={(k) => { setSel(k); setExp(false); }} prefix="Season" /> : null}
-      <UndoChip depth={fun.undoDepth(id)} onPress={() => fun.undo(id)} />
       <LiveRace visible={!!live} race={live?.st.race.name || ''} laps={live?.laps} drivers={live?.drivers} sc={live?.sc} wet={live?.wet} shower={live?.shower} onClose={endLive} />
       <SessionShow visible={shw?.type === 'session'} title={(shw?.type === 'session' && f.races.find((r) => r.id === shw.raceId)?.name) || ''} sub={shw?.session} rows={shw?.type === 'session' ? sessRows(f, shw.raceId, shw.session) : []} onClose={() => setShw(null)} />
       <TransferShow visible={shw?.type === 'transfers'} season={shw?.season} items={shw?.items || []} onClose={() => setShw(null)} />
@@ -420,7 +420,6 @@ export function Fantasy({ route, navigation }) {
         <Segmented value={String(f.rules?.rel ?? 1)} onChange={(k) => fun.update(id, (g) => ({ ...g, rules: { ...(g.rules || {}), rel: Number(k) } }))} items={Object.entries(RULE_REL).map(([k, l]) => [k, l])} />
       </View></Card>) : null}
       {shown === 'settings' && (<Card><Eyebrow>Save</Eyebrow><View style={{ gap: 10, marginTop: 10 }}>
-        {fun.canUndo(id) ? <Btn icon="arrow-undo" onPress={() => fun.undo(id)}>Undo last change</Btn> : null}
         <Btn icon={f.archived ? 'archive' : 'archive-outline'} onPress={() => { fun.update(id, (g) => ({ ...g, archived: !g.archived })); if (!f.archived) { nav.current.leave = true; navigation.goBack(); } }}>{f.archived ? 'Restore from the archive' : 'Archive this save'}</Btn>
         <Text style={{ color: colors.muted, fontSize: 13 }}>Archived saves move out of the main list into an Archived section. Nothing is deleted and you can restore them any time.</Text>
         {isCur && !ended ? <Btn icon="flag" onPress={() => Alert.alert('End this save?', 'The save is closed and the total stats of every season are shown. You can reopen it later.', [{ text: 'Cancel', style: 'cancel' }, { text: 'End save', onPress: () => { fun.update(id, (g) => ({ ...g, ended: true, endedAt: Date.now(), off: false })); setTab('stats'); } }])}>End this save and show total stats</Btn> : null}
@@ -480,7 +479,6 @@ export function FantasyTransfers({ route, navigation }) {
         <View style={{ marginTop: 12, gap: 10 }}>
           <Btn tone="solid" icon="flag" disabled={!canStart} onPress={() => { upd((g) => ({ ...g, off: false })); navigation.navigate('Fantasy', { id }); }}>{`Start season ${seasonNo(f)} now`}</Btn>
           <Btn icon="shuffle" onPress={() => { const r = simulateTransfers(f); upd(() => r.f); if (fun.settings.animSeason) setShow(true); }}>{f.news?.length ? 'Simulate the transfers again' : 'Simulate transfers (random)'}</Btn>
-          <UndoChip depth={fun.undoDepth(id)} onPress={() => fun.undo(id)} />
         </View>
         {(f.news || []).length ? (<View style={{ gap: 6, marginTop: 12 }}><Eyebrow>Transfer news</Eyebrow>{f.news.map((n, i) => <Text key={i} style={{ color: n.kind === 'retire' ? colors.muted : colors.fg, fontSize: 15 }}>{`${n.kind === 'retire' ? '🏁' : n.kind === 'rookie' ? '🌱' : n.kind === 'move' ? '🔁' : '•'} ${n.text}`}</Text>)}</View>) : null}
       </Card>
@@ -547,7 +545,6 @@ export function FantasyDriver({ route, navigation }) {
           </View>
         </View>
       </Grad>
-      <UndoChip depth={fun.undoDepth(id)} onPress={() => fun.undo(id)} />
       {!inGrid ? <Note>{`No longer on the grid. Showing season ${season ?? '—'}, the last one he raced.`}</Note> : null}
       <Text style={{ color: colors.muted, fontSize: 14 }}>{d.me ? "This is you. Your photo, name and number come from your driver profile." : d.ref ? 'A fantasy version of a real driver. What happens here only counts in this fantasy.' : 'A fantasy driver.'}</Text>
       <Card>
@@ -890,7 +887,6 @@ export function PresetGrid({ route, navigation }) {
   const addTeam = () => upd((g) => { const used = g.teams.map((t) => t.color); const t = { id: uid(), name: `Team ${g.teams.length + 1}`, color: TEAM_COLORS.find((c) => !used.includes(c)) || TEAM_COLORS[g.teams.length % TEAM_COLORS.length], logo: null, car: 70, rel: 75, dev: 60, pit: 75 }; const g2 = { ...g, drivers: [...g.drivers, newDriver(g, t.id)] }; return { ...g2, teams: [...g.teams, t], drivers: [...g2.drivers, newDriver(g2, t.id)] }; });
   return (
     <Screen header={false}>
-      <UndoChip depth={fun.undoDepth(id)} onPress={() => fun.undo(id)} />
       <Note>A preset is a full grid kept for later. Edit teams, drivers (tap one for every attribute) and races, then pick it when you make a new season.</Note>
       <Setup f={f} update={upd} profile={fun.profile} navigation={navigation} onDelete={() => Alert.alert('Delete this preset?', 'Saves made from it are not affected.', [{ text: 'Cancel', style: 'cancel' }, { text: 'Delete', style: 'destructive', onPress: () => { fun.remove(id); navigation.goBack(); } }])} />
       <Btn icon="add" onPress={addTeam}>Add a team</Btn>

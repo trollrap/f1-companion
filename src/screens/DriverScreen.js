@@ -42,7 +42,8 @@ export default function DriverScreen({ route, navigation }) {
   // Opens on the current season; a driver who is not racing now opens on the last season he raced in.
   const raced = seasons.v; const nowStand = useAsync(() => driverStandings(YEAR), []);
   const activeNow = !nowStand.v || nowStand.v.some((x) => x.driverId === driverId); // judged by this season's standings, not by a cached career list
-  const year = pick != null ? pick : !activeNow && raced && raced.length ? raced.find((y) => y < YEAR) ?? YEAR : YEAR; const isCur = year === YEAR;
+  // The seasons he actually raced decide where it opens (this one only when he raced in it), so a driver opened from a statistic never lands on an empty current season.
+  const year = pick != null ? pick : raced && raced.length ? (raced.includes(YEAR) && activeNow ? YEAR : raced.find((y) => y < YEAR) ?? raced[0]) : YEAR; const isCur = year === YEAR;
   const season = useAsync(async () => {
     const [rows, q] = await Promise.all([driverSeasonResults(year, driverId), driverSeasonQuali(year, driverId).catch(() => ({ poles: null, q3: null }))]); // side by side
     return { rows, stats: seasonStats(rows, q.poles, q.q3) };

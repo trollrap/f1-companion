@@ -5,8 +5,10 @@ import Screen, { Card, Eyebrow, Note } from '../components/Screen';
 import { StatHeader } from '../components/StatRows';
 import Reveal from '../components/Reveal';
 import { Segmented } from '../components/Shared';
-import { colors, alpha } from '../theme';
-import { gridSlotOdds, lineupStrength, titleHistory } from '../api/history';
+import { colors, alpha, teamColor } from '../theme';
+import Press from '../components/Press';
+import { useNavigation } from '@react-navigation/native';
+import { gridSlotOdds, lineupStrength, titleHistory, entityByName } from '../api/history';
 
 const pct = (v, d = 0) => `${(v * 100).toFixed(d)}%`;
 const Bar = ({ v, tint }) => (<View style={{ height: 6, borderRadius: 3, backgroundColor: colors.line, overflow: 'hidden', flex: 1 }}><View style={{ width: `${Math.max(1, Math.min(100, v * 100))}%`, height: 6, backgroundColor: tint }} /></View>);
@@ -37,16 +39,29 @@ export function GridOddsScreen() {
 }
 
 function Pair({ o, i, mode }) {
+  const nav = useNavigation(); const ent = entityByName(o.team); const col = ent ? teamColor(ent.teamId) : colors.accent;
+  const open = (name) => { const e = entityByName(name); if (e && e.type === 'driver') nav.navigate('Driver', { driverId: e.driverId, name: e.name, first: e.first, last: e.last, year: Number(o.year) }); };
+  const tot = Math.max(1, o.pa + o.pb); const big = mode === 'gap' ? `${o.pa - o.pb} pts` : mode === 'close' ? `${Math.abs(o.pa - o.pb)} pts` : pct(o.share, 1);
   return (
     <Reveal index={Math.min(i, 8)}>
-      <Card>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' }}>
-          <Text style={{ color: colors.fg, fontSize: 16, fontWeight: '700', flex: 1 }} numberOfLines={1}>{`${i + 1}. ${o.year} ${o.team}`}</Text>
-          <Text style={{ color: colors.fg, fontSize: 21, fontWeight: '800' }}>{mode === 'gap' ? `${o.pa - o.pb} pts` : mode === 'close' ? `${Math.abs(o.pa - o.pb)} pts` : pct(o.share, 1)}</Text>
+      <View style={{ borderRadius: 18, borderWidth: 1, borderColor: alpha(col, 0.5), backgroundColor: colors.card, overflow: 'hidden' }}>
+        <View style={{ height: 4, backgroundColor: col }} />
+        <View style={{ padding: 14, gap: 10 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <View style={{ width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', backgroundColor: alpha(col, 0.22) }}><Text style={{ color: colors.fg, fontWeight: '800' }}>{i + 1}</Text></View>
+            <View style={{ flex: 1 }}><Text style={{ color: colors.fg, fontSize: 17, fontWeight: '800' }} numberOfLines={1}>{o.team}</Text><Text style={{ color: colors.muted, fontSize: 13 }}>{`${o.year} · ${o.comb} points together`}</Text></View>
+            <Text style={{ color: col, fontSize: 22, fontWeight: '800' }}>{big}</Text>
+          </View>
+          <View style={{ flexDirection: 'row', height: 10, borderRadius: 5, overflow: 'hidden', backgroundColor: colors.line }}>
+            <View style={{ flex: o.pa / tot, backgroundColor: col }} /><View style={{ flex: o.pb / tot, backgroundColor: alpha(col, 0.38) }} />
+          </View>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+            <Press onPress={() => open(o.a)} accessibilityLabel={`${o.a}, open profile`}><Text style={{ color: colors.fg, fontWeight: '700', fontSize: 14 }}>{`${o.a}  ${o.pa}`}</Text></Press>
+            <Press onPress={() => open(o.b)} accessibilityLabel={`${o.b}, open profile`}><Text style={{ color: colors.fg, fontWeight: '700', fontSize: 14 }}>{`${o.pb}  ${o.b}`}</Text></Press>
+          </View>
+          <Text style={{ color: colors.muted, fontSize: 12 }}>{`${pct(o.share, 1)} of everything scored that season`}</Text>
         </View>
-        <Text style={{ color: colors.fg, fontSize: 14, marginTop: 4 }}>{`${o.a} ${o.pa}  ·  ${o.b} ${o.pb}`}</Text>
-        <Text style={{ color: colors.muted, fontSize: 13, marginTop: 2 }}>{`Together ${o.comb} points, ${pct(o.share, 1)} of everything scored that year`}</Text>
-      </Card>
+      </View>
     </Reveal>);
 }
 export function LineupScreen() {

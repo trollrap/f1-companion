@@ -1,6 +1,7 @@
 // Jolpica-F1: Ergast-compatible history, results and standings. No live timing.
 // Routes follow Jolpica's docs: season first, then /drivers/{id}, /constructors/{id}, /fastest/{rank}, endpoints end in .json or /.
 // The position filter (/results/1) is NOT in Jolpica's docs, so it is probed at runtime and falls back to counting rows.
+import { CALENDAR_2027, GRID_2027 } from '../data/season2027';
 import { cachedJSON, memo, MIN, HOUR, DAY } from '../lib/cache';
 import { YEAR } from './openf1';
 import { driverChampionYears, constructorChampionYears } from '../data/champions';
@@ -68,8 +69,10 @@ export async function winnersByRound(year) {
 }
 // The full schedule with every session start (UTC). Used for round numbers, sprint weekends and as a fallback for OpenF1.
 export async function jolpicaSchedule(year) {
-  const d = await get(`/${year}/races.json?limit=100`, ttlFor(year, 6 * HOUR));
-  return d.RaceTable.Races.map((r) => ({ ...r, round: Number(r.round) }));
+  // 2027 is already announced; until the data server publishes it, the built-in copy of the announced calendar is shown.
+  let live = null; try { const d = await get(`/${year}/races.json?limit=100`, ttlFor(year, 6 * HOUR)); live = d.RaceTable.Races.map((r) => ({ ...r, round: Number(r.round) })); } catch (e) { if (year !== 2027) throw e; }
+  if (year === 2027 && (!live || live.length < 20)) return CALENDAR_2027.map((r) => ({ ...r, round: Number(r.round) }));
+  return live;
 }
 
 /* ---------- drivers and teams ---------- */
@@ -263,6 +266,13 @@ export async function seasonPoints(year) {
 
 // The entry list for a season (before it starts: whatever the server has published so far). Teams with their drivers.
 export async function entryList(year) {
+  if (year === 2027) { // announced line-ups are the fallback until the data server lists a full 2027 entry
+    try { const live = await entryListLive(year); if (live.length >= 10 && live.every((t) => t.drivers.length >= 2)) return live; } catch {}
+    return GRID_2027;
+  }
+  return entryListLive(year);
+}
+async function entryListLive(year) {
   const cs = (await get(`/${year}/constructors.json?limit=100`, 10 * MIN)).ConstructorTable.Constructors;
   const out = await Promise.all(cs.map(async (c) => ({ teamId: c.constructorId, name: c.name, drivers: await settle(teamDrivers(year, c.constructorId)) || [] })));
   return out.filter((x) => x.drivers.length);
@@ -329,8 +339,16 @@ export async function raceLaps(year, round) {
 // Team-mate battles for a season: for every team, the two drivers who raced most for it, and who was ahead in qualifying and in the race at each round.
 // Rounds where either driver did not take part in a session are left out of that session's count. Qualifying comes from Jolpica (not in the offline history).
 export async function teamBattles(year) {
-  const sch = await jolpicaSchedule(year); const done = sch.filter((r) => new Date(`${r.date}T23:59:59Z`) < new Date());
-  const per = await Promise.all(done.map(async (r) => { const [q, x] = await Promise.all([sessionResults(year, r.round, 'qualifying').catch(() => null), sessionResults(year, r.round, 'results').catch(() => null)]); return { round: r.round, name: r.raceName.replace(' Grand Prix', ''), q, x }; }));
+  let per = null;
+  if (LH.localYear(year)) per = LH.localBattles(year); // finished seasons: instant, from the built-in history
+  if (!per) {
+    // the live season: two paged requests (results and qualifying for the whole year) instead of two per round
+    const [res, qual] = await Promise.all([pageAll(`/${year}/results.json`, resultRows, ttlFor(year, 20 * MIN), 8), pageAll(`/${year}/qualifying.json`, qualiRows, ttlFor(year, 20 * MIN), 8).catch(() => [])]);
+    const rounds = {};
+    const row = ({ race, r }, isQ) => { const o = (rounds[race.round] ||= { round: Number(race.round), name: race.raceName, x: [], q: [] }); (isQ ? o.q : o.x).push({ driverId: r.Driver.driverId, driver: `${r.Driver.givenName} ${r.Driver.familyName}`, last: r.Driver.familyName, teamId: r.Constructor.constructorId, team: r.Constructor.name, position: Number(r.position) || 99 }); };
+    res.forEach((e) => row(e, false)); qual.forEach((e) => row(e, true));
+    per = Object.values(rounds).sort((a, b) => a.round - b.round);
+  }
   const teams = {};
   per.forEach((p) => (p.x || []).forEach((r) => { const t = (teams[r.teamId] ||= { teamId: r.teamId, name: r.team, n: {} }); t.n[r.driverId] = t.n[r.driverId] || { id: r.driverId, name: r.driver, last: r.last, n: 0 }; t.n[r.driverId].n++; }));
   const out = Object.values(teams).map((t) => {

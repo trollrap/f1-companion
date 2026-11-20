@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import { View, ScrollView } from 'react-native';
+import { View, useWindowDimensions } from 'react-native';
+import ShareCard from '../components/ShareCard';
 import { Text } from '../components/Text';
 import Screen, { Card, Note, ErrorNote } from '../components/Screen';
 import Skeleton from '../components/Skeleton';
@@ -20,30 +21,34 @@ export const heatColor = (c) => {
   if (c.pos <= 10) return alpha(colors.good, 0.85 - (c.pos - 4) * 0.09);
   return alpha(colors.fg, 0.12);
 };
-const CELL = 30, NAME = 64;
+const NAME = 40;
 export function SeasonHeatmapScreen() {
   const years = historyYears(); const [year, setYear] = useState(years[0]); const [pick, setPick] = useState(null);
   const d = useMemo(() => seasonHeat(year), [year]);
+  const { width: W } = useWindowDimensions(); const CELL = d ? Math.max(12, Math.min(30, Math.floor((W - 32 - 16 - NAME) / d.rounds.length))) : 30; // every round fits the width, so the whole season is on screen and in the shared picture
   const cell = pick && d ? d.drivers.find((x) => x.idx === pick.d).cells[pick.r] : null;
   return (
     <Screen header={false}>
       <StatHeader title="Season heatmap" icon="grid" color={colors.good} note="One row per driver, one column per round, in championship order. Gold, silver and bronze are the podium, green is a points finish, grey is a finish outside the points and red is a retirement. Tap a square for the detail." />
       <Dropdown value={year} options={years.map((y) => [y, String(y)])} onChange={(v) => { setYear(Number(v)); setPick(null); }} prefix="Season" />
       {d ? (<>
+        <ShareCard title={`${year} season heatmap`}>
         <View style={{ borderRadius: 16, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.line, padding: 8 }}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          <Text style={{ color: colors.fg, fontWeight: '800', fontSize: 15, marginBottom: 6 }}>{`${year} season, race by race`}</Text>
+          <View>
             <View>
               <View style={{ flexDirection: 'row', marginLeft: NAME, marginBottom: 4 }}>{d.rounds.map((r) => <View key={r.round} style={{ width: CELL, alignItems: 'center' }}><Text style={{ color: colors.muted, fontSize: 10, fontWeight: '700' }}>{r.round}</Text></View>)}</View>
               {d.drivers.map((dr) => (
                 <View key={dr.idx} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 3 }}>
                   <View style={{ width: NAME, flexDirection: 'row', alignItems: 'center', gap: 5 }}><View style={{ width: 4, height: 18, borderRadius: 2, backgroundColor: teamColor(dr.teamId) }} /><Text style={{ color: colors.fg, fontSize: 12, fontWeight: '800' }}>{dr.code}</Text></View>
                   {dr.cells.map((c, ri) => { const on = pick && pick.d === dr.idx && pick.r === ri;
-                    return (<View key={ri} accessible accessibilityLabel={c ? `${dr.name}, ${d.rounds[ri].name}: ${c.pos ? `P${c.pos}` : c.status || 'did not finish'}` : `${dr.name}, ${d.rounds[ri].name}: did not take part`} onTouchEnd={() => setPick(on ? null : { d: dr.idx, r: ri })} style={{ width: CELL - 3, height: 26, marginRight: 3, borderRadius: 6, backgroundColor: heatColor(c), alignItems: 'center', justifyContent: 'center', borderWidth: on ? 2 : 0, borderColor: colors.fg }}>
-                      <Text style={{ color: c && c.pos && c.pos <= 3 ? '#111' : colors.fg, fontSize: 11, fontWeight: '800' }}>{c ? (c.pos || '×') : ''}</Text></View>); })}
+                    return (<View key={ri} accessible accessibilityLabel={c ? `${dr.name}, ${d.rounds[ri].name}: ${c.pos ? `P${c.pos}` : c.status || 'did not finish'}` : `${dr.name}, ${d.rounds[ri].name}: did not take part`} onTouchEnd={() => setPick(on ? null : { d: dr.idx, r: ri })} style={{ width: CELL - 3, height: Math.min(26, CELL), marginRight: 3, borderRadius: 6, backgroundColor: heatColor(c), alignItems: 'center', justifyContent: 'center', borderWidth: on ? 2 : 0, borderColor: colors.fg }}>
+                      <Text style={{ color: c && c.pos && c.pos <= 3 ? '#111' : colors.fg, fontSize: CELL < 18 ? 8 : 11, fontWeight: '800' }}>{c ? (c.pos || '×') : ''}</Text></View>); })}
                 </View>))}
             </View>
-          </ScrollView>
+          </View>
         </View>
+        </ShareCard>
         {pick && cell ? <Card><Text style={{ color: colors.fg, fontWeight: '800', fontSize: 16 }}>{`${d.drivers.find((x) => x.idx === pick.d).name} · ${d.rounds[pick.r].name} Grand Prix`}</Text>
           <Text style={{ color: colors.onSoft, marginTop: 4 }}>{`${cell.pos ? `Finished P${cell.pos}` : cell.status || 'Did not finish'}${cell.grid ? ` · started P${cell.grid}` : ''}${cell.pts ? ` · ${cell.pts} pts` : ''}${cell.fast ? ' · fastest lap' : ''}`}</Text></Card>
           : pick ? <Card><Text style={{ color: colors.onSoft }}>Did not take part in this round.</Text></Card> : null}

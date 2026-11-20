@@ -58,7 +58,7 @@ export default function RoundScreen({ route, navigation }) {
   const ended = sessions.filter((x) => Date.parse(x.date_end) < now); const hasEnded = (n) => ended.some((x) => x.session_name === n);
   const gridRace = !hasEnded('Race') && hasEnded('Qualifying'), gridSprint = !hasEnded('Sprint') && hasEnded('Sprint Qualifying') && sessions.some((x) => x.session_name === 'Sprint');
   const order = sessions.map((x) => x.session_name);
-  const names = [...ended.map((x) => x.session_name), ...(gridSprint ? ['Sprint'] : []), ...(gridRace ? ['Race'] : [])].sort((a, b) => order.indexOf(a) - order.indexOf(b));
+  const names = [...ended.map((x) => x.session_name), ...(gridSprint ? ['Sprint'] : []), ...(gridRace ? ['Race'] : [])].filter((n) => year >= YEAR || !/^Practice/.test(n)).sort((a, b) => order.indexOf(a) - order.indexOf(b)); // past seasons have no practice results
   const cur = sel && names.includes(sel) ? sel : names.includes('Race') ? 'Race' : names.at(-1);
   const isGrid = (cur === 'Race' && gridRace) || (cur === 'Sprint' && gridSprint);
   const labelOf = (n) => ((n === 'Race' && gridRace) || (n === 'Sprint' && gridSprint) ? `${n} · starting grid` : n);
@@ -154,6 +154,12 @@ export default function RoundScreen({ route, navigation }) {
       {(cur === 'Race' || cur === 'Sprint') && !isGrid && sessions.find((x) => x.session_name === cur && x.session_key) ? (
         showStrat ? <Strategy key={cur} sessionKey={sessions.find((x) => x.session_name === cur).session_key} onHide={() => setShowStrat(false)} />
           : <Press onPress={() => setShowStrat(true)}><View style={{ height: 48, borderRadius: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: colors.accentSoft, borderWidth: 1, borderColor: colors.accent }}><Ionicons name="color-fill-outline" size={18} color={colors.accent} /><Text style={{ color: colors.fg, fontWeight: '700', fontSize: 16 }}>{`Show tire strategy (${cur.toLowerCase()})`}</Text></View></Press>) : null}
+      {cur === 'Race' && !isGrid && year >= 2011 && meeting.round ? (
+        <Press onPress={() => navigation.navigate('LapChart', { year, round: Number(meeting.round) })} accessibilityLabel="Open the lap chart for this race">
+          <Grad color={colors.accent} from={0.4} to={0.06} radius={16} border style={{ padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <Ionicons name="git-branch-outline" size={24} color={colors.fg} /><View style={{ flex: 1 }}><Text style={{ color: colors.fg, fontWeight: '800', fontSize: 16 }}>Lap chart</Text><Text style={{ color: colors.onSoft, fontSize: 12 }}>Every car's running order, lap by lap</Text></View><Ionicons name="chevron-forward" size={18} color={colors.muted} />
+          </Grad>
+        </Press>) : null}
       {cur === 'Race' && !isGrid && sessions.find((x) => x.session_name === 'Race') ? <RacePace sessionKey={sessions.find((x) => x.session_name === 'Race').session_key} /> : null}
       {/^(Sprint )?Qualifying$|^Sprint Shootout$/.test(cur || '') && !isGrid && sessions.find((x) => x.session_name === cur) ? <QualiGaps key={cur} sessionKey={sessions.find((x) => x.session_name === cur).session_key} /> : null}
       {cur === 'Race' && !isGrid && raceRows && raceRows.length ? <RaceStats rows={raceRows} sessionKey={sessions.find((x) => x.session_name === 'Race')?.session_key} colorOf={tc} /> : null}

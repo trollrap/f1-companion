@@ -85,13 +85,24 @@ const skipText = /^(read more|related|share|follow us|subscribe|advertisement|si
 // Full text: the feed's own body when it has one, otherwise the article page itself (its <article> element). Falls back to the feed summary.
 export async function fetchArticle(item) {
   let blocks = htmlToBlocks(item.html, item.link);
-  if (blocks.filter((b) => b.t === 'p').length < 3 && item.link && !ui.offline) {
+  const words = (bl) => bl.filter((b) => b.t === 'p' || b.t === 'quote').reduce((n, b) => n + b.v.split(/\s+/).length, 0);
+  // The feed often holds only a teaser, so the article page is always read too and whichever version has more text wins (the whole article, not a preview).
+  if (item.link && !ui.offline) {
     try {
-      const ctrl = new AbortController(); const timer = setTimeout(() => ctrl.abort(), 12000);
+      const ctrl = new AbortController(); const timer = setTimeout(() => ctrl.abort(), 15000);
       const r = await fetch(item.link, { headers: UA, signal: ctrl.signal }).finally(() => clearTimeout(timer));
       if (r.ok) {
-        const page = await r.text(); const art = /<article\b[\s\S]*?<\/article>/i.exec(page)?.[0] || /<main\b[\s\S]*?<\/main>/i.exec(page)?.[0] || '';
-        const b2 = htmlToBlocks(art, item.link); if (b2.filter((b) => b.t === 'p').length >= 2) blocks = b2;
+        const page = await r.text(); const cands = [];
+        // 1. the structured data many sites include: the complete article text
+        for (const m of page.matchAll(/<script[^>]*application\/ld\+json[^>]*>([\s\S]*?)<\/script>/gi)) {
+          try { const walk = (o) => { if (!o || typeof o !== 'object') return; if (Array.isArray(o)) return o.forEach(walk); if (typeof o.articleBody === 'string' && o.articleBody.length > 400) cands.push(o.articleBody.split(/\n+/).map((t) => ({ t: 'p', v: stripTags(t).trim() })).filter((x) => x.v.length > 2)); Object.values(o).forEach(walk); }; walk(JSON.parse(m[1])); } catch {}
+        }
+        // 2. every <article>, then well-known article containers, then <main>; the one with the most text is kept
+        const parts = [...page.matchAll(/<article\b[\s\S]*?<\/article>/gi)].map((x) => x[0]);
+        for (const m of page.matchAll(/<(div|section)\b[^>]*class=["'][^"']*(?:article-body|entry-content|post-content|story-body|article__body|c-entry-content|article-content|body-content|content-body)[^"']*["'][^>]*>/gi)) { const at = m.index; parts.push(page.slice(at, at + 60000)); }
+        const mainEl = /<main\b[\s\S]*?<\/main>/i.exec(page)?.[0]; if (mainEl) parts.push(mainEl);
+        parts.forEach((h) => cands.push(htmlToBlocks(h, item.link)));
+        let best = blocks; cands.forEach((c) => { if (words(c) > words(best) * 1.15) best = c; }); blocks = best;
       }
     } catch {}
   }
@@ -99,5 +110,5 @@ export async function fetchArticle(item) {
   if (!blocks.some((b) => b.t === 'p') && item.summary) blocks = [...blocks, { t: 'p', v: item.summary }];
   const seen = new Set(); blocks = blocks.filter((b) => { const k = b.t + b.v; if (seen.has(k)) return false; seen.add(k); return true; });
   if (item.image) blocks = blocks.filter((b) => !(b.t === 'img' && b.v === item.image));
-  return blocks.slice(0, 60);
+  return blocks.slice(0, 400);
 }

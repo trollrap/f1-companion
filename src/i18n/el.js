@@ -182,3 +182,5 @@ Object.assign(DICT, { 'Number history': 'Ιστορικό αριθμών', 'Spri
 
 
 Object.assign(DICT, { 'Classic': 'Κλασική', 'Phone': 'Τηλέφωνο', 'Classic font': 'Κλασική γραμματοσειρά' });
+
+Object.assign(DICT, { 'Other': 'Άλλα', 'My profile': 'Το προφίλ μου', 'Create or edit my profile': 'Δημιουργία ή επεξεργασία προφίλ', 'About you': 'Για εσένα', 'Favourites': 'Αγαπημένα', 'Race number': 'Αριθμός αγώνα', 'Show on my card': 'Τι εμφανίζεται στην κάρτα μου', 'Choose photo': 'Επιλογή φωτογραφίας', 'Change photo': 'Αλλαγή φωτογραφίας', 'Remove': 'Αφαίρεση', 'Replace': 'Αντικατάσταση', 'You': 'Εσύ', 'Statistics': 'Στατιστικά' });

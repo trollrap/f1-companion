@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Text } from '../components/Text';
@@ -13,7 +13,7 @@ import { GamesHub } from './GamesHub';
 
 // Everything about fantasy seasons: the saves, a new season, presets and settings.
 export function FantasyHub({ navigation }) {
-  const fun = useFun(); const live = fun.fantasies.filter((f) => !f.archived); const old = fun.fantasies.filter((f) => f.archived);
+  const [showOld, setShowOld] = useState(false); const fun = useFun(); const live = fun.fantasies.filter((f) => !f.archived); const old = fun.fantasies.filter((f) => f.archived);
   const row = (f, i) => {
     const done = f.races.filter((r) => sessionsOf(r).every((s) => f.results?.[r.id]?.[s])).length; const lead = done ? standings(f).drivers[0] : null;
     return (
@@ -38,7 +38,7 @@ export function FantasyHub({ navigation }) {
       <Eyebrow>Saved seasons</Eyebrow>
       {fun.loaded && !live.length && <Note>No fantasy season yet. Make one: pick how many teams there are, choose the races and simulate.</Note>}
       {live.map(row)}
-      {old.length ? <View style={{ gap: 10 }}><Eyebrow>Archived</Eyebrow>{old.map((f, i) => row(f, i))}</View> : null}
+      {old.length ? <View style={{ gap: 10 }}><Press onPress={() => setShowOld((v) => !v)} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 8 }}><Eyebrow>{`Archived · ${old.length}`}</Eyebrow><Ionicons name={showOld ? 'chevron-up' : 'chevron-down'} size={16} color={colors.muted} /></Press>{showOld ? <View style={{ gap: 10, opacity: 0.55 }}>{old.map((f, i) => row(f, i))}</View> : null}</View> : null}
       <Btn icon="add-circle-outline" tone="solid" onPress={() => navigation.navigate('FantasyNew')}>New fantasy season</Btn>
       <Btn icon="bookmarks-outline" onPress={() => navigation.navigate('FantasyPresets')}>Presets: drivers, races and grids</Btn>
       <Btn icon="settings-outline" onPress={() => navigation.navigate('FunSettings')}>Fantasy settings</Btn>

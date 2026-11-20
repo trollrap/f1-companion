@@ -518,3 +518,12 @@ Expo Go (SDK 53+) does not include the `expo-notifications` native module; impor
 - Font: default body font is now Exo 2 (400-700, from the already-installed @expo-google-fonts/exo-2, no new package); `ui.font` has three values: default, classic (Rajdhani), system. Body text is scaled 0.95 in components/Text.js to offset Exo 2's width. Tab labels follow the font. Greek still uses Roboto Condensed.
 - ErrorNote `friendly()` never prints "undefined".
 - Not verified: how every screen looks with Exo 2 on a real phone (only web screenshots of some screens, mostly in the offline state).
+
+## V1.62.0 (JS-only)
+- News/notification spam: notifyNow serialised + 12h dedupe, checkResults/checkNews mutex, seen saved before sending. lib/saved.js rewritten; fetchArticle keeps the longest of feed/page/JSON-LD.
+- lib/trivia.js restored. data/history.json now includes 2026 (thru: 2026, upTo: 2025). data/season2027.js = 2027 calendar/grid fallback (web sources, seats may change).
+- StatRow auto-links drivers/teams (entityByName). Segmented falls back to pills. CalendarPicker + ics options. MotoGP ALERT map covers every session.
+- Season review, heatmap (fit width, ShareCard), Streaks, PoleConversion rewritten. ShareCard transparent (PNG).
+- New screens/Profile162.js (route Profile, prefs.opts.profile). Fun tab labelled Other with Statistics and My profile on top.
+- Fantasy: pick the driver to replace; archived collapsed/dimmed; undo + house removed.
+- NOT done: poster maker, race recap restyle, number history, TP career rework, 20-driver cap hunt, Hamilton poles 105 vs 104 check.

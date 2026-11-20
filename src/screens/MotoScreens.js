@@ -316,7 +316,7 @@ function Schedule({ list, now }) {
               </View>); })}
         </View>))}
       </View>
-      <Note>Times follow your device's timezone. Shown for the class selected below.</Note>
+      <Note>Shown for the class selected below.</Note>
     </Card>
   );
 }
