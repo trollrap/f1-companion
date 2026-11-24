@@ -2,6 +2,7 @@
 # Needs the repository secret EXPO_TOKEN (expo.dev > Account settings > Access tokens). Does nothing for changes that need a new APK.
 name: Publish update
 on:
+  workflow_dispatch: # also lets you press "Run workflow" from the GitHub page or the GitHub phone app
   push:
     branches: [main]
     paths: ['src/**', 'App.js', 'package.json']
@@ -15,4 +16,4 @@ jobs:
       - run: npm install
       - uses: expo/expo-github-action@v8
         with: { eas-version: latest, token: '${{ secrets.EXPO_TOKEN }}' }
-      - run: eas update --branch preview --message "${{ github.event.head_commit.message }}" --non-interactive
+      - run: eas update --branch preview --environment preview --platform android --message "${{ github.event.head_commit.message || 'manual run' }}" --non-interactive

@@ -596,3 +596,6 @@ JS-only. React Navigation puts a custom tabBar in normal flow (tabBarStyle absol
 ## 1.74.0 (JS-only)
 Header offset by insets.top + translucent-black shadow gradient; tab bar drag removed, deeper shadow; colors.accentText (contrast-safe) applied to text/icons; colors.red is now fixed red; driver last-5 palette; StatRow passes year from badge; Settings bell scrolls to section; Lap chart hidden until race done; old-driver code fallback.
 Unverified on device: status-bar offset, bell scroll (web sandbox has no insets/native scroll).
+
+## 1.75.0 (JS-only)
+tools/media-fetch (own package.json; imgly background removal runs in a forked worker because it crashes if sharp is loaded in the same process): Wikidata search -> verified by birth date (drivers) / logo file P154 (teams) -> Commons FilePath -> cut-out + 1:1 crop -> out/review.html -> publish.js -> remote-media/{drivers,logos}/ + index.json. App: lib/media.js loadRemoteMedia() (cached index in AsyncStorage 'media:idx', raw.githubusercontent.com main) feeds driverPhoto/teamLogo as {uri}. Tested offline with mockfetch.js only; real Wikidata run unverified.

@@ -1,6 +1,6 @@
 {
   "name": "f1-companion",
-  "version": "1.74.0",
+  "version": "1.75.0",
   "main": "node_modules/expo/AppEntry.js",
   "scripts": {
     "start": "expo start",
@@ -8,8 +8,10 @@
     "ios": "expo start --ios",
     "media": "node scripts/optimize-media.js && node scripts/gen-media.js",
     "fetch:history": "node scripts/fetch-history.js",
+    "media:remote": "npm --prefix tools/media-fetch install && npm --prefix tools/media-fetch run fetch",
+    "media:publish": "npm --prefix tools/media-fetch run publish",
     "media:ids": "node scripts/list-ids.js",
-    "ota": "eas update --channel preview --environment preview",
+    "ota": "eas update --branch preview --environment preview --platform android --non-interactive --message update",
     "sync": "node scripts/sync-config.js",
     "setup:ios": "node scripts/setup-ios.js"
   },

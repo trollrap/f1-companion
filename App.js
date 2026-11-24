@@ -5,6 +5,7 @@ import './src/lib/resultAlerts'; // registers the background task: must load wit
 import { applyAccent, applyTheme, colors, teamColor } from './src/theme';
 import { readDurable } from './src/lib/durable';
 import { loadDev } from './src/lib/dev';
+import { loadRemoteMedia } from './src/lib/media';
 import { installCrashLog } from './src/lib/crashlog';
 installCrashLog();
 
@@ -18,6 +19,7 @@ export default function App() {
       .then(([r, acc, dur, favRaw]) => { let a = acc; try { a = a || (dur && JSON.parse(dur)?.opts?.accent) || (r && JSON.parse(r)?.opts?.accent); } catch {} if (a) applyAccent(a); try { const o = (dur && JSON.parse(dur)?.opts) || (r && JSON.parse(r)?.opts) || {}; if (o.teamTheme && o.teamTheme !== 'off') { const fv = favRaw ? JSON.parse(favRaw) : {}; const id = o.teamTheme === 'fav' ? (fv.teams || [])[0] : o.teamTheme; const tc = id && teamColor(id); if (tc) applyAccent(tc); } } catch {} let th = null; try { th = (dur && JSON.parse(dur)?.opts?.theme) || (r && JSON.parse(r)?.opts?.theme); } catch {} if (th) applyTheme(th); let cb = false; try { cb = !!((dur && JSON.parse(dur)?.opts?.colorblind) || (r && JSON.parse(r)?.opts?.colorblind)); } catch {} if (cb) { colors.good = '#3B9CFF'; colors.red = '#FF9F1C'; } })
       .catch(() => {})
       .then(() => loadDev().catch(() => {}))
+      .then(() => loadRemoteMedia().catch(() => {}))
       .finally(() => { if (on) setMain(() => require('./src/Main').default); });
     return () => { on = false; };
   }, []);

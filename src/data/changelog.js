@@ -1,5 +1,9 @@
 // Newest first. Plain language, one line per change.
 export const CHANGELOG = [
+  { v: '1.75.0', items: [
+    'Driver photos and team logos can now be downloaded when they are first needed, so past drivers and defunct teams get pictures without growing the app.',
+    'New tool (tools/media-fetch) finds portraits and official logos on Wikidata and Wikimedia Commons, cuts the drivers out to transparent 1:1 and lets you review them before publishing.',
+  ] },
   { v: '1.74.0', items: [
     'The bottom bar can no longer be dragged (it looked wrong on the phone); tapping works as before, with a deeper shadow behind it.',
     'The top bar sits below the clock and battery, and a soft shadow replaces the grey fade when you scroll.',
