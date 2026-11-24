@@ -15,7 +15,7 @@ export default function NextSession({ sessions, now, off }) {
   return (
     <View style={{ borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: alpha(colors.accent, live ? 0.8 : 0.4), paddingHorizontal: 14, paddingVertical: 12, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
       <LinearGradient pointerEvents="none" colors={[alpha(colors.accent, live ? 0.5 : 0.28), alpha(colors.accent, 0.04)]} start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }} style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }} />
-      <Ionicons name={live ? 'radio-button-on' : 'time-outline'} size={22} color={colors.accent} />
+      <Ionicons name={live ? 'radio-button-on' : 'time-outline'} size={22} color={colors.accentText} />
       <View style={{ flex: 1 }}>
         <Text style={{ color: colors.muted, fontFamily: 'label', fontSize: 11, letterSpacing: 1.8 }}>{live ? 'IN PROGRESS' : 'NEXT SESSION'}</Text>
         <Text style={{ color: colors.fg, fontSize: 19, fontWeight: '700' }} numberOfLines={1}>{x.session_name}</Text>

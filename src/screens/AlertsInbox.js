@@ -21,7 +21,7 @@ export default function AlertsInboxScreen() {
       {log && !log.length ? <Note>Nothing sent yet. If you expected news or result alerts, open Settings > News alerts to see what the checks did.</Note> : null}
       {(log || []).map((x, i) => (
         <Reveal key={`${x.t}${i}`} index={Math.min(i, 6)}>
-          <Card>
+          <Card style={{ borderLeftWidth: 4, borderLeftColor: x.status === 'sent' ? colors.good : colors.gold }}>
             <Text style={{ color: colors.fg, fontWeight: '700', fontSize: 16 }}>{x.title}</Text>
             {x.body ? <Text style={{ color: colors.fg, fontSize: 15 }}>{x.body}</Text> : null}
             <Text style={{ color: x.status === 'sent' ? colors.muted : colors.warn || colors.gold, fontSize: 13, marginTop: 3 }}>{`${when(x.t)} · ${x.status}`}</Text>
@@ -30,6 +30,6 @@ export default function AlertsInboxScreen() {
       {log && log.length ? <Btn icon="trash-outline" onPress={() => clearInbox().then(load)}>Clear the list</Btn> : null}
       <Eyebrow>Coming up</Eyebrow>
       {!up.length ? <Note>No reminders are scheduled with Android right now (or this build cannot list them).</Note> : up.slice(0, 25).map((x) => (
-        <Card key={x.id}><Text style={{ color: colors.fg, fontWeight: '600' }}>{x.title}</Text>{x.body ? <Text style={{ color: colors.muted, fontSize: 14 }}>{x.body}</Text> : null}<Text style={{ color: colors.accent, fontSize: 13, marginTop: 3 }}>{when(x.at)}</Text></Card>))}
+        <Card key={x.id}><Text style={{ color: colors.fg, fontWeight: '600' }}>{x.title}</Text>{x.body ? <Text style={{ color: colors.muted, fontSize: 14 }}>{x.body}</Text> : null}<Text style={{ color: colors.accentText, fontSize: 13, marginTop: 3 }}>{when(x.at)}</Text></Card>))}
     </Screen>);
 }

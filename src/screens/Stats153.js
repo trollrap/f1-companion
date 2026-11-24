@@ -43,12 +43,12 @@ export function OpenersClosersScreen() {
   const mo = Math.max(...d.openers.map((r) => r.n), 1), mc = Math.max(...d.closers.map((r) => r.n), 1);
   return (
     <Screen header={false}>
-      <StatHeader title="Openers and finales" icon="flag" color={colors.accent} note={`The first and last race of each season. The opener's winner went on to take the title ${d.openerChamps} times in ${d.n} seasons; the finale's winner ${d.closerChamps} times.`} />
+      <StatHeader title="Openers and finales" icon="flag" color={colors.accentText} note={`The first and last race of each season. The opener's winner went on to take the title ${d.openerChamps} times in ${d.n} seasons; the finale's winner ${d.closerChamps} times.`} />
       <Segmented value={m} items={[['both', 'Won both'], ['open', 'Openers'], ['close', 'Finales'], ['all', 'Every year']]} onChange={setM} />
       <StatList>
-        {m === 'both' ? (d.both.length ? d.both.map((r, i) => (<StatRow key={r.year} i={i} badge={r.year} title={r.opener} sub={`${r.openerRace} and ${r.closerRace}`} value={r.openerChamp ? 'Champion' : ''} color={colors.gold} />)) : <Note>No driver has done it.</Note>) : null}
-        {m === 'open' ? d.openers.map((r, i) => (<StatRow key={r.name} i={i} medal badge={r.n} title={r.name} sub="season openers won" frac={r.n / mo} />)) : null}
-        {m === 'close' ? d.closers.map((r, i) => (<StatRow key={r.name} i={i} medal badge={r.n} title={r.name} sub="season finales won" frac={r.n / mc} />)) : null}
+        {m === 'both' ? (d.both.length ? d.both.map((r, i) => (<StatRow key={r.year} i={i} badge={r.year} title={r.opener} slot sub={`${r.openerRace} and ${r.closerRace}`} value={r.openerChamp ? 'Champion' : ''} color={colors.gold} />)) : <Note>No driver has done it.</Note>) : null}
+        {m === 'open' ? d.openers.map((r, i) => (<StatRow key={r.name} i={i} medal badge={r.n} title={r.name} slot sub="season openers won" frac={r.n / mo} />)) : null}
+        {m === 'close' ? d.closers.map((r, i) => (<StatRow key={r.name} i={i} medal badge={r.n} title={r.name} slot sub="season finales won" frac={r.n / mc} />)) : null}
         {m === 'all' ? d.rows.map((r, i) => (<StatRow key={r.year} i={i} badge={r.year} title={`${r.openerRace}: ${r.opener}${r.openerChamp ? ' (champion)' : ''}`} sub={`${r.closerRace}: ${r.closer}${r.closerChamp ? ' (champion)' : ''}`} value={r.both ? 'Both' : ''} color={colors.gold} />)) : null}
       </StatList>
     </Screen>);

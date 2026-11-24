@@ -37,8 +37,8 @@ export default function PredictCard({ gp, flag, pole, podium, marks }) {
   return (
     <View collapsable={false} style={{ borderRadius: 22, overflow: 'hidden', padding: 16, backgroundColor: colors.deep, borderWidth: 1, borderColor: alpha(colors.accent, 0.5) }}>
       <LinearGradient pointerEvents="none" colors={[colors.accentSoft, colors.deep]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }} />
-      <Text style={{ color: colors.fg, fontFamily: 'label', fontWeight: '700', letterSpacing: 2.5, fontSize: 16 }}>F1<Text style={{ color: colors.accent }}>·</Text>COMPANION</Text>
-      <Text style={{ color: colors.accent, fontFamily: 'label', letterSpacing: 2.4, fontSize: 12, fontWeight: '700', marginTop: 14 }}>MY PREDICTIONS</Text>
+      <Text style={{ color: colors.fg, fontFamily: 'label', fontWeight: '700', letterSpacing: 2.5, fontSize: 16 }}>F1<Text style={{ color: colors.accentText }}>·</Text>COMPANION</Text>
+      <Text style={{ color: colors.accentText, fontFamily: 'label', letterSpacing: 2.4, fontSize: 12, fontWeight: '700', marginTop: 14 }}>MY PREDICTIONS</Text>
       <Text style={{ color: colors.fg, fontFamily: 'display', fontStyle: 'italic', fontWeight: '800', fontSize: 30, marginTop: 2 }} numberOfLines={1}>{`${flag || ''} ${gp}`}</Text>
       <View style={{ flexDirection: 'row', gap: 8, marginTop: 14 }}>{podium.map((d, i) => <Slot key={i} label={`P${i + 1}`} d={d} ok={marks?.podium?.[i]} tall />)}</View>
       <View style={{ marginTop: 8 }}><Slot label="POLE" d={pole} big={false} wide ok={marks?.pole} /></View>

@@ -40,7 +40,7 @@ export default function WhatIfScreen() {
           <Card>
             <Eyebrow>{`What if · ${next}`}</Eyebrow>
             {hasSprint ? <View style={{ marginTop: 12 }}><Segmented value={kind} onChange={setKind} items={[['race', 'Race'], ['sprint', 'Sprint']]} /></View> : null}
-            {placed > 0 ? <Pressable onPress={() => setOrders({ race: [], sprint: [] })} hitSlop={8} style={{ alignSelf: 'flex-start', marginTop: 12 }}><Text style={{ color: colors.accent, fontWeight: '700', fontSize: 16 }}>Reset everything</Text></Pressable> : null}
+            {placed > 0 ? <Pressable onPress={() => setOrders({ race: [], sprint: [] })} hitSlop={8} style={{ alignSelf: 'flex-start', marginTop: 12 }}><Text style={{ color: colors.accentText, fontWeight: '700', fontSize: 16 }}>Reset everything</Text></Pressable> : null}
           </Card>
           <View style={{ marginTop: 6 }}>
             {picker.map((r) => { const i = order.indexOf(r.driverId); return (

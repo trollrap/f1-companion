@@ -20,6 +20,7 @@ import { YEAR } from '../api/openf1';
 import { useFavs } from '../hooks/useFavs';
 import Reveal from './Reveal';
 import Press from './Press';
+import CountUp from './CountUp';
 
 export function Countdown({ ms, large }) {
   let t = Math.max(0, Math.floor(ms / 1000));
@@ -28,7 +29,7 @@ export function Countdown({ ms, large }) {
     <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }} accessibilityRole="timer">
       {[[d, 'DAYS'], [h, 'HRS'], [m, 'MIN'], [t, 'SEC']].map(([v, l], i) => (
         <View key={l} style={{ flex: 1, alignItems: 'center', gap: 5 }}>
-          <View style={[s.tile, large && { paddingVertical: 12 }, i === 3 && { borderColor: alpha(colors.accent, 0.5) }]}><Text style={[s.tileText, large && { fontSize: 36 }, i === 3 && { color: colors.accent }]}>{String(v).padStart(2, '0')}</Text></View>
+          <View style={[s.tile, large && { paddingVertical: 12 }, i === 3 && { borderColor: alpha(colors.accent, 0.5) }]}><Text style={[s.tileText, large && { fontSize: 36 }, i === 3 && { color: colors.accentText }]}>{String(v).padStart(2, '0')}</Text></View>
           <Text style={s.tileLabel}>{l}</Text>
         </View>
       ))}
@@ -42,7 +43,7 @@ export function Chips({ items, value, onChange }) {
     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 }}>
       {items.map(([v, l]) => (
         <Pressable key={String(v)} onPress={() => onChange(v)} style={({ pressed }) => [s.chip, on(v) && s.chipOn, pressed && { opacity: 0.8 }]}>
-          {on(v) && Array.isArray(value) ? <Ionicons name="checkmark" size={14} color={colors.accent} /> : null}
+          {on(v) && Array.isArray(value) ? <Ionicons name="checkmark" size={14} color={colors.accentText} /> : null}
           <Text style={{ color: on(v) ? colors.fg : colors.muted, fontWeight: '600', fontSize: 15 }}>{l}</Text>
         </Pressable>
       ))}
@@ -91,7 +92,7 @@ function SegmentedBar({ items, value, onChange }) {
   })).current;
   return (
     <View style={s.seg} onLayout={(e) => setW(e.nativeEvent.layout.width)} {...pan.panHandlers}>
-      {seg > 0 && <Animated.View style={[s.segInd, { width: seg, borderColor: tint, transform: [{ translateX: x }] }]} />}
+      {seg > 0 && <Animated.View style={[s.segInd, { width: seg, transform: [{ translateX: x }] }]} />}
       {items.map(([v, l]) => (
         <Pressable key={v} onPress={() => onChange(v)} style={s.segBtn}><Text style={{ color: value === v ? colors.fg : colors.muted, fontWeight: '600', fontSize: 15 }}>{l}</Text></Pressable>
       ))}
@@ -110,10 +111,10 @@ export function DriverName({ first, last, size = 18, align }) {
   );
 }
 // Head and shoulders photo cropped tight on the face. Renders nothing when the driver has no photo.
-export function HeadShot({ id, size = 48, color }) {
+export function HeadShot({ id, size = 48, color, round }) {
   const photo = driverPhoto(id); if (!photo) return null;
   return (
-    <View style={{ width: size, height: size, borderRadius: size * 0.28, overflow: 'hidden', backgroundColor: alpha(color || colors.muted, 0.2) }}>
+    <View style={{ width: size, height: size, borderRadius: round ? size / 2 : size * 0.28, overflow: 'hidden', backgroundColor: alpha(color || colors.muted, 0.2), ...(round ? { borderWidth: 2, borderColor: 'rgba(255,255,255,0.25)' } : null) }}>
       <Image source={photo} resizeMode="cover" resizeMethod="resize" fadeDuration={0} style={{ position: 'absolute', width: size * 1.8, height: size * 1.8, left: -size * 0.4, top: -size * 0.12 }} />
     </View>
   );
@@ -126,26 +127,27 @@ export function Flash() {
 }
 // One row of any classification: position, driver, optional head photo or team logo, then time/gap and points.
 // Tinted with the team colour; `logoId` adds a faint team logo behind the right side.
+// A favourite driver's photo box gets a gold stroke around it.
+const FAVRING = { borderWidth: 1, borderColor: colors.gold, borderRadius: 13, overflow: 'hidden' };
 export const ResultLine = React.memo(function ResultLine({ pos, first, last, color, right, sub, fav, fastest, onPress, style, photoId, logoId, midLogoId, slotLogoId, champion, index, tags, flash, rowRef, photoSrc, logoSrc }) {
   const { prefs } = usePrefs(); const photos = prefs.opts.photos !== false; const slot = slotLogoId ? teamLogo(slotLogoId) : null;
   const gold = pos === 1 || champion; const wm = logoSrc || (logoId ? teamLogo(logoId) : null), mid = midLogoId ? teamLogo(midLogoId) : null;
   const body = (
     <View ref={rowRef} collapsable={false}><Grad color={color || colors.muted} from={champion ? 0.42 : 0.26} to={0.03} dir="h" radius={14} border={gold ? 0.7 : 0.22} style={[{ marginTop: 6 }, gold && { borderColor: alpha(colors.gold, champion ? 0.95 : 0.55), borderWidth: champion ? 1.5 : 1 }, style]}>
       {wm ? <Image source={wm} resizeMode="contain" resizeMethod="resize" fadeDuration={0} style={s.wm} /> : null}
-      {fav ? <View style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 4, backgroundColor: colors.gold }} /> : null}
       <View style={s.line}>
-        <View style={[s.posBox, { backgroundColor: alpha(gold ? colors.gold : color || colors.muted, gold ? 0.22 : 0.28) }]}><Text style={[s.pos, gold && { color: colors.gold }]}>{pos ?? '–'}</Text></View>
+        <View style={[s.posBox, { backgroundColor: alpha(gold ? colors.gold : color || colors.muted, gold ? 0.22 : 0.28) }, fav && !(photos && (photoSrc || photoId)) && { borderWidth: 2, borderColor: colors.gold }]}><Text style={[s.pos, gold && { color: colors.gold }]}>{pos ?? '–'}</Text></View>
         <View style={{ flex: 1 }}>
           <DriverName first={first} last={last} size={18} />
           {champion ? <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, alignSelf: 'flex-start', marginTop: 3, backgroundColor: alpha(colors.gold, 0.18), borderRadius: 7, paddingHorizontal: 6, paddingVertical: 2 }}><Ionicons name="trophy" size={11} color={colors.gold} /><Text style={{ color: colors.gold, fontFamily: 'label', fontWeight: '700', fontSize: 10, letterSpacing: 1.2 }}>CHAMPION</Text></View> : null}
           {tags && tags.length ? <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: 4 }}>{tags.map((g) => <View key={g.text} style={{ borderRadius: 7, paddingHorizontal: 6, paddingVertical: 2, backgroundColor: alpha(g.bad === false ? colors.good : colors.gold, 0.18), borderWidth: 1, borderColor: alpha(g.bad === false ? colors.good : colors.gold, 0.55) }}><Text style={{ color: g.bad === false ? colors.good : colors.gold, fontSize: 11, fontWeight: '700' }}>{g.text}</Text></View>)}</View> : null}
         </View>
-        {photoSrc && photos ? <View style={{ width: 46, height: 46, borderRadius: 13, overflow: 'hidden', backgroundColor: alpha(color || colors.muted, 0.2) }}><Image source={photoSrc} resizeMode="cover" style={{ width: 46, height: 46 }} /></View> : photoId && photos ? <HeadShot id={photoId} size={46} color={color} /> : null}
+        {photoSrc && photos ? <View style={[{ width: 46, height: 46, borderRadius: 13, overflow: 'hidden', backgroundColor: alpha(color || colors.muted, 0.2) }, fav && FAVRING]}><Image source={photoSrc} resizeMode="cover" style={{ width: 46, height: 46 }} /></View> : photoId && photos ? <View style={fav ? [FAVRING, { borderRadius: 15 }] : null}><HeadShot id={photoId} size={46} color={color} /></View> : null}
         {slot ? <Image source={slot} resizeMode="contain" resizeMethod="resize" fadeDuration={0} style={{ width: 44, height: 44, opacity: 0.95 }} /> : null}
         {mid ? <Image source={mid} resizeMode="contain" resizeMethod="resize" fadeDuration={0} style={{ width: 44, height: 44, opacity: 0.4 }} /> : null}
         <View style={{ alignItems: 'flex-end', minWidth: 64 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>{fastest ? <Ionicons name="flash" size={14} color={colors.purple} /> : null}<Text style={s.time}>{right}</Text></View>
-          {sub ? <Text style={s.sub}>{sub}</Text> : null}
+          {sub ? <Text style={[s.sub, { textAlign: 'right' }]}>{sub}</Text> : null}
         </View>
       </View>
       {flash ? <Flash /> : null}
@@ -159,15 +161,15 @@ export const driverParams = (r, year) => ({ driverId: r.driverId, name: r.name |
 export function ResultRow({ r, photo = true, index, tags, flash, rowRef, year }) {
   const favs = useFavs(); const tc = useTeamColor(); const nav = useNavigation();
   const start = r.grid > 0 ? `Started P${r.grid}` : r.grid === 0 ? 'Pit lane' : '';
-  const sub = [start, Number.isFinite(r.points) ? `${r.points} pts` : ''].filter(Boolean).join(' · ');
+  const sub = [start, Number.isFinite(r.points) ? `${r.points} pts` : ''].filter(Boolean).join('\n');
   return <ResultLine pos={r.position} first={r.first} last={r.last} color={tc(r.teamId)} right={r.time} sub={sub} fav={r.driverId && favs.isDriver(r.driverId)} fastest={r.fastest} index={index} tags={tags} flash={flash} rowRef={rowRef}
     logoId={r.teamId} photoId={photo ? r.driverId : null} onPress={r.driverId ? () => nav.navigate('Driver', driverParams(r, year)) : undefined} />;
 }
 export function CircuitBox({ meeting }) {
-  const nav = useNavigation(); const c = circuitFor(meeting);
+  const nav = useNavigation(); const c = circuitFor(meeting); const [open, setOpen] = useState(true);
   return (
-    <Card onPress={() => nav.navigate('Circuit', { meeting })}>
-      <Eyebrow right="Track info">Circuit</Eyebrow>
+    <Card onPress={() => { LayoutAnimation.configureNext(LayoutAnimation.create(220, 'easeInEaseOut', 'opacity')); setOpen(!open); }}>
+      <Eyebrow right={open ? 'Hide' : 'Show'}>Circuit</Eyebrow>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, marginTop: 12 }}>
         <Text style={{ fontSize: 30 }}>{flag(meeting.country_code)}</Text>
         <View style={{ flex: 1 }}>
@@ -175,15 +177,20 @@ export function CircuitBox({ meeting }) {
           <Text style={s.sub}>{c ? `${c.stats[0][1]} · ${c.stats[1][1]} turns · ${c.stats[2][1]} laps` : 'Track map and details'}</Text>
         </View>
       </View>
+      {open && c ? (
+        <View style={{ marginTop: 12, gap: 6 }}>
+          {c.stats.map(([k, v]) => (<View key={k} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4, borderTopWidth: 1, borderTopColor: colors.line }}><Text style={{ color: colors.muted, fontSize: 14 }}>{k}</Text><Text style={{ color: colors.fg, fontSize: 14, fontWeight: '700', flexShrink: 1, textAlign: 'right', marginLeft: 12 }}>{String(v)}</Text></View>))}
+        </View>) : null}
+      {open ? <Pressable onPress={() => nav.navigate('Circuit', { meeting })} accessibilityRole="button" style={({ pressed }) => [{ marginTop: 12, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: alpha(colors.accent, 0.16), borderWidth: 1, borderColor: alpha(colors.accent, 0.5) }, pressed && { opacity: 0.8 }]}><Text style={{ color: colors.fg, fontWeight: '800', fontSize: 15 }}>Track map and full details</Text></Pressable> : null}
     </Card>
   );
 }
-export function StarButton({ on, onPress, label, small }) {
+export function StarButton({ on, onPress, label, small, bare }) {
   const sc = useRef(new Animated.Value(1)).current; const z = small ? 32 : 40;
   const press = () => { Animated.sequence([Animated.timing(sc, { toValue: 0.8, duration: 70, useNativeDriver: true }), Animated.spring(sc, { toValue: 1, friction: 4, useNativeDriver: true })]).start(); onPress(); };
   return (
     <Pressable onPress={press} hitSlop={8} accessibilityLabel={label} accessibilityState={{ selected: on }}>
-      <Animated.View style={{ transform: [{ scale: sc }], width: z, height: z, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: on ? alpha(colors.gold, 0.18) : 'rgba(0,0,0,0.28)' }}>
+      <Animated.View style={{ transform: [{ scale: sc }], width: z, height: z, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: bare ? 'transparent' : on ? alpha(colors.gold, 0.18) : 'rgba(0,0,0,0.28)' }}>
         <Ionicons name={on ? 'star' : 'star-outline'} size={small ? 18 : 22} color={on ? colors.gold : colors.fg} />
       </Animated.View>
     </Pressable>
@@ -197,9 +204,9 @@ export function StatGrid({ items, cols = 2, accent }) {
       {items.map(([k, v], n) => (
         <View key={k} style={{ width: w }}>
           <Reveal index={n % 6}>
-            <View style={{ backgroundColor: colors.surface2, borderRadius: 12, paddingVertical: 10, paddingHorizontal: 12, borderWidth: 1, borderColor: colors.line }}>
+            <View style={{ backgroundColor: colors.surface2, borderRadius: 16, paddingVertical: 12, paddingHorizontal: 14, borderWidth: 1, borderColor: colors.line }}>
               <Text style={{ color: colors.muted, fontFamily: 'label', fontSize: 10, letterSpacing: 1.4 }} numberOfLines={1}>{up(k)}</Text>
-              <Text style={{ color: accent && k === accent ? colors.accent : colors.fg, fontSize: 22, fontWeight: '700', marginTop: 2, fontVariant: ['tabular-nums'] }}>{v}</Text>
+              <CountUp value={v} style={{ color: accent && k === accent ? colors.accentText : colors.fg, fontSize: 22, fontWeight: '700', marginTop: 2, fontVariant: ['tabular-nums'] }} />
             </View>
           </Reveal>
         </View>
@@ -235,8 +242,8 @@ export const DriverBox = React.memo(function DriverBox({ d, fav, onPress, onStar
         {photo && center ? <Image source={photo} resizeMode="cover" resizeMethod="resize" fadeDuration={0} style={{ position: 'absolute', alignSelf: 'center', width: height * 1.0, height: height * 1.0, bottom: -height * 0.02, opacity: 1 }} />
           : photo ? <Image source={photo} resizeMode="cover" resizeMethod="resize" fadeDuration={0} style={{ position: 'absolute', right: -big * 0.08, bottom: -big * 0.07, width: big, height: big }} />
           : d.number != null ? <Text style={{ position: 'absolute', right: 6, bottom: -14, opacity: 0.55, fontFamily: 'display', fontWeight: '800', fontSize: height * 0.6, color: colors.onSoft }}>{d.number}</Text> : null}
-        {photo ? <Scrim dir="v" from={0} to={0.82} style={{ top: '38%' }} /> : null}
-        {photo && !center ? <Scrim dir="h" from={0.45} to={0} style={{ right: '35%' }} /> : null}
+        {photo ? <Scrim dir="v" from={0} to={0.6} style={{ top: '58%' }} /> : null}
+        {photo && !center ? <Scrim dir="h" from={0.32} to={0} style={{ right: '40%' }} /> : null}
         <View style={{ flex: 1, padding: 12, justifyContent: 'space-between' }}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             {numImg ? <Image source={numImg} resizeMode="contain" resizeMethod="resize" fadeDuration={0} style={{ width: 52, height: 28, opacity: 0.65 }} /> : <Text style={{ opacity: 0.65, fontFamily: 'display', fontWeight: '800', fontSize: 26, color: colors.fg }}>{photo ? d.number ?? '' : ''}</Text>}
@@ -291,8 +298,8 @@ const s = StyleSheet.create({
   tile: { width: '100%', backgroundColor: colors.surface2, borderColor: colors.line, borderWidth: 1, borderRadius: 12, paddingVertical: 8, alignItems: 'center' },
   tileText: { fontFamily: 'display', color: colors.fg, fontSize: 28, fontWeight: '800', fontVariant: ['tabular-nums'] }, tileLabel: { fontFamily: 'label', color: colors.muted, fontSize: 10, letterSpacing: 1.8 },
   chip: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 13, paddingVertical: 9, borderRadius: 99, backgroundColor: colors.surface2, borderWidth: 1, borderColor: colors.line }, chipOn: { borderColor: colors.accent, backgroundColor: colors.accentSoft },
-  seg: { flexDirection: 'row', backgroundColor: colors.surface2, borderRadius: 12, padding: 4, borderWidth: 1, borderColor: colors.line },
-  segBtn: { flex: 1, paddingVertical: 9, borderRadius: 9, alignItems: 'center' }, segInd: { position: 'absolute', left: 4, top: 4, bottom: 4, borderRadius: 9, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.accent },
+  seg: { flexDirection: 'row', backgroundColor: colors.surface, borderRadius: 99, padding: 4, borderWidth: 1, borderColor: colors.line },
+  segBtn: { flex: 1, paddingVertical: 10, borderRadius: 99, alignItems: 'center' }, segInd: { position: 'absolute', left: 4, top: 4, bottom: 4, borderRadius: 99, backgroundColor: colors.accent },
   line: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, paddingHorizontal: 10 },
   posBox: { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center' }, pos: { color: colors.fg, fontFamily: 'display', fontWeight: '800', fontSize: 16 },
   wm: { position: 'absolute', right: 6, top: 2, bottom: 2, width: 100, opacity: 0.17 },

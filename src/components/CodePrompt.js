@@ -20,7 +20,7 @@ export default function CodePrompt({ visible, title, onSubmit, onClose }) {
           {bad ? <Text style={{ color: colors.red, marginTop: 8 }}>That is not the code.</Text> : null}
           <View style={{ flexDirection: 'row', gap: 10, marginTop: 16 }}>
             <Pressable onPress={onClose} style={({ pressed }) => [{ flex: 1, height: 46, borderRadius: 14, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.line }, pressed && { opacity: 0.7 }]}><Text style={{ color: colors.muted, fontSize: 17, fontWeight: '700' }}>Cancel</Text></Pressable>
-            <Pressable onPress={go} style={({ pressed }) => [{ flex: 1, height: 46, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.accent }, pressed && { opacity: 0.8 }]}><Text style={{ color: '#fff', fontSize: 17, fontWeight: '700' }}>Open</Text></Pressable>
+            <Pressable onPress={go} style={({ pressed }) => [{ flex: 1, height: 46, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.accent }, pressed && { opacity: 0.8 }]}><Text style={{ color: colors.onAccent, fontSize: 17, fontWeight: '700' }}>Open</Text></Pressable>
           </View>
         </View>
       </View>

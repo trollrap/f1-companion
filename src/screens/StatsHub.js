@@ -3,29 +3,49 @@ import { View, Pressable, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Text } from '../components/Text';
 import Screen, { Card, Note } from '../components/Screen';
-import { StatHeader } from '../components/StatRows';
 import Reveal from '../components/Reveal';
+import Grad from '../components/Grad';
 import { colors, alpha } from '../theme';
 import { norm } from '../lib/names';
 import { PAGES } from '../lib/pages';
 import { GROUPS } from '../lib/statsGroups';
 import { usePrefs } from '../hooks/usePrefs';
+import { statOfDay } from '../lib/statOfDay';
+import { today } from '../lib/kv';
 
 // Every statistics screen in one place, grouped, with a search box. Descriptions come from lib/pages.js so they stay in step.
 const ICONS = { Records: 'ribbon', Dominance: 'flame', TitleHistory: 'trophy', ConstructorTitles: 'trophy', SeasonParity: 'git-compare', OpenersClosers: 'flag', PointsPerStart: 'speedometer', GridOdds: 'dice', Lineups: 'people', Streaks: 'flash', Droughts: 'hourglass', Winless: 'sad', PoleConversion: 'locate', PlacesGained: 'trending-up', Comebacks: 'arrow-up-circle', HatTricks: 'medal', AgeRecords: 'hourglass', BestDebuts: 'rocket', DnfRates: 'warning', PodiumPairs: 'people-circle', HomeHeroes: 'home', Milestones: 'ribbon', GridDrops: 'arrow-down-circle', Reliability: 'build', SeasonStrip: 'reorder-three', EraExplorer: 'time', SeasonReview: 'newspaper', CompareSeasons: 'git-compare', CalendarGrowth: 'calendar', GridAge: 'analytics', Debuts: 'enter', Travel: 'airplane', Passing: 'swap-horizontal', TitleSwing: 'pulse', Rematch: 'repeat', TimeMachine: 'hourglass', Replay: 'play-circle', WhatIf: 'help-circle', CareerCurves: 'trending-up', TeamCurves: 'trending-up', TeamMates: 'people', Journeymen: 'walk', EngineHistory: 'cog', TeamTrees: 'git-branch', CircuitCompare: 'map', ComparePicks: 'checkmark-done', FavDigest: 'star', TrophyRoom: 'trophy', YearReview: 'albums', FavCircuits: 'heart', WatchList: 'bookmark', Rivalry: 'flame', Poster: 'image', MyCard: 'card', Birthday: 'gift', LapChart: 'pulse', NumberHistory: 'keypad', SprintStats: 'flash', SeasonHeatmap: 'grid', QualiBattles: 'people', CountdownCard: 'timer', Achievements: 'ribbon', DailyChallenges: 'checkmark-done', GameStats: 'game-controller' };
 const META = { Journeymen: 'drivers who raced for the most teams', GridAge: 'how the average driver age changed', CalendarGrowth: 'races and countries per season', WatchList: 'past races to watch later', StatsHub: '' };
 export default function StatsHubScreen({ navigation }) {
-  const [q, setQ] = useState(''); const { prefs, setOpt } = usePrefs(); const pinned = prefs.opts.pins || [];
+  const [q, setQ] = useState(''); const [only, setOnly] = useState(''); const { prefs, setOpt } = usePrefs(); const pinned = prefs.opts.pins || [];
   const flip = (r) => { const on = pinned.includes(r); if (!on && pinned.length >= 8) return; setOpt('pins', on ? pinned.filter((x) => x !== r) : [...pinned, r]); };
   const info = useMemo(() => { const m = {}; PAGES.forEach(([r, t, d]) => { m[r] = [t, d]; }); return m; }, []);
   const TITLES = { Journeymen: 'Journeymen', GridAge: 'Grid age over time', CalendarGrowth: 'Calendar growth', WatchList: 'Watch list' };
   const row = (r) => { const t = (info[r] && info[r][0]) || TITLES[r] || r; const d = (info[r] && info[r][1]) || META[r] || ''; return { r, t, d }; };
+  const sod = useMemo(() => { try { return statOfDay(today(), null); } catch { return null; } }, []);
   const n = norm(q); const total = GROUPS.reduce((a, g) => a + g[3].length, 0);
   return (
     <Screen header={false}>
-      <StatHeader title="Statistics" icon="stats-chart" note={`${total} screens built from every race since 1950. Search or browse. Swipe sideways inside any screen to move to the next one. Tap the pin to put one on Home (up to 8).`} />
-      <TextInput value={q} onChangeText={setQ} placeholder="Search statistics" placeholderTextColor={colors.muted} accessibilityLabel="Search statistics" style={{ color: colors.fg, fontSize: 16, padding: 12, borderRadius: 12, backgroundColor: colors.card }} />
-      {GROUPS.map(([name, icon, tint, routes]) => {
+      <Text style={{ color: colors.fg, fontSize: 30, fontWeight: '800' }}>Statistics</Text>
+      <TextInput value={q} onChangeText={setQ} placeholder={`Search ${total} statistics`} placeholderTextColor={colors.muted} accessibilityLabel="Search statistics" style={{ color: colors.fg, fontSize: 15, paddingVertical: 12, paddingHorizontal: 16, borderRadius: 16, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line }} />
+      {!q && sod ? (
+        <Grad color={colors.purple} from={0.35} to={0.04} radius={26} border={0.4} style={{ padding: 18 }}>
+          <Text style={{ color: colors.purple, fontSize: 10, fontWeight: '800', letterSpacing: 1.8 }}>{`STAT OF THE DAY · ${String(sod.tag || '').toUpperCase()}`}</Text>
+          <Text style={{ color: colors.fg, fontSize: 21, fontWeight: '800', lineHeight: 27, marginTop: 6 }}>{sod.text}</Text>
+          {sod.src ? <Text style={{ color: colors.muted, fontSize: 12, marginTop: 8 }}>{sod.src}</Text> : null}
+        </Grad>) : null}
+      {!q ? <Text style={{ color: colors.muted, fontSize: 11, letterSpacing: 1.8, fontWeight: '700' }}>BROWSE</Text> : null}
+      {!q ? (
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
+          {GROUPS.map(([name, icon, tint, routes]) => { const on = only === name; return (
+            <Pressable key={name} accessibilityRole="button" accessibilityLabel={`${name}, ${routes.length} screens`} onPress={() => setOnly(on ? '' : name)} style={({ pressed }) => [{ width: '47.8%', opacity: pressed ? 0.8 : 1 }]}>
+              <Grad color={tint} from={on ? 0.45 : 0.22} to={0.03} radius={22} border={on ? 0.9 : 0.35} style={{ padding: 14, height: 92, justifyContent: 'space-between' }}>
+                <View style={{ width: 32, height: 32, borderRadius: 11, backgroundColor: alpha(tint, 0.3), alignItems: 'center', justifyContent: 'center' }}><Ionicons name={icon} size={18} color={colors.fg} /></View>
+                <View><Text style={{ color: colors.fg, fontSize: 16, fontWeight: '800' }} numberOfLines={1}>{name}</Text><Text style={{ color: colors.onSoft, fontSize: 12 }}>{`${routes.length} screens`}</Text></View>
+              </Grad>
+            </Pressable>); })}
+        </View>) : null}
+      {GROUPS.filter((g) => q || !only || g[0] === only).map(([name, icon, tint, routes]) => {
         const items = routes.map(row).filter((x) => !n || norm(`${x.t} ${x.d}`).includes(n)); if (!items.length) return null;
         return (
           <View key={name} style={{ gap: 8 }}>
@@ -41,5 +61,6 @@ export default function StatsHubScreen({ navigation }) {
               </Reveal>))}
           </View>); })}
       {n && !GROUPS.some((g) => g[3].map(row).some((x) => norm(`${x.t} ${x.d}`).includes(n))) ? <Note>Nothing matches.</Note> : null}
+      {!q ? <Note>{`${total} screens built from every race since 1950. Swipe sideways inside any screen to move to the next one. Tap the pin to put one on Home (up to 8).`}</Note> : null}
     </Screen>);
 }

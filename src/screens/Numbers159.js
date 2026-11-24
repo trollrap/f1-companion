@@ -27,6 +27,9 @@ export function NumberHistoryScreen() {
       {q.v ? (<>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>{nums.map((n) => (
           <Pressable key={n} accessibilityRole="button" accessibilityLabel={`Number ${n}${by[n] ? `, ${by[n].map((d) => d.name).join(', ')}` : ', never taken'}`} onPress={() => setPick(pick === n ? null : n)} style={{ width: 40, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: col(n), borderWidth: pick === n ? 2 : 0, borderColor: colors.fg }}><Text style={{ color: by[n] ? '#fff' : colors.muted, fontWeight: '800', fontSize: 13 }}>{n}</Text></Pressable>))}</View>
+        {(() => { const cur = nums.filter((n) => by[n] && by[n].some(now)); const gone = nums.filter((n) => by[n] && !by[n].some(now)); const multi = nums.filter((n) => by[n] && by[n].length > 1);
+          return (<View style={{ flexDirection: 'row', gap: 10 }}>{[[cur.length, 'on the grid', colors.good], [gone.length, 'retired owners', colors.accent], [99 - used, 'still free', colors.muted], [multi.length, 'used twice+', colors.purple]].map(([v, l, c]) => (
+            <View key={l} style={{ flex: 1, padding: 10, borderRadius: 14, backgroundColor: alpha(c, 0.14), borderWidth: 1, borderColor: alpha(c, 0.4), alignItems: 'center' }}><Text style={{ color: colors.fg, fontSize: 22, fontWeight: '900' }}>{v}</Text><Text style={{ color: colors.onSoft, fontSize: 11, textAlign: 'center' }}>{l}</Text></View>))}</View>); })()}
         <Note>{`${used} of 99 numbers have been registered. ${99 - used} are still free.`}</Note>
         {pick ? (<>
           <SectionLabel color={colors.purple}>{`Number ${pick}`}</SectionLabel>

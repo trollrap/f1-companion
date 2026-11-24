@@ -12,7 +12,7 @@ export default class ErrorBoundary extends React.Component {
     if (!this.state.error) return this.props.children;
     return (
       <View style={{ flex: 1, backgroundColor: colors.bg, padding: 20, paddingTop: 70 }}>
-        <Text style={{ color: colors.accent, fontSize: 22, fontWeight: '700' }}>Something went wrong</Text>
+        <Text style={{ color: colors.accentText, fontSize: 22, fontWeight: '700' }}>Something went wrong</Text>
         <ScrollView style={{ marginTop: 12 }}><Text style={{ color: colors.fg, fontSize: 15 }}>{String(this.state.error?.stack || this.state.error)}</Text></ScrollView>
       </View>
     );

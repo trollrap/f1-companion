@@ -7,7 +7,7 @@ import { flag, NAME3, shortName } from '../lib/time';
 import { colors, alpha } from '../theme';
 
 export const finishText = (r) => (classified(r) ? `P${r.position}` : r.positionText === 'D' ? 'DSQ' : 'DNF');
-const finishColor = (r) => (r.position === 1 && classified(r) ? colors.gold : classified(r) && r.position <= 3 ? colors.accent : classified(r) ? colors.fg : colors.muted);
+const finishColor = (r) => (r.position === 1 && classified(r) ? colors.gold : classified(r) && r.position <= 3 ? colors.good : classified(r) ? colors.fg : colors.muted);
 const gridText = (r) => `Grid: ${r.grid > 0 ? r.grid : r.grid === 0 ? 'Pit' : '–'}${r.fastest ? ' · FL' : ''}`;
 const shortRace = (r) => shortName(r.race);
 
@@ -30,7 +30,7 @@ export function SeasonRow({ r, color, onPress }) {
   const body = (
     <Grad color={color} from={0.28} to={0.03} dir="h" radius={14} border={gold ? 0.8 : 0.25} style={[{ marginTop: 8 }, gold && { borderColor: alpha(colors.gold, 0.6) }]}>
       <View style={s.row}>
-        <View style={[s.rd, { backgroundColor: alpha(podium ? finishColor(r) : color, 0.22) }]}><Text style={s.rdText}>R{r.round}</Text></View>
+        <View style={[s.rd, { backgroundColor: podium ? alpha(finishColor(r), 0.28) : alpha(colors.fg, 0.1) }]}><Text style={s.rdText}>R{r.round}</Text></View>
         <View style={{ flex: 1 }}>
           <Text style={s.race} numberOfLines={1}>{flag(NAME3[r.country] || '')} {shortRace(r)}</Text>
           <Text style={s.sub}>{gridText(r)}</Text>

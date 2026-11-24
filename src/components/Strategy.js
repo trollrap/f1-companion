@@ -18,7 +18,7 @@ export default function Strategy({ sessionKey, onHide }) {
     <Card>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
         <Eyebrow>Tire strategy</Eyebrow>
-        {onHide ? <Pressable onPress={onHide} hitSlop={10} accessibilityRole="button"><Text style={{ color: colors.accent, fontWeight: '700', fontSize: 15 }}>Hide</Text></Pressable> : null}
+        {onHide ? <Pressable onPress={onHide} hitSlop={10} accessibilityRole="button"><Text style={{ color: colors.accentText, fontWeight: '700', fontSize: 15 }}>Hide</Text></Pressable> : null}
       </View>
       {st.loading && <Skeleton />}
       {st.error && <Note>Strategy data is not available for this race yet.</Note>}

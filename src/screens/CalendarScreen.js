@@ -24,7 +24,7 @@ import { wantOutlines, outlineFor, useOutlinesVersion } from '../lib/outlines';
 import { colors, alpha } from '../theme';
 import { placeLine, shortRange, monthLabel, shortName, flag, daysUntil } from '../lib/time';
 
-const CARD = 72, LABEL = 18, INNER = 10, OUTER = 12, PAD = 16;
+const CARD = 72, LABEL = 18, INNER = 12, OUTER = 12, PAD = 16;
 // Season calendar. The current season opens on the last finished and the next race; earlier seasons show every winner.
 export default function CalendarScreen({ navigation }) {
   const spoil = useSpoilerHidden('calendar');
@@ -64,7 +64,7 @@ export default function CalendarScreen({ navigation }) {
       {spoil ? <Pressable accessibilityRole="button" accessibilityLabel="Winners hidden. Tap to reveal." onPress={() => reveal('calendar')} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14, borderRadius: 14, borderWidth: 1, borderStyle: 'dashed', borderColor: colors.line, marginBottom: 8 }}><Ionicons name="eye-off-outline" size={20} color={colors.muted} /><Text style={{ color: colors.muted, fontWeight: '700', flex: 1 }}>Winners hidden. Tap to reveal.</Text></Pressable> : null}
       <CalendarPicker visible={pickCal} onClose={() => setPickCal(false)} onDone={(k) => { setPickCal(false); go(k); }} />
       <SeasonSwitch year={year} onChange={setYear} max={YEAR + 1} />
-      {year === YEAR ? (<Pressable accessibilityRole="button" accessibilityLabel="Add upcoming sessions to your calendar" onPress={() => setPickCal(true)} style={({ pressed }) => [{ flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-start', paddingVertical: 8, paddingHorizontal: 12, borderRadius: 18, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.line }, pressed && { opacity: 0.8 }]}><Ionicons name="calendar-outline" size={16} color={colors.accent} /><Text style={{ color: colors.fg, fontWeight: '700', fontSize: 13 }}>Add to my calendar</Text></Pressable>) : null}
+      {year === YEAR ? (<Pressable accessibilityRole="button" accessibilityLabel="Add upcoming sessions to your calendar" onPress={() => setPickCal(true)} style={({ pressed }) => [{ flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-start', paddingVertical: 8, paddingHorizontal: 12, borderRadius: 18, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.line }, pressed && { opacity: 0.8 }]}><Ionicons name="calendar-outline" size={16} color={colors.accentText} /><Text style={{ color: colors.fg, fontWeight: '700', fontSize: 13 }}>Add to my calendar</Text></Pressable>) : null}
       {!cur && past.loading && <Skeleton rows={5} />}
       {!cur && past.error && <ErrorNote error={past.error} onRetry={past.reload} />}
       {months.map((g) => (
@@ -82,7 +82,7 @@ export default function CalendarScreen({ navigation }) {
               </View>
               <View style={{ alignItems: 'flex-end', minWidth: 64 }}>
                 {!cur ? (wn ? <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}><Ionicons name="trophy" size={13} color={colors.gold} /><Text style={[s.sub, { color: colors.gold, fontWeight: '700' }]}>{wn.last}</Text></View> : null)
-                  : done ? <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>{wn?.code ? <View style={s.code}><Text style={s.codeT}>{wn.code}</Text></View> : null}<Ionicons name="checkmark-circle" size={20} color={colors.good} /></View> : live ? <Pill color={colors.accent}>In progress</Pill> : isNext ? <Pill color={colors.accent}>Next</Pill> : <Text style={s.sub}>{`In ${Math.max(daysUntil(r.date_end), 0)} d`}</Text>}
+                  : done ? <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>{wn?.code ? <View style={s.code}><Text style={s.codeT}>{wn.code}</Text></View> : null}<Ionicons name="checkmark-circle" size={20} color={colors.good} /></View> : live ? <Pill color={colors.accentText}>In progress</Pill> : isNext ? <Pill color={colors.accentText}>Next</Pill> : <Text style={s.sub}>{`In ${Math.max(daysUntil(r.date_end), 0)} d`}</Text>}
               </View>
             </>);
             const map = pts ? (
@@ -90,7 +90,7 @@ export default function CalendarScreen({ navigation }) {
                 <TrackMap pts={pts} width={150} height={CARD - 12} stroke={2.2} opacity={0.5} fade />
               </View>) : null;
             const card = wcol
-              ? <Grad color={wcol} from={0.42} to={0.05} dir="h" radius={16} border={0.4} style={s.card}>{map}{body}</Grad>
+              ? <Grad color={wcol} from={0.42} to={0.05} dir="h" radius={22} border={0.4} style={s.card}>{map}{body}</Grad>
               : <View style={[s.card, s.plain, isNext && { borderColor: colors.accent, backgroundColor: colors.accentSoft }, live && { borderColor: colors.accent, backgroundColor: alpha(colors.accent, 0.14) }]}>{map}{body}</View>;
             return <Press key={r.meeting_key} scale={0.98} onPress={() => navigation.navigate('Round', { meeting: r.year ? r : { ...r, year: YEAR } })}>{card}</Press>;
           })}
@@ -99,11 +99,11 @@ export default function CalendarScreen({ navigation }) {
   );
 }
 const s = StyleSheet.create({
-  month: { color: colors.muted, fontFamily: 'label', fontSize: 12, lineHeight: LABEL, letterSpacing: 2.6, fontWeight: '600' },
+  month: { color: colors.onSoft, fontFamily: 'label', fontSize: 13, lineHeight: LABEL, letterSpacing: 2, fontWeight: '800', marginTop: 6 },
   card: { height: CARD, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 12 },
-  plain: { backgroundColor: colors.surface, borderColor: colors.line, borderWidth: 1, borderRadius: 16, overflow: 'hidden' },
+  plain: { backgroundColor: colors.surface, borderColor: colors.line, borderWidth: 1, borderRadius: 22, overflow: 'hidden' },
   map: { position: 'absolute', right: 0, top: 0, bottom: 0, width: 150, alignItems: 'flex-end', justifyContent: 'center' },
-  rn: { width: 46, height: 46, borderRadius: 13, backgroundColor: colors.surface2, alignItems: 'center', justifyContent: 'center' }, rb: { color: colors.fg, fontSize: 17, fontWeight: '800' },
+  rn: { width: 46, height: 46, borderRadius: 16, backgroundColor: colors.surface2, alignItems: 'center', justifyContent: 'center' }, rb: { color: colors.fg, fontSize: 17, fontWeight: '800' },
   code: { backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 }, codeT: { color: colors.fg, fontSize: 12, fontWeight: '800', letterSpacing: 1 },
   nm: { color: colors.fg, fontSize: 18, fontWeight: '700', flexShrink: 1 }, sub: { color: colors.muted, fontSize: 14 },
 });

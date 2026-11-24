@@ -29,7 +29,7 @@ function Flip({ c, onFlip }) {
   return (
     <Pressable accessibilityRole="button" accessibilityLabel={up ? c.name : 'Flip card'} onPress={flip}>
       <Animated.View style={{ transform: [{ scaleX: v }] }}>
-        {up ? <DriverCard c={c} w={104} /> : <View style={{ width: 104, height: 151, borderRadius: 16, backgroundColor: colors.card, borderWidth: 2, borderColor: colors.accent, alignItems: 'center', justifyContent: 'center' }}><Text style={{ color: colors.accent, fontSize: 34, fontWeight: '900' }}>F1</Text><Text style={{ color: colors.muted, fontSize: 11 }}>TAP</Text></View>}
+        {up ? <DriverCard c={c} w={104} /> : <View style={{ width: 104, height: 151, borderRadius: 16, backgroundColor: colors.card, borderWidth: 2, borderColor: colors.accent, alignItems: 'center', justifyContent: 'center' }}><Text style={{ color: colors.accentText, fontSize: 34, fontWeight: '900' }}>F1</Text><Text style={{ color: colors.muted, fontSize: 11 }}>TAP</Text></View>}
       </Animated.View>
     </Pressable>);
 }
@@ -51,10 +51,11 @@ export default function CardScreen() {
         <View style={{ marginTop: 12 }}><Btn icon="gift" tone="solid" disabled={m.packs < 1 || busy} onPress={open}>{m.packs < 1 ? 'No packs left' : 'Open a pack'}</Btn></View>
       </Card>
       {pack ? (<Card><Eyebrow>Your pull</Eyebrow><View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 12 }}>{pack.map((c, i) => <Flip key={`${c.id}${i}${m.opened}`} c={c} onFlip={() => setFlipped((f) => f + 1)} />)}</View>{flipped < pack.length ? <Note>Tap each card to turn it over.</Note> : <Note>Added to your collection.</Note>}</Card>) : null}
+      <View style={{ flexDirection: 'row', gap: 8 }}>{ORDER.map((r) => (<View key={r} style={{ flex: 1, padding: 10, borderRadius: 14, backgroundColor: alpha(RARITY[r].color, 0.14), borderWidth: 1, borderColor: alpha(RARITY[r].color, 0.45), alignItems: 'center' }}><Text style={{ color: colors.fg, fontSize: 22, fontWeight: '900' }}>{by(r).length}</Text><Text style={{ color: RARITY[r].color, fontSize: 10, fontWeight: '800', letterSpacing: 1 }}>{RARITY[r].label.toUpperCase()}</Text></View>))}</View>
       {ORDER.map((r) => { const list = by(r); return (
         <View key={r} style={{ gap: 8 }}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}><Text style={{ color: RARITY[r].color, fontFamily: 'label', fontSize: 12, letterSpacing: 2 }}>{RARITY[r].label.toUpperCase()}</Text><Text style={{ color: colors.muted }}>{list.length}</Text></View>
-          {list.length ? <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }}>{list.map((c) => <DriverCard key={c.id} c={c} w={118} count={c.n} />)}</ScrollView> : <Text style={{ color: colors.muted, fontSize: 13 }}>None yet.</Text>}
+          {list.length ? <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }}>{list.map((c) => <DriverCard key={c.id} c={c} w={118} count={c.n} />)}</ScrollView> : <View style={{ flexDirection: 'row', gap: 10 }}>{[0, 1, 2].map((k) => <View key={k} style={{ width: 118, height: 70, borderRadius: 14, borderWidth: 1, borderStyle: 'dashed', borderColor: alpha(RARITY[r].color, 0.45), backgroundColor: alpha(RARITY[r].color, 0.06), alignItems: 'center', justifyContent: 'center' }}><Text style={{ color: alpha(RARITY[r].color, 0.7), fontSize: 20, fontWeight: '800' }}>?</Text></View>)}</View>}
         </View>); })}
       <Note>{`${cards.length} different drivers collected, ${cards.reduce((a, c) => a + c.n, 0)} cards in total. Rarity: legendary is a world champion, epic is 10 or more wins, rare is a win or three podiums.`}</Note>
     </Screen>);

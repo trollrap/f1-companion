@@ -59,6 +59,7 @@ export function TeamPrincipal({ f, id, fun, reveal = 0 }) {
           </View>
           <Text style={{ color: colors.onSoft, fontSize: 11, letterSpacing: 2, marginTop: 12 }}>REPUTATION</Text>
           <View style={{ marginTop: 5 }}><Bar pct={tp.hype} color={tp.hype >= 60 ? colors.good : tp.hype >= 35 ? colors.gold : colors.red} height={9} /></View>
+          {(() => { const conf = Math.max(0, Math.min(100, Math.round(60 + (tp.target - pos) * 12 + (tp.hype - 50) * 0.4))); return (<><Text style={{ color: colors.onSoft, fontSize: 11, letterSpacing: 2, marginTop: 12 }}>BOARD CONFIDENCE</Text><View style={{ marginTop: 5 }}><Bar pct={conf} color={conf >= 60 ? colors.good : conf >= 35 ? colors.gold : colors.red} height={9} /></View>{conf < 25 ? <Text style={{ color: colors.red, fontSize: 13, marginTop: 6, fontWeight: '700' }}>The board is losing patience. Climb the table or lift the reputation.</Text> : null}</>); })()}
           <Text style={{ color: colors.fg, fontSize: 14, marginTop: 10 }}>{`Board target: finish ${ord(tp.target)} or better. ${pos <= tp.target ? 'You are on track.' : `You are ${pos - tp.target} place${pos - tp.target === 1 ? '' : 's'} short.`}`}</Text>
         </Grad>
       </Reveal>

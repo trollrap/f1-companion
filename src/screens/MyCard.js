@@ -43,6 +43,6 @@ export default function MyCardScreen() {
         </Grad>
       </ShareCard>
       {!did || !tid ? <Note>Pick a favourite driver and team (the star on their pages) and they show up here.</Note> : null}
-      <Press onPress={() => nav.navigate('Profile')} accessibilityLabel="Edit my profile"><View style={{ minHeight: 48, borderRadius: 14, borderWidth: 1, borderColor: colors.accent, alignItems: 'center', justifyContent: 'center' }}><Text style={{ color: colors.accent, fontWeight: '800' }}>Create or edit my profile</Text></View></Press>
+      <Press onPress={() => nav.navigate('Profile')} accessibilityLabel="Edit my profile"><View style={{ minHeight: 48, borderRadius: 14, borderWidth: 1, borderColor: colors.accent, alignItems: 'center', justifyContent: 'center' }}><Text style={{ color: colors.accentText, fontWeight: '800' }}>Create or edit my profile</Text></View></Press>
     </Screen>);
 }

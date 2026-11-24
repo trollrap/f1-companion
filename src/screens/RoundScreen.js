@@ -77,7 +77,10 @@ export default function RoundScreen({ route, navigation }) {
   const tagsOf = (driverId, grid) => { const n = Number(numberOf(driverId)); if (!n) return []; return pens.filter((p) => p.number === n && (grid ? ['grid', 'back', 'pit'].includes(p.kind) : true)).map((p) => ({ text: p.text })); };
   useEffect(() => {
     if (!cur) return; setRes({ loading: true });
-    if (isGrid && cur === 'Race') { sessionResults(year, meeting.round, 'qualifying').then((v) => (v ? setRes({ v, grid: true }) : setRes({ note: 'Qualifying results are not archived yet.' }))).catch((e) => setRes({ error: String(e.message || e) })); return; }
+    // Jolpica publishes qualifying late; OpenF1 has it within minutes, so it is the fallback (and tried at once when Jolpica is slow).
+    const viaOpenF1 = (grid) => { const q = sessOf('Qualifying'); if (!q) { setRes({ note: 'Qualifying results are not archived yet.' }); return; } sessionClassification(q.session_key).then((t) => (t && t.length ? setRes({ timing: t, grid, gridQ: grid }) : setRes({ note: 'Qualifying results are not published yet. They appear here as soon as the timing feed has them.' }))).catch((e) => setRes({ error: String(e.message || e) })); };
+    if (isGrid && cur === 'Race') { sessionResults(year, meeting.round, 'qualifying').then((v) => (v && v.length ? setRes({ v, grid: true }) : viaOpenF1(true))).catch(() => viaOpenF1(true)); return; }
+    if (cur === 'Qualifying' && year >= YEAR) { sessionResults(year, meeting.round, 'qualifying').then((v) => (v && v.length ? setRes({ v }) : viaOpenF1(false))).catch(() => viaOpenF1(false)); return; }
     if (isGrid && cur === 'Sprint') { const sq = sessOf('Sprint Qualifying'); if (!sq) { setRes({ note: 'This session is not in the schedule data.' }); return; } sessionClassification(sq.session_key).then((v) => setRes({ timing: v, grid: true })).catch((e) => setRes({ error: String(e.message || e) })); return; }
     const kind = KIND[cur];
     if (kind) { sessionResults(year, meeting.round, kind).then((v) => (v ? setRes({ v }) : setRes({ note: 'No results are archived for this session.' }))).catch((e) => setRes({ error: String(e.message || e) })); return; }
@@ -121,7 +124,16 @@ export default function RoundScreen({ route, navigation }) {
   const raceRows = res.v && !res.grid && cur !== 'Qualifying' ? res.v : null;
   const canGap = !res.grid && !!(qualiRows || (raceRows && raceRows.some((r) => parseGap(r.time) != null)) || (res.timing && !res.grid && res.timing.some((r) => parseGap(r.gap) != null)));
   const raceShown = raceRows ? (gapMode === 'ahead' ? aheadList(raceRows.map((r) => r.time)).map((t, i) => ({ ...raceRows[i], time: t })) : raceRows) : null;
-  const timingShown = res.timing ? (gapMode === 'ahead' ? aheadList(res.timing.map((r) => r.gap)).map((g, i) => ({ ...res.timing[i], gap: g })) : res.timing) : null;
+  // Qualifying order from the timing feed with the stewards' grid penalties applied (used before Jolpica has the qualifying result).
+  const timingGrid = res.timing && res.gridQ && cur === 'Race' ? (() => {
+    const out = res.timing.map((r) => ({ ...r, quali: r.position })); 
+    pens.filter((p) => ['grid', 'back', 'pit'].includes(p.kind)).forEach((p) => {
+      const i = out.findIndex((r) => Number(r.number) === p.number); if (i < 0) return;
+      const [r] = out.splice(i, 1); out.splice(p.kind === 'grid' ? Math.min(out.length, i + p.places) : out.length, 0, { ...r, penalised: true });
+    });
+    return out.map((r, i) => ({ ...r, position: i + 1 }));
+  })() : null;
+  const timingShown = timingGrid ? timingGrid : res.timing ? (gapMode === 'ahead' ? aheadList(res.timing.map((r) => r.gap)).map((g, i) => ({ ...res.timing[i], gap: g })) : res.timing) : null;
   return (
     <Screen header={false} scrollRef={scroller}>
       <Grad color={colors.accent} from={0.3} to={0.03} border={0.4} style={{ padding: 14 }}>
@@ -137,7 +149,7 @@ export default function RoundScreen({ route, navigation }) {
           <View style={{ marginTop: 12 }}><Dropdown value={cur} options={names.map((n) => [n, labelOf(n)])} onChange={(v) => { setShowStrat(false); setSel(v); }} /></View>
           {canGap ? (
             <Pressable onPress={() => { const k = gapMode === 'leader' ? 'ahead' : 'leader'; setGapMode(k); setOpt('gap', k); }} hitSlop={8} accessibilityRole="button" style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 12, alignSelf: 'flex-start', opacity: pressed ? 0.6 : 1 })}>
-              <Ionicons name="swap-vertical" size={16} color={colors.accent} /><Text style={{ color: colors.accent, fontWeight: '700', fontSize: 16 }}>{gapMode === 'leader' ? 'Gap to leader' : 'Interval'}</Text>
+              <Ionicons name="swap-vertical" size={16} color={colors.accentText} /><Text style={{ color: colors.accentText, fontWeight: '700', fontSize: 16 }}>{gapMode === 'leader' ? 'Gap to leader' : 'Interval'}</Text>
             </Pressable>) : null}
           {res.loading && <Skeleton />}
           {res.error && <Note>Results unavailable: {res.error}</Note>}{res.note && <Note>{res.note}</Note>}
@@ -153,7 +165,7 @@ export default function RoundScreen({ route, navigation }) {
       )}
       {(cur === 'Race' || cur === 'Sprint') && !isGrid && sessions.find((x) => x.session_name === cur && x.session_key) ? (
         showStrat ? <Strategy key={cur} sessionKey={sessions.find((x) => x.session_name === cur).session_key} onHide={() => setShowStrat(false)} />
-          : <Press onPress={() => setShowStrat(true)}><View style={{ height: 48, borderRadius: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: colors.accentSoft, borderWidth: 1, borderColor: colors.accent }}><Ionicons name="color-fill-outline" size={18} color={colors.accent} /><Text style={{ color: colors.fg, fontWeight: '700', fontSize: 16 }}>{`Show tire strategy (${cur.toLowerCase()})`}</Text></View></Press>) : null}
+          : <Press onPress={() => setShowStrat(true)}><View style={{ height: 48, borderRadius: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: colors.accentSoft, borderWidth: 1, borderColor: colors.accent }}><Ionicons name="color-fill-outline" size={18} color={colors.accentText} /><Text style={{ color: colors.fg, fontWeight: '700', fontSize: 16 }}>{`Show tire strategy (${cur.toLowerCase()})`}</Text></View></Press>) : null}
       {cur === 'Race' && !isGrid && year >= 2011 && meeting.round ? (
         <Press onPress={() => navigation.navigate('LapChart', { year, round: Number(meeting.round) })} accessibilityLabel="Open the lap chart for this race">
           <Grad color={colors.accent} from={0.4} to={0.06} radius={16} border style={{ padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12 }}>

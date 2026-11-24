@@ -12,7 +12,7 @@ export default function ShareCard({ children, title = 'F1 Companion' }) {
     <View>
       <View ref={ref} collapsable={false} style={{ backgroundColor: 'transparent' }}>{children}</View>
       <Pressable accessibilityRole="button" accessibilityLabel="Share this card as a picture" hitSlop={8} onPress={go} style={({ pressed }) => [{ alignSelf: 'flex-end', flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 6, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 12, backgroundColor: alpha(colors.accent, 0.14) }, pressed && { opacity: 0.7 }]}>
-        <Ionicons name="share-outline" size={15} color={colors.accent} /><Text style={{ color: colors.accent, fontSize: 12, fontWeight: '800' }}>Share</Text>
+        <Ionicons name="share-outline" size={15} color={colors.accentText} /><Text style={{ color: colors.accentText, fontSize: 12, fontWeight: '800' }}>Share</Text>
       </Pressable>
     </View>);
 }

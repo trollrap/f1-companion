@@ -19,7 +19,7 @@ export default function FavDigestScreen() {
       {q.error ? <ErrorNote error={q.error} onRetry={q.reload} /> : null}
       {d && d.empty ? <Note>Favourite some drivers or teams in the Paddock and they will show up here.</Note> : null}
       {d && !d.empty && !d.race ? <Note>No race has been run yet this season.</Note> : null}
-      {d && d.race ? <Text style={{ color: colors.accent, fontWeight: '700' }}>{`${d.race.name} · round ${d.race.round}`}</Text> : null}
+      {d && d.race ? <Text style={{ color: colors.accentText, fontWeight: '700' }}>{`${d.race.name} · round ${d.race.round}`}</Text> : null}
       {d && d.race ? d.drivers.map((x, i) => (
         <Reveal key={x.id} index={i}><Card>
           <Text style={{ color: colors.fg, fontSize: 18, fontWeight: '700' }}>{x.name}</Text>

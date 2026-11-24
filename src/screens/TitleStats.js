@@ -18,7 +18,7 @@ export function GridOddsScreen() {
   const d = useMemo(() => { try { return gridSlotOdds(); } catch { return null; } }, []);
   const [k, setK] = useState(0); const [m, setM] = useState('wins');
   if (!d) return <Missing />;
-  const era = d[k]; const slots = era.slots.slice(0, 20);
+  const era = d[k]; const slots = era.slots.slice(0, 24);
   const val = (s) => (m === 'wins' ? s.wins : s.podiums) / s.n;
   const top = Math.max(0.01, ...slots.map(val));
   return (

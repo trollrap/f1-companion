@@ -132,19 +132,19 @@ export default function LiveRace({ visible, race, laps, drivers, sc, wet, shower
               <Text style={{ color: colors.muted, fontSize: 12 }}>{`lap ${d.lap}`}</Text>
             </View>))}
           <Text style={{ color: colors.muted, fontFamily: 'label', fontSize: 11, letterSpacing: 2, marginTop: 12 }}>RACE CONTROL</Text>
-          {log.slice(0, 8).map((e, i) => (<View key={`${e.lap}-${i}-${e.t}`} style={{ flexDirection: 'row', gap: 8, opacity: Math.max(0.35, 1 - i * 0.1) }}><Text style={{ color: colors.accent, fontWeight: '800', fontSize: 13, width: 44 }}>{`LAP ${e.lap}`}</Text><Text style={{ flex: 1, color: e.k === 'out' ? '#ff8a8a' : e.k === 'lead' ? colors.gold : '#fff', fontSize: 14 }}>{e.t}</Text></View>))}
+          {log.slice(0, 8).map((e, i) => (<View key={`${e.lap}-${i}-${e.t}`} style={{ flexDirection: 'row', gap: 8, opacity: Math.max(0.35, 1 - i * 0.1) }}><Text style={{ color: colors.accentText, fontWeight: '800', fontSize: 13, width: 44 }}>{`LAP ${e.lap}`}</Text><Text style={{ flex: 1, color: e.k === 'out' ? '#ff8a8a' : e.k === 'lead' ? colors.gold : '#fff', fontSize: 14 }}>{e.t}</Text></View>))}
           <View style={{ height: 120 }} />
         </ScrollView>
         {call ? (
           <View accessibilityLiveRegion="polite" style={{ position: 'absolute', left: 12, right: 12, bottom: Math.max(ins.bottom, 12) + 70, padding: 14, borderRadius: 18, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.accent, gap: 10 }}>
-            <Text style={{ color: colors.accent, fontFamily: 'label', fontSize: 11, letterSpacing: 2 }}>TEAM RADIO · STRATEGY CALL</Text>
+            <Text style={{ color: colors.accentText, fontFamily: 'label', fontSize: 11, letterSpacing: 2 }}>TEAM RADIO · STRATEGY CALL</Text>
             <Text style={{ color: colors.fg, fontSize: 16, fontWeight: '700' }}>{call.q}</Text>
-            <View style={{ flexDirection: 'row', gap: 10 }}>{call.opts.map(([l, v]) => (<Pressable key={v} accessibilityRole="button" accessibilityLabel={l} onPress={() => answer(v)} style={{ flex: 1, height: 48, borderRadius: 24, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' }}><Text style={{ color: '#fff', fontWeight: '800', fontSize: 16 }}>{l}</Text></Pressable>))}</View>
+            <View style={{ flexDirection: 'row', gap: 10 }}>{call.opts.map(([l, v]) => (<Pressable key={v} accessibilityRole="button" accessibilityLabel={l} onPress={() => answer(v)} style={{ flex: 1, height: 48, borderRadius: 24, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' }}><Text style={{ color: colors.onAccent, fontWeight: '800', fontSize: 16 }}>{l}</Text></Pressable>))}</View>
           </View>) : null}
         {done && (calls.length || stew.length) ? <View style={{ position: 'absolute', left: 12, right: 12, bottom: Math.max(ins.bottom, 12) + 70, padding: 12, borderRadius: 16, backgroundColor: colors.card }}><Text style={{ color: colors.fg, fontWeight: '700', textAlign: 'center' }}>{[calls.length ? `Strategy calls: ${calls.filter(Boolean).length} of ${calls.length} right (right calls earn budget and hype).` : '', stew.length ? `Steward calls: ${stew.filter(Boolean).length} of ${stew.length} right.` : ''].filter(Boolean).join(' ')}</Text></View> : null}
         <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, paddingBottom: Math.max(ins.bottom, 12) + 8, paddingTop: 12, paddingHorizontal: 16, backgroundColor: 'rgba(10,5,6,0.96)', flexDirection: 'row', alignItems: 'center', gap: 8 }}>
           {done ? (
-            <Pressable onPress={() => onClose(calls, stew)} style={{ flex: 1, height: 48, borderRadius: 24, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' }}><Text style={{ color: '#fff', fontWeight: '800', fontSize: 17 }}>See the result</Text></Pressable>
+            <Pressable onPress={() => onClose(calls, stew)} style={{ flex: 1, height: 48, borderRadius: 24, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' }}><Text style={{ color: colors.onAccent, fontWeight: '800', fontSize: 17 }}>See the result</Text></Pressable>
           ) : (
             <>
               <Pressable accessibilityRole="button" accessibilityLabel={play ? 'Pause' : 'Play'} disabled={!!call} onPress={() => setPlay((p) => !p)} style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center' }}><Ionicons name={play ? 'pause' : 'play'} size={22} color="#fff" /></Pressable>

@@ -21,10 +21,10 @@ import { CIRCUITS } from '../data/circuits';
 
 // ---------- Poster maker: a driver poster to share ----------
 const STAT_DEFS = { wins: ['Wins', (c) => c.wins], podiums: ['Podiums', (c) => c.podiums], poles: ['Poles', (c) => c.poles], starts: ['Starts', (c) => c.races], titles: ['Titles', (c, id) => titlesOf(id)], points: ['Points', (c) => Math.round(c.points)] };
-const PALETTE = [['Red', '#E10600'], ['Gold', '#F5C542'], ['Blue', '#3B9CFF'], ['Green', '#3DD16C'], ['Violet', '#9B6BFF'], ['Orange', '#FF8000']];
+const PALETTE = [['Red', '#E10600'], ['Gold', '#F5C542'], ['Blue', '#3B9CFF'], ['Green', '#3DD16C'], ['Violet', '#9B6BFF'], ['Orange', '#FF8000'], ['Teal', '#27C9B5'], ['Pink', '#FF5FA2'], ['White', '#FFFFFF'], ['Black', '#16181D']];
 export function PosterScreen() {
   const all = useMemo(() => { try { return localAllDrivers(); } catch { return []; } }, []);
-  const [id, setId] = useState('max_verstappen'); const [q, setQ] = useState(''); const [pick, setPick] = useState(['wins', 'podiums', 'titles']); const [col, setCol] = useState(PALETTE[0][1]);
+  const [id, setId] = useState('max_verstappen'); const [q, setQ] = useState(''); const [pick, setPick] = useState(['wins', 'podiums', 'titles']); const [col, setCol] = useState(PALETTE[0][1]); const [lay, setLay] = useState('bold');
   const info = all.find((d) => d.driverId === id) || all.find((d) => d.last === 'Verstappen') || null;
   const c = useMemo(() => { try { return info ? careerStats(info.driverId) : null; } catch { return null; } }, [info?.driverId]); // eslint-disable-line react-hooks/exhaustive-deps
   const team = useMemo(() => { try { return info ? careerTeams(info.driverId)?.main : ''; } catch { return ''; } }, [info?.driverId]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -40,14 +40,17 @@ export function PosterScreen() {
       {sugg.map((d) => (<Pressable key={d.driverId} accessibilityRole="button" onPress={() => { setId(d.driverId); setQ(''); hap.tap(); }} style={{ paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.line }}><Text style={{ color: colors.fg }}>{d.name}</Text></Pressable>))}
       <ShareCard title={text}>
         <Grad color={col} from={0.65} to={0.1} dir="v" radius={18} style={{ aspectRatio: 0.8, padding: 22, justifyContent: 'space-between' }}>
-          {photo ? <Image source={photo} resizeMode="contain" style={{ position: 'absolute', right: -10, bottom: 60, width: '78%', height: '72%', opacity: 0.95 }} /> : null}
-          <View><Text style={{ color: colors.fg, fontSize: 18, fontWeight: '600', opacity: 0.85 }}>{info.first}</Text><Text style={{ color: colors.fg, fontSize: 44, fontWeight: '900', letterSpacing: 1 }} numberOfLines={1} adjustsFontSizeToFit>{String(info.last).toUpperCase()}</Text>{team ? <Text style={{ color: colors.fg, opacity: 0.8, marginTop: 2 }}>{team}</Text> : null}</View>
+          {info.number && lay !== 'min' ? <Text style={{ position: 'absolute', left: lay === 'split' ? undefined : -6, right: lay === 'split' ? -6 : undefined, top: 40, color: alpha(colors.fg, 0.12), fontSize: 230, fontWeight: '900', fontStyle: 'italic' }}>{info.number}</Text> : null}
+          {photo && lay !== 'min' ? <Image source={photo} resizeMode="contain" style={{ position: 'absolute', ...(lay === 'split' ? { left: -10 } : { right: -10 }), bottom: 60, width: '78%', height: '72%', opacity: 0.95 }} /> : null}
+          <View style={lay === 'split' ? { alignItems: 'flex-end' } : null}><Text style={{ color: colors.fg, fontSize: 18, fontWeight: '600', opacity: 0.85 }}>{info.first}</Text><Text style={{ color: colors.fg, fontSize: 44, fontWeight: '900', letterSpacing: 1 }} numberOfLines={1} adjustsFontSizeToFit>{String(info.last).toUpperCase()}</Text>{team ? <Text style={{ color: colors.fg, opacity: 0.8, marginTop: 2 }}>{team}</Text> : null}</View>
           <View>
             <View style={{ flexDirection: 'row', gap: 10 }}>{pick.map((k) => (<View key={k} style={{ flex: 1, padding: 10, borderRadius: 12, backgroundColor: alpha('#000000', 0.35) }}><Text style={{ color: colors.fg, fontSize: 28, fontWeight: '900' }}>{STAT_DEFS[k][1](c, info.driverId)}</Text><Text style={{ color: colors.fg, opacity: 0.8, fontSize: 12 }}>{STAT_DEFS[k][0]}</Text></View>))}</View>
             <Text style={{ color: colors.fg, opacity: 0.7, fontSize: 11, marginTop: 10, letterSpacing: 2 }}>{`F1 COMPANION · ${c.first || ''}${c.last && c.last !== c.first ? ` TO ${c.last}` : ''}`}</Text>
           </View>
         </Grad>
       </ShareCard>
+      <Eyebrow>Layout</Eyebrow>
+      <Segmented value={lay} onChange={setLay} items={[['bold', 'Bold'], ['split', 'Split'], ['min', 'Minimal']]} />
       <Eyebrow>Stats (pick three)</Eyebrow>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>{Object.keys(STAT_DEFS).map((k) => (<Pressable key={k} accessibilityRole="button" accessibilityState={{ selected: pick.includes(k) }} onPress={() => toggle(k)} style={{ paddingHorizontal: 12, paddingVertical: 7, borderRadius: 14, backgroundColor: pick.includes(k) ? alpha(colors.accent, 0.25) : colors.card, borderWidth: 1, borderColor: pick.includes(k) ? colors.accent : colors.line }}><Text style={{ color: colors.fg, fontWeight: '700', fontSize: 13 }}>{STAT_DEFS[k][0]}</Text></Pressable>))}</View>
       <Eyebrow>Colour</Eyebrow>
@@ -71,7 +74,7 @@ export function FavCircuitsScreen() {
       </ShareCard>
       <Segmented value={f} items={[['all', 'All'], ['love', 'Loved'], ['been', 'Visited']]} onChange={setF} />
       {list.map((c) => (
-        <Card key={c.key}>
+        <Card key={c.key} style={{ borderLeftWidth: 4, borderLeftColor: m[c.key]?.love ? colors.accent : m[c.key]?.been ? colors.good : colors.line }}>
           <Text style={{ color: colors.fg, fontSize: 16, fontWeight: '700' }}>{c.name}</Text><Text style={{ color: colors.muted, fontSize: 13 }}>{c.place}</Text>
           <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}><Tog on={!!m[c.key]?.love} icon="heart" label="Love" onPress={() => flip(c.key, 'love')} /><Tog on={!!m[c.key]?.been} icon="flag" label="Been there" onPress={() => flip(c.key, 'been')} /></View>
         </Card>))}

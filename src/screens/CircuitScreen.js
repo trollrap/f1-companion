@@ -59,7 +59,7 @@ export default function CircuitScreen({ route, navigation }) {
           </View>
           <Text style={[s.fact, { marginTop: 10 }]}>{`${hist.fromPole} of ${hist.races} were won from pole (${Math.round((hist.fromPole / hist.races) * 100)}%).`}</Text>
           {hist.list.slice(0, all ? 80 : 8).map((x) => (<View key={x.year} style={{ flexDirection: 'row', gap: 10, paddingVertical: 5, borderTopWidth: 1, borderTopColor: colors.line }}><Text style={{ width: 44, color: colors.muted, fontWeight: '700' }}>{x.year}</Text><Text style={{ flex: 1, color: colors.fg, fontWeight: '600' }} numberOfLines={1}>{x.name}</Text><Text style={{ color: colors.muted, fontSize: 13 }} numberOfLines={1}>{`${x.team} · P${x.grid > 0 ? x.grid : 'pit'}`}</Text></View>))}
-          {hist.list.length > 8 ? <Pressable onPress={() => setAll(!all)} hitSlop={8} accessibilityRole="button"><Text style={{ color: colors.accent, fontWeight: '700', marginTop: 8 }}>{all ? 'Show fewer' : `Show all ${hist.list.length}`}</Text></Pressable> : null}
+          {hist.list.length > 8 ? <Pressable onPress={() => setAll(!all)} hitSlop={8} accessibilityRole="button"><Text style={{ color: colors.accentText, fontWeight: '700', marginTop: 8 }}>{all ? 'Show fewer' : `Show all ${hist.list.length}`}</Text></Pressable> : null}
           <Note>Matched by the race's name, so earlier years may have been held at a different circuit.</Note>
         </Card>) : null}
       {c && <Card><Eyebrow>About</Eyebrow><Text style={s.fact}>{c.about}</Text></Card>}
@@ -69,5 +69,5 @@ export default function CircuitScreen({ route, navigation }) {
 const s = StyleSheet.create({
   place: { color: colors.muted, fontSize: 16, marginBottom: 6 }, grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   stat: { width: '48.5%', backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line, borderRadius: 14, padding: 12 }, k: { color: colors.muted, fontFamily: 'label', fontSize: 10, letterSpacing: 1.5 },
-  v: { color: colors.fg, fontSize: 22, fontWeight: '700', marginTop: 2 }, sub: { color: colors.muted, fontSize: 14 }, link: { color: colors.accent, fontSize: 13, fontWeight: '700', marginTop: 4 }, fact: { color: '#CDD0D8', fontSize: 17, marginTop: 10 },
+  v: { color: colors.fg, fontSize: 22, fontWeight: '700', marginTop: 2 }, sub: { color: colors.muted, fontSize: 14 }, link: { color: colors.accentText, fontSize: 13, fontWeight: '700', marginTop: 4 }, fact: { color: '#CDD0D8', fontSize: 17, marginTop: 10 },
 });

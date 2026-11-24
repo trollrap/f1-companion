@@ -29,7 +29,7 @@ function Shell({ visible, title, sub, onClose, children, cta = 'Continue', glow 
         </View>
         <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 20, paddingBottom: 24, gap: 10 }}>{visible ? children : null}</ScrollView>
         <View style={{ paddingHorizontal: 20, paddingTop: 10, paddingBottom: bottom, backgroundColor: colors.deep }}>
-          <Pressable onPress={onClose} accessibilityRole="button" style={({ pressed }) => [{ height: 54, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.accent }, pressed && { opacity: 0.8 }]}><Text style={{ color: '#fff', fontSize: 18, fontWeight: '800' }}>{cta}</Text></Pressable>
+          <Pressable onPress={onClose} accessibilityRole="button" style={({ pressed }) => [{ height: 54, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.accent }, pressed && { opacity: 0.8 }]}><Text style={{ color: colors.onAccent, fontSize: 18, fontWeight: '800' }}>{cta}</Text></Pressable>
         </View>
       </View>
     </Modal>

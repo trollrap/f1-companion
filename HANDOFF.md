@@ -527,3 +527,72 @@ Expo Go (SDK 53+) does not include the `expo-notifications` native module; impor
 - New screens/Profile162.js (route Profile, prefs.opts.profile). Fun tab labelled Other with Statistics and My profile on top.
 - Fantasy: pick the driver to replace; archived collapsed/dimmed; undo + house removed.
 - NOT done: poster maker, race recap restyle, number history, TP career rework, 20-driver cap hunt, Hamilton poles 105 vs 104 check.
+
+## V1.62.1 (JS-only)
+- Poster maker layouts, RaceRecap restyle (recap.js returns win/podium), Number history tiles, TP rival development + steeper upgrade cost, grid-odds slots 24.
+- Still open: Hamilton poles total unverified (f1db), TP sacking/board patience, Fun/Stats further freshness.
+
+## V1.62.2 (JS-only)
+- Main.js Fun tab label/icon fix (line ~92), RulesScreen redesign, Settings profile card. Sweep script: scratchpad ui/sweep.js (hash route + click Fun tab in patched FunHome).
+
+## V1.62.3 (JS-only)
+- Cards rarity tiles/empty slots, FavCircuits coloured edge, TP board confidence bar. Hamilton poles: f1db qualifying position 1 gives 106 incl. 2026, same as the app (matches source; FIA count differs by edge cases).
+
+## V1.63.0 (JS-only) rebrand
+- theme.js palette (slate dark, accent #F43F4B), applyAccent tint capped; app name Pitwall via sed (not in lib/ics.js PRODID or backup id). Launcher name in app.json still 'F1 Companion' (needs APK).
+
+## V1.63.1 (JS-only)
+- Name reverted to F1 Companion (user keeps logo and name). Cards flatter/rounder, Eyebrow dot, TabBar active pill.
+
+## V1.64.0 (JS-only) redesign step 1
+- Mockup canvas approved (claude.ai artifact 'F1 Companion redesign'). Rule: no feature or button removed. Done: TabBar floating pill, Home greeting, Driver hero photo fade (LinearGradient to colors.surface). Next: Home hero/countdown, Standings hero leader card, Race weekend timeline, Stats tiles, Other profile card.
+
+## V1.65.0 (JS-only) redesign step 2
+- StandingsScreen leader Grad hero, Schedule timeline, StatsHub category tiles (only filter), FunHome profile card (components/Avatar.js holds useProfile/Avatar), Settings section radius. Still to restyle: News, Calendar rows, Paddock, MotoGP/football screens, games inner screens, fantasy tabs.
+
+## V1.66.0 (JS-only) redesign step 3
+- Grad default radius 22, Segmented pill, Calendar radii/month header, article image radius. MotoGP/football/game/fantasy screens inherit shared components. Ideas left: welcome/tour, Alerts inbox/Storage, Compare/Team pages, motion pass (count-up, transitions).
+
+## V1.67.0 (JS-only) redesign step 4
+- components/CountUp.js (integers only) used in StatGrid and Standings hero; Welcome, AlertsInbox, Storage touches. MotoGP/football/Compare/Team already use Grad heroes (radius now 22); no individual rebuilds.
+
+
+## V1.68.0 (JS-only) floating slider bar, results fixes
+- TabBar BarView: floating pill, sliding highlight (spring), shadow, no band.
+- RoundScreen: OpenF1 fallback for qualifying/grid; timingGrid applies penalties. openf1.racePenalties regex broadened. Unverified against live data.
+- Schedule rows open Round results (RaceDetailScreen passes onOpen).
+- Gap wrappers normalised to 12; Reveal stagger 35ms; detail transition 240ms.
+
+
+## V1.69.0 (JS-only) mockup layouts
+- HomeScreen hero buttons, LastSession winner+podium, compact favourite driver cards; DriverScreen new hero (PhotoRise), stat trio, bars; FunHome games row; StatsHub stat of the day; WeekendResults inline on RaceDetail. Not seen rendered (sandbox has no data).
+
+
+## V1.69.1 (JS-only)
+- StandingsScreen row cards per mockup (Standings.dc.html). Not seen rendered (no data in sandbox).
+
+
+## V1.70.0 (JS-only) mockup layouts, verified by rendering
+- Verified with fixtures: scratchpad ui/fx.js fakes Jolpica so real screens render in the sandbox (shotfx.js). Compared to dc/project/*.dc.html mockups.
+- New: components/Timeline.js, lib/ics.js shareMeeting, SeasonSwitch pill prop, Card flat prop, Segmented filled accent.
+
+
+## V1.71.0 (JS-only)
+- TabBar BarView: expanding-pill bar (selected shows label, others icon only; highlight glides). Note: inactive labels are icon-only, so test scripts must click by accessibility label (sweep.js updated).
+- Photos: uncircled cutouts (contain) over faint team-colour disc: Home Your drivers, LastSession winner/P2/P3, Standings leader + rows. Photos are the user's local assets/drivers PNGs (not in the zip).
+
+## 1.72.0
+JS-only. Fixed entityByName driver ids (IX.idOf), Home/Standings/Driver/Team/Grid/Circuit/Settings/TabBar drag/Header changes per the user's 1.72 list. News background notifications still need a native build / server push.
+
+## 1.73.0
+JS-only. Screenshot-driven fixes (see changelog). Jolpica timed out in the user's diagnostics (server side); cache.js now waits 25s + one retry.
+
+## 1.73.1
+JS-only. Tab bar tabBarStyle absolute+transparent; Screen pads bottom by BottomTabBarHeightContext; Header absolute over a bg fade; OfflineBanner always absolute.
+
+## 1.73.2
+JS-only. React Navigation puts a custom tabBar in normal flow (tabBarStyle absolute is ignored), so BarView/NavBar now positions itself absolute (float prop); Screen pads bottom by 66+inset.
+
+## 1.74.0 (JS-only)
+Header offset by insets.top + translucent-black shadow gradient; tab bar drag removed, deeper shadow; colors.accentText (contrast-safe) applied to text/icons; colors.red is now fixed red; driver last-5 palette; StatRow passes year from badge; Settings bell scrolls to section; Lap chart hidden until race done; old-driver code fallback.
+Unverified on device: status-bar offset, bell scroll (web sandbox has no insets/native scroll).

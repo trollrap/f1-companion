@@ -80,9 +80,9 @@ export default function PredictScreen() {
         {!past.length && <Note>Your finished predictions show up here with the points they earned.</Note>}
         {results.map(({ r, pred, sc, gp }) => (
           <View key={r} style={{ marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.line }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}><Text style={s.val}>{gp ? shortName(gp.meeting_name) : `Round ${r}`}</Text><Text style={{ color: colors.accent, fontWeight: '800', fontSize: 18 }}>{sc.total} pts</Text></View>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}><Text style={s.val}>{gp ? shortName(gp.meeting_name) : `Round ${r}`}</Text><Text style={{ color: colors.accentText, fontWeight: '800', fontSize: 18 }}>{sc.total} pts</Text></View>
             <Text style={s.sub}>{`Pole ${name(pred.pole)}${sc.pole != null ? ` (+${sc.pole})` : ' (waiting)'}${sc.bonus != null ? ` · Bonus +${sc.bonus}` : ''}${sc.double ? ' · Doubled' : ''}`}</Text>
-            <Pressable onPress={() => setOpen(open === r ? null : r)} hitSlop={8} style={{ marginTop: 8, alignSelf: 'flex-start' }}><Text style={{ color: colors.accent, fontWeight: '700', fontSize: 15 }}>{open === r ? 'Hide picture' : 'Picture to share or save'}</Text></Pressable>
+            <Pressable onPress={() => setOpen(open === r ? null : r)} hitSlop={8} style={{ marginTop: 8, alignSelf: 'flex-start' }}><Text style={{ color: colors.accentText, fontWeight: '700', fontSize: 15 }}>{open === r ? 'Hide picture' : 'Picture to share or save'}</Text></Pressable>
             {open === r && (
               <View style={{ marginTop: 10, gap: 10 }}>
                 <View ref={pastRef} collapsable={false}><PredictCard gp={gp ? shortName(gp.meeting_name) : `Round ${r}`} flag={gp ? flagOf(gp.country_code) : ''} pole={pick(pred.pole)} podium={(pred.podium || []).map(pick)} marks={{ pole: sc.pole == null ? null : sc.pole > 0, podium: [0, 1, 2].map((i) => (sc.podium[i] == null ? null : sc.podium[i] === 3)) }} /></View>

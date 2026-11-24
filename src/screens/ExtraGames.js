@@ -74,7 +74,7 @@ export function YearReviewScreen() {
   return (
     <Screen header={false}>
       <View ref={ref} collapsable={false} style={{ padding: 16, borderRadius: 22, backgroundColor: colors.bg, borderWidth: 1, borderColor: alpha(colors.accent, 0.5), gap: 4 }}>
-        <Eyebrow color={colors.accent}>Your year in review</Eyebrow>
+        <Eyebrow color={colors.accentText}>Your year in review</Eyebrow>
         <Text style={{ color: colors.fg, fontSize: 26, fontWeight: '900', fontStyle: 'italic', marginBottom: 8 }}>F1 Companion</Text>
         {rows.length ? rows.map(([k, v]) => (
           <View key={k} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderTopWidth: 1, borderTopColor: alpha(colors.fg, 0.08) }}>

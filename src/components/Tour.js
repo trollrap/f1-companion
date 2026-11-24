@@ -22,14 +22,14 @@ export default function Tour({ visible, onClose }) {
       <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.78)', justifyContent: 'center', padding: 24 }}>
         <View style={{ backgroundColor: colors.surface, borderColor: colors.line, borderWidth: 1, borderRadius: 26, padding: 24 }}>
           <Animated.View style={{ opacity: v, transform: [{ translateY: v.interpolate({ inputRange: [0, 1], outputRange: [14, 0] }) }], alignItems: 'center', gap: 14, minHeight: 250, justifyContent: 'center' }}>
-            <View style={{ width: 76, height: 76, borderRadius: 38, backgroundColor: colors.accentSoft, alignItems: 'center', justifyContent: 'center' }}><Ionicons name={ic} size={38} color={colors.accent} /></View>
+            <View style={{ width: 76, height: 76, borderRadius: 38, backgroundColor: colors.accentSoft, alignItems: 'center', justifyContent: 'center' }}><Ionicons name={ic} size={38} color={colors.accentText} /></View>
             <Text style={{ color: colors.fg, fontSize: 26, fontWeight: '800', textAlign: 'center' }}>{title}</Text>
             <Text style={{ color: colors.muted, fontSize: 17, lineHeight: 24, textAlign: 'center' }}>{text}</Text>
           </Animated.View>
           <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 8, marginVertical: 14 }}>{SLIDES.map((_, k) => <View key={k} style={{ width: k === i ? 22 : 8, height: 8, borderRadius: 4, backgroundColor: k === i ? colors.accent : colors.line }} />)}</View>
           <View style={{ flexDirection: 'row', gap: 10 }}>
             <Pressable onPress={onClose} style={({ pressed }) => [{ flex: 1, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.line }, pressed && { opacity: 0.7 }]}><Text style={{ color: colors.muted, fontSize: 17, fontWeight: '700' }}>{last ? 'Close' : 'Skip'}</Text></Pressable>
-            <Pressable onPress={() => (last ? onClose() : setI(i + 1))} style={({ pressed }) => [{ flex: 1.4, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.accent }, pressed && { opacity: 0.85 }]}><Text style={{ color: '#fff', fontSize: 17, fontWeight: '700' }}>{last ? 'Start' : 'Next'}</Text></Pressable>
+            <Pressable onPress={() => (last ? onClose() : setI(i + 1))} style={({ pressed }) => [{ flex: 1.4, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.accent }, pressed && { opacity: 0.85 }]}><Text style={{ color: colors.onAccent, fontSize: 17, fontWeight: '700' }}>{last ? 'Start' : 'Next'}</Text></Pressable>
           </View>
         </View>
       </View>

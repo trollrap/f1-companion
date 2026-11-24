@@ -55,7 +55,7 @@ export default function RaceDayScreen() {
           <Eyebrow>Track conditions</Eyebrow>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 10, rowGap: 14 }}>
             {[['thermometer-outline', 'Air', `${num(w.air_temperature)}°`], ['flame-outline', 'Track', `${num(w.track_temperature)}°`], ['water-outline', 'Humidity', `${num(w.humidity, 0)}%`], ['flag-outline', 'Wind', `${num(w.wind_speed)} m/s`], [w.rainfall ? 'rainy-outline' : 'sunny-outline', 'Rain', w.rainfall ? 'Wet' : 'Dry']].map(([ic, l, v]) => (
-              <View key={l} style={{ width: '33.3%', alignItems: 'center', gap: 2 }}><Ionicons name={ic} size={22} color={colors.accent} /><Text style={{ color: colors.fg, fontSize: 20, fontWeight: '700' }}>{v}</Text><Text style={{ color: colors.muted, fontSize: 12 }}>{l}</Text></View>))}
+              <View key={l} style={{ width: '33.3%', alignItems: 'center', gap: 2 }}><Ionicons name={ic} size={22} color={colors.accentText} /><Text style={{ color: colors.fg, fontSize: 20, fontWeight: '700' }}>{v}</Text><Text style={{ color: colors.muted, fontSize: 12 }}>{l}</Text></View>))}
           </View>
         </Card>) : null}
       <Card>

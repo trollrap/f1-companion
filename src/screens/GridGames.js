@@ -46,7 +46,7 @@ export function DriverGridScreen() {
       <View style={{ flexDirection: 'row', marginLeft: 76, gap: 6 }}>{grid.cols.map((c) => <Text key={c} style={{ flex: 1, color: colors.gold, fontSize: 11, fontWeight: '800', textAlign: 'center' }} numberOfLines={2}>{c}</Text>)}</View>
       {[0, 1, 2].map((r) => (
         <View key={r} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6 }}>
-          <Text style={{ width: 70, color: colors.accent, fontSize: 11, fontWeight: '800' }} numberOfLines={2}>{grid.rows[r]}</Text>
+          <Text style={{ width: 70, color: colors.accentText, fontSize: 11, fontWeight: '800' }} numberOfLines={2}>{grid.rows[r]}</Text>
           {[0, 1, 2].map((c) => { const i = r * 3 + c; const f = cells[i]; return (
             <Pressable key={c} accessibilityRole="button" accessibilityLabel={`${grid.rows[r]}, ${grid.cols[c]}${f?.ok ? `, ${f.name}` : ''}`} onPress={() => { if (!f?.ok && !over) { setSel(i); setMsg(''); } }} style={{ flex: 1, height: 64, borderRadius: 12, alignItems: 'center', justifyContent: 'center', padding: 4, borderWidth: 1.5, borderColor: sel === i ? colors.accent : f?.ok ? colors.good : colors.line, backgroundColor: f?.ok ? alpha(colors.good, 0.2) : sel === i ? alpha(colors.accent, 0.14) : colors.card }}>
               <Text style={{ color: colors.fg, fontSize: 11, fontWeight: '700', textAlign: 'center' }} numberOfLines={3}>{f?.ok ? f.name : ''}</Text></Pressable>); })}

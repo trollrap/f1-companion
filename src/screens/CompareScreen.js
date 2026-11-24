@@ -117,7 +117,7 @@ export default function CompareScreen({ route }) {
         {grid.loading && <Skeleton rows={4} />}
         {grid.error && <ErrorNote error={grid.error} onRetry={grid.reload} />}
         {grid.v && (
-          <View style={{ gap: 10 }}>
+          <View style={{ gap: 12 }}>
             {Array.from({ length: Math.ceil(grid.v.filter((x) => x.driverId !== a.driverId).length / 2) }).map((_, row) => {
               const list = grid.v.filter((x) => x.driverId !== a.driverId).slice(row * 2, row * 2 + 2);
               return <View key={row} style={{ flexDirection: 'row', gap: 10 }}>{list.map((x) => <DriverBox key={x.driverId} height={104} d={{ ...x, number: x.permNumber }} onPress={() => pickB(x)} />)}{list.length === 1 ? <View style={{ flex: 1 }} /> : null}</View>;
@@ -162,7 +162,7 @@ export default function CompareScreen({ route }) {
       {common && !common.length ? <Note>These two never raced in the same season, so their careers are compared.</Note> : null}
       {tabs ? <Segmented value={mode} onChange={setTab} items={tabs} /> : null}
       {common && common.length > 1 && mode === 'season' ? <SeasonSwitch compact year={cyear} years={common} onChange={setPickYear} caption="seasons they shared" /> : null}
-      <Pressable onPress={() => { setB(null); setPickYear(null); }} style={s.change}><Text style={{ color: colors.accent, fontWeight: '700', fontSize: 15 }}>Change driver</Text></Pressable>
+      <Pressable onPress={() => { setB(null); setPickYear(null); }} style={s.change}><Text style={{ color: colors.accentText, fontWeight: '700', fontSize: 15 }}>Change driver</Text></Pressable>
       <ExportBar target={shotRef} />
     </Screen>
   );

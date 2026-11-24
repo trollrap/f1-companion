@@ -5,7 +5,7 @@ import { colors, alpha } from '../theme';
 // A card with a soft gradient of one colour (usually a team colour). Uses the native gradient view, so it always fills the card
 // (the old SVG version could stay at its first size when the card grew) and costs far less on long lists.
 const DIR = { diag: [{ x: 0, y: 0 }, { x: 1, y: 1 }], h: [{ x: 0, y: 0.5 }, { x: 1, y: 0.5 }], v: [{ x: 0.5, y: 0 }, { x: 0.5, y: 1 }] };
-export default function Grad({ color = colors.accent, from = 0.3, to = 0.03, dir = 'diag', radius = 18, border = 0.32, style, children }) {
+export default function Grad({ color = colors.accent, from = 0.3, to = 0.03, dir = 'diag', radius = 22, border = 0.32, style, children }) {
   const [start, end] = DIR[dir] || DIR.diag;
   return (
     <View style={[{ borderRadius: radius, overflow: 'hidden', backgroundColor: colors.surface, borderWidth: 1, borderColor: alpha(color, border) }, style]}>

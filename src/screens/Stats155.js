@@ -20,11 +20,11 @@ export function BirthdayScreen() {
   const put = (n) => { const x = { ...n, set: true }; if (x.d > LEN[x.m - 1]) x.d = LEN[x.m - 1]; setBd(x); kvSet('birthday:v1', x); };
   return (
     <Screen header={false}>
-      <StatHeader title="On my birthday" icon="gift" color={colors.accent} note="Pick a day. Only the month and day are used and they stay on this phone." />
+      <StatHeader title="On my birthday" icon="gift" color={colors.accentText} note="Pick a day. Only the month and day are used and they stay on this phone." />
       <Card><Dropdown value={bd.m} options={MONTHS.map((n, i) => [i + 1, n])} onChange={(m) => put({ ...bd, m })} />
         <Dropdown value={bd.d} options={Array.from({ length: LEN[bd.m - 1] }, (_, i) => [i + 1, String(i + 1)])} onChange={(v) => put({ ...bd, d: v })} prefix="Day" /></Card>
       <SectionLabel>{`Drivers born on ${bd.d} ${MONTHS[bd.m - 1]}`}</SectionLabel>
-      <StatList>{d.born.length ? d.born.map((x, i) => <StatRow key={x.name} i={i} medal badge={x.year} title={x.name} sub={`${x.starts} start${x.starts === 1 ? '' : 's'}`} value={x.titles ? `${x.titles} title${x.titles > 1 ? 's' : ''}` : x.wins ? `${x.wins} wins` : ''} color={colors.accent} />) : <Note>No F1 driver in the history was born on this day.</Note>}</StatList>
+      <StatList>{d.born.length ? d.born.map((x, i) => <StatRow key={x.name} i={i} medal badge={x.year} title={x.name} sub={`${x.starts} start${x.starts === 1 ? '' : 's'}`} value={x.titles ? `${x.titles} title${x.titles > 1 ? 's' : ''}` : x.wins ? `${x.wins} wins` : ''} color={colors.accentText} />) : <Note>No F1 driver in the history was born on this day.</Note>}</StatList>
       <SectionLabel color={colors.gold}>{`Grands Prix held on ${bd.d} ${MONTHS[bd.m - 1]}`}</SectionLabel>
       <StatList>{d.races.length ? d.races.map((x, i) => <StatRow key={`${x.year}${x.name}`} i={i} badge={x.year} title={x.name} sub={x.winner ? `won by ${x.winner}` : ''} color={colors.gold} />) : <Note>No Grand Prix was held on this date.</Note>}</StatList>
     </Screen>);

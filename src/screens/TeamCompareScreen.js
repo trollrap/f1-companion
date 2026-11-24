@@ -103,7 +103,7 @@ export default function TeamCompareScreen({ route }) {
       {common && !common.length ? <Note>These two teams never raced in the same season, so their records are compared.</Note> : null}
       {tabs ? <Segmented value={mode} onChange={setTab} items={tabs} /> : null}
       {common && common.length > 1 && mode === 'season' ? <SeasonSwitch compact year={cyear} years={common} onChange={setPickYear} caption="seasons they shared" /> : null}
-      <Pressable onPress={() => { setB(null); setPickYear(null); }} style={{ alignSelf: 'center', paddingVertical: 4 }}><Text style={{ color: colors.accent, fontWeight: '700', fontSize: 15 }}>Change team</Text></Pressable>
+      <Pressable onPress={() => { setB(null); setPickYear(null); }} style={{ alignSelf: 'center', paddingVertical: 4 }}><Text style={{ color: colors.accentText, fontWeight: '700', fontSize: 15 }}>Change team</Text></Pressable>
       <ExportBar target={shotRef} />
     </Screen>
   );

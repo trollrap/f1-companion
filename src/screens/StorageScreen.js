@@ -33,8 +33,9 @@ export default function StorageScreen() {
       <Card><Eyebrow>Storage</Eyebrow><Note>What the app keeps on this phone. The built-in F1 history ships with the app and is not part of this.</Note>{rows ? <Text style={{ color: colors.fg, fontSize: 26, fontWeight: '800', marginTop: 6 }}>{fmt(total)}</Text> : null}</Card>
       {(rows || []).map((g) => (
         <Card key={g.id}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}><Text style={{ color: colors.fg, fontWeight: '700', fontSize: 16, flex: 1 }}>{g.name}</Text><Text style={{ color: colors.accent, fontWeight: '800' }}>{fmt(g.bytes)}</Text></View>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}><Text style={{ color: colors.fg, fontWeight: '700', fontSize: 16, flex: 1 }}>{g.name}</Text><Text style={{ color: colors.accentText, fontWeight: '800' }}>{fmt(g.bytes)}</Text></View>
           <Text style={{ color: colors.muted, fontSize: 14 }}>{`${g.note} (${g.keys.length} item${g.keys.length === 1 ? '' : 's'})`}</Text>
+          <View style={{ height: 6, borderRadius: 3, backgroundColor: colors.line, marginTop: 8, overflow: 'hidden' }}><View style={{ width: `${Math.max(2, Math.round((g.bytes / Math.max(1, total)) * 100))}%`, height: 6, borderRadius: 3, backgroundColor: g.clear ? colors.accent : colors.muted }} /></View>
           {g.clear && g.keys.length ? <View style={{ marginTop: 8 }}><Btn icon="trash-outline" onPress={() => wipe(g)}>Clear</Btn></View> : null}
         </Card>))}
     </Screen>);

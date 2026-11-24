@@ -47,7 +47,7 @@ export function CompareSeasonsScreen() {
       {A && B ? (
         <ShareCard title={`${a} vs ${b}`}>
           <Card>
-            <View style={{ flexDirection: 'row', paddingBottom: 6 }}><View style={{ flex: 1 }} /><Text style={{ flex: 1.3, color: colors.accent, fontWeight: '900', fontSize: 18, textAlign: 'center' }}>{a}</Text><Text style={{ flex: 1.3, color: colors.gold, fontWeight: '900', fontSize: 18, textAlign: 'center' }}>{b}</Text></View>
+            <View style={{ flexDirection: 'row', paddingBottom: 6 }}><View style={{ flex: 1 }} /><Text style={{ flex: 1.3, color: colors.accentText, fontWeight: '900', fontSize: 18, textAlign: 'center' }}>{a}</Text><Text style={{ flex: 1.3, color: colors.gold, fontWeight: '900', fontSize: 18, textAlign: 'center' }}>{b}</Text></View>
             {rows.map(([k, x, y], i) => (
               <View key={k} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 8, borderTopWidth: 1, borderTopColor: colors.line }}>
                 <Text style={{ flex: 1, color: colors.muted, fontSize: 12, fontWeight: '700' }}>{k}</Text><Text style={{ flex: 1.3, color: colors.fg, fontWeight: '800', textAlign: 'center', fontSize: 14 }}>{String(x)}</Text><Text style={{ flex: 1.3, color: colors.fg, fontWeight: '800', textAlign: 'center', fontSize: 14 }}>{String(y)}</Text>

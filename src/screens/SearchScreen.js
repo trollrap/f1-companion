@@ -14,7 +14,7 @@ import { RULES } from '../data/rules';
 // One search box over everything that is stored offline: every driver and team in the history, the 25 circuits, the rules text and the app's own pages.
 const Row = ({ icon, title, sub, onPress }) => (
   <Pressable accessibilityRole="button" onPress={onPress} style={({ pressed }) => [{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10, borderTopWidth: 1, borderTopColor: colors.line }, pressed && { opacity: 0.7 }]}>
-    <Ionicons name={icon} size={20} color={colors.accent} />
+    <Ionicons name={icon} size={20} color={colors.accentText} />
     <View style={{ flex: 1 }}><Text style={{ color: colors.fg, fontSize: 16, fontWeight: '700' }} numberOfLines={1}>{title}</Text>{sub ? <Text style={{ color: colors.muted, fontSize: 13 }} numberOfLines={1}>{sub}</Text> : null}</View>
     <Ionicons name="chevron-forward" size={16} color={colors.muted} />
   </Pressable>);

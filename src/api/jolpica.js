@@ -115,7 +115,7 @@ const sprintRows = (d) => d.RaceTable.Races.flatMap((race) => (race.SprintResult
 const sumPts = (rows) => Math.round(rows.reduce((a, x) => a + Number(x.r.points || 0), 0) * 10) / 10;
 
 // Titles come from the built-in list of champions (see data/champions.js). A title in progress is never counted.
-export async function driverTitles(id, year) { return driverChampionYears(id).filter((y) => y < year).length; }
+export async function driverTitles(id, year) { return driverChampionYears(id).filter((y) => y <= year).length; }
 export async function constructorTitles(id, year) { return constructorChampionYears(id).filter((y) => y < year).length; }
 const lowGet = (path, ttl) => cachedJSON(`${BASE}${path}`, ttl, { low: true }).then((j) => j.MRData);
 

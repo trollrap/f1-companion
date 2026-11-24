@@ -24,8 +24,8 @@ export default function Dropdown({ value, options, onChange, prefix }) {
         <Animated.View style={[s.list, { opacity: fade, transform: [{ translateY: fade.interpolate({ inputRange: [0, 1], outputRange: [-6, 0] }) }] }]}>
           {options.map(([v, l], i) => (
             <Pressable key={String(v)} onPress={() => { onChange(v); flip(false); }} style={({ pressed }) => [s.opt, i > 0 && s.sep, pressed && { backgroundColor: colors.surface }]}>
-              <Text style={[s.optText, v === value && { color: colors.accent }]}>{l}</Text>
-              {v === value ? <Ionicons name="checkmark" size={18} color={colors.accent} /> : null}
+              <Text style={[s.optText, v === value && { color: colors.accentText }]}>{l}</Text>
+              {v === value ? <Ionicons name="checkmark" size={18} color={colors.accentText} /> : null}
             </Pressable>))}
         </Animated.View>
       )}

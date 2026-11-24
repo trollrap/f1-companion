@@ -27,18 +27,18 @@ export default function PinnedPagesScreen() {
   const Pill = ({ on, onPress, label }) => (<Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress} style={{ paddingHorizontal: 12, paddingVertical: 7, borderRadius: 14, backgroundColor: on ? alpha(colors.accent, 0.2) : alpha(colors.fg, 0.08), borderWidth: 1, borderColor: on ? colors.accent : colors.line }}><Text style={{ color: on ? colors.accent : colors.fg, fontWeight: '800', fontSize: 13 }}>{on ? 'Pinned' : 'Pin'}</Text></Pressable>);
   return (
     <Screen header={false}>
-      <StatHeader title="Pinned pages" icon="pin" color={colors.accent} note={`The shortcuts at the top of Home, in this order. ${have.length} of ${MAX} used.`} />
+      <StatHeader title="Pinned pages" icon="pin" color={colors.accentText} note={`The shortcuts at the top of Home, in this order. ${have.length} of ${MAX} used.`} />
       <SectionLabel>On Home</SectionLabel>
       {have.length ? (<View style={{ gap: 6 }}>{have.map((r, i) => (
         <View key={r} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, padding: 10, borderRadius: 14, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.line }}>
           <Text style={{ width: 20, color: colors.muted, fontWeight: '800' }}>{i + 1}</Text>
           <Text style={{ flex: 1, color: colors.fg, fontWeight: '700' }} numberOfLines={1}>{byRoute[r][1]}</Text>
           {[['arrow-up', -1, i === 0], ['arrow-down', 1, i === have.length - 1]].map(([ic, d, off]) => (<Pressable key={ic} accessibilityRole="button" accessibilityLabel={d < 0 ? 'Move up' : 'Move down'} disabled={off} hitSlop={6} onPress={() => move(i, d)} style={{ width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: alpha(colors.fg, 0.08), opacity: off ? 0.3 : 1 }}><Ionicons name={ic} size={17} color={colors.fg} /></Pressable>))}
-          <Pressable accessibilityRole="button" accessibilityLabel="Unpin" hitSlop={6} onPress={() => toggle(r)} style={{ width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: alpha(colors.accent, 0.18) }}><Ionicons name="close" size={18} color={colors.accent} /></Pressable>
+          <Pressable accessibilityRole="button" accessibilityLabel="Unpin" hitSlop={6} onPress={() => toggle(r)} style={{ width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: alpha(colors.accent, 0.18) }}><Ionicons name="close" size={18} color={colors.accentText} /></Pressable>
         </View>))}
         <Pressable accessibilityRole="button" onPress={() => set([])} style={{ alignSelf: 'flex-start', paddingVertical: 6 }}><Text style={{ color: colors.muted, fontWeight: '700' }}>Unpin all</Text></Pressable></View>)
         : <Note>Nothing pinned yet. Pick pages below.</Note>}
-      {msg ? <Text style={{ color: colors.accent, fontWeight: '700' }}>{msg}</Text> : null}
+      {msg ? <Text style={{ color: colors.accentText, fontWeight: '700' }}>{msg}</Text> : null}
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, borderRadius: 14, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.line }}>
         <Ionicons name="search" size={18} color={colors.muted} />
         <TextInput value={q} onChangeText={setQ} placeholder="Search pages" placeholderTextColor={colors.muted} accessibilityLabel="Search pages" autoCorrect={false} style={{ flex: 1, color: colors.fg, fontSize: 16, paddingVertical: 12 }} />

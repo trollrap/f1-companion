@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { View, Pressable, Switch, ScrollView } from 'react-native';
 import { Alert } from '../lib/dialog';
 import { Ionicons } from '@expo/vector-icons';
@@ -6,6 +6,7 @@ import { Text } from '../components/Text';
 import Screen, { Card, Eyebrow, Note } from '../components/Screen';
 import Grad, { Scrim } from '../components/Grad';
 import Press from '../components/Press';
+import { Avatar as ProfileAvatar, useProfile } from '../components/Avatar';
 import Reveal from '../components/Reveal';
 import Dropdown from '../components/Dropdown';
 import { Segmented, StatGrid } from '../components/Shared';
@@ -15,7 +16,12 @@ import { useFun, pickImage, uid, canPickImage } from '../fun/store';
 import { sessionsOf, standings, freeNumber, TEAM_COLORS } from '../fun/sim';
 import { profileStats } from '../fun/profile';
 import { usePrefs } from '../hooks/usePrefs';
-import { kvGet, kvSet } from '../lib/kv';
+import { kvGet, kvSet, today } from '../lib/kv';
+import { useFocusEffect } from '@react-navigation/native';
+import { loadCards } from '../lib/cards';
+import { TROPHIES } from './TrophyRoom';
+import { GRID_2027 } from '../data/season2027';
+import { runOf } from '../lib/shield';
 import { usePaddockMeta } from '../hooks/useTeams';
 import { CIRCUITS } from '../data/circuits';
 import { colors, alpha } from '../theme';
@@ -48,25 +54,71 @@ function Hero({ i, color, icon, kicker, title, info, onPress, height = 128, chil
     </Reveal>);
 }
 export function FunHome({ navigation }) {
-  const fun = useFun(); const [pins, toggle] = usePins(); const st = useGameStatus();
+  const [profile] = useProfile(); const fun = useFun(); const [pins, toggle] = usePins(); const st = useGameStatus();
   const live = fun.fantasies.filter((f) => !f.archived); const cur = live[0];
   let fInfo = fun.loaded ? 'Build your own season. Pick teams and races, then simulate.' : 'Loading your seasons…';
   if (cur) { const done = cur.races.filter((r) => sessionsOf(r).every((s) => cur.results?.[r.id]?.[s])).length; fInfo = `${live.length} saved season${live.length === 1 ? '' : 's'} · ${cur.name}: ${done}/${cur.races.length} races`; }
+  const [tally, setTally] = useState(null);
+  useFocusEffect(useCallback(() => { let off = false; (async () => { const m = await loadCards().catch(() => ({ owned: {}, keys: {} })); const keys = m.keys || {}; if (!off) setTally({ trophies: TROPHIES.filter((t) => keys[t[0]]).length, cards: Object.keys(m.owned || {}).length }); })(); return () => { off = true; }; }, []));
+  const streak = st.loaded ? runOf(new Set(st.days), today()).cur : null;
+  const sub = [profile.teamId ? (GRID_2027.find((t) => t.teamId === profile.teamId) || {}).name : null, profile.driverId ? String(profile.driverId).replace(/_/g, ' ') : null].filter(Boolean).join(' · ');
+  const tile = (c, ic, label, to) => (
+    <Pressable key={label} accessibilityRole="button" accessibilityLabel={label} onPress={() => navigation.navigate(to)} style={({ pressed }) => [{ flex: 1 }, pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] }]}>
+      <View style={{ height: 92, borderRadius: 22, padding: 14, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line, justifyContent: 'space-between' }}>
+        <View style={{ width: 30, height: 30, borderRadius: 10, backgroundColor: alpha(c, 0.28), alignItems: 'center', justifyContent: 'center' }}><Ionicons name={ic} size={17} color={c} /></View>
+        <Text style={{ color: colors.fg, fontWeight: '800', fontSize: 16 }}>{label}</Text>
+      </View>
+    </Pressable>);
+  const row = (c, ic, label, subt, to) => (
+    <Pressable key={label} accessibilityRole="button" onPress={() => navigation.navigate(to)} style={({ pressed }) => [{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, borderRadius: 18, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line }, pressed && { opacity: 0.85 }]}>
+      <View style={{ width: 36, height: 36, borderRadius: 12, backgroundColor: alpha(c, 0.22), alignItems: 'center', justifyContent: 'center' }}><Ionicons name={ic} size={18} color={c} /></View>
+      <View style={{ flex: 1 }}><Text style={{ color: colors.fg, fontWeight: '700', fontSize: 16 }}>{label}</Text>{subt ? <Text style={{ color: colors.muted, fontSize: 12 }} numberOfLines={1}>{subt}</Text> : null}</View>
+      <Ionicons name="chevron-forward" size={18} color={colors.muted} />
+    </Pressable>);
+  const gtile = (c, kick, label, onPress, key) => (
+    <Pressable key={key || label} accessibilityRole="button" accessibilityLabel={label} onPress={onPress} style={({ pressed }) => pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] }}>
+      <Grad color={c} from={0.25} to={0.03} radius={22} border={0.35} style={{ width: 150, height: 110, padding: 14, justifyContent: 'space-between' }}>
+        <Text style={{ color: c, fontSize: 11, fontWeight: '800', letterSpacing: 1.4 }}>{kick}</Text>
+        <Text style={{ color: colors.fg, fontWeight: '800', fontSize: 16 }} numberOfLines={2}>{label}</Text>
+      </Grad>
+    </Pressable>);
+  const KICK = { quiz: 'QUIZ', daily: 'DAILY', arcade: 'ARCADE', puzzle: 'PUZZLE', predict: 'PREDICT', two: 'TWO PLAYERS', whatif: 'WHAT IF' };
   return (
     <Screen>
-      <Reveal index={0}><Text style={{ color: colors.fg, fontSize: 24, fontWeight: '800', fontStyle: 'italic' }}>Other</Text></Reveal>
-      <Reveal index={1}><View style={{ flexDirection: 'row', gap: 10 }}>
-        <View style={{ flex: 1 }}><Hero i={1} color={colors.purple} icon="stats-chart" kicker="NUMBERS" title="Statistics" info="Records, streaks, odds, season reviews and more" onPress={() => navigation.navigate('StatsHub')} height={150} /></View>
-        <View style={{ flex: 1 }}><Hero i={1} color={colors.gold} icon="person-circle" kicker="YOU" title="My profile" info="Name, photo, favourites, number" onPress={() => navigation.navigate('Profile')} height={150} /></View>
-      </View></Reveal>
-      <Reveal index={1}><DailyBanner navigation={navigation} st={st} /></Reveal>
-      <Reveal index={1}><ChallengeCard navigation={navigation} /></Reveal>
+      <Reveal index={0}><Text style={{ color: colors.fg, fontSize: 30, fontWeight: '800' }}>Other</Text></Reveal>
+      <Reveal index={1}><Press onPress={() => navigation.navigate('Profile')} accessibilityLabel="My profile">
+        <Grad color={colors.accent} from={0.3} to={0.02} radius={28} border={0.4} style={{ padding: 18 }}>
+          <Text style={{ color: colors.accentText, fontSize: 10, fontWeight: '800', letterSpacing: 1.8 }}>F1 COMPANION PROFILE</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, marginTop: 10 }}>
+            <ProfileAvatar p={profile} size={68} />
+            <View style={{ flex: 1 }}><Text style={{ color: colors.fg, fontSize: 24, fontWeight: '800' }} numberOfLines={1}>{profile.name || 'Create your profile'}</Text><Text style={{ color: colors.onSoft, fontSize: 12 }} numberOfLines={1}>{sub || 'Name, photo, favourites and number'}</Text></View>
+            {profile.number ? <Text style={{ color: alpha(colors.fg, 0.85), fontSize: 44, fontWeight: '800', fontStyle: 'italic' }}>{profile.number}</Text> : <Ionicons name="chevron-forward" size={22} color={colors.fg} />}
+          </View>
+          <View style={{ flexDirection: 'row', gap: 20, marginTop: 12 }}>
+            {[[tally ? `${tally.trophies}/${TROPHIES.length}` : '–', 'Trophies', colors.gold], [tally ? String(tally.cards) : '–', 'Cards', colors.fg], [streak == null ? '–' : String(streak), 'Day streak', colors.fg]].map(([v, l, c]) => (
+              <View key={l}><Text style={{ color: c, fontSize: 20, fontWeight: '800' }}>{v}</Text><Text style={{ color: colors.muted, fontSize: 11 }}>{l}</Text></View>))}
+          </View>
+        </Grad>
+      </Press></Reveal>
+      <Reveal index={2}><View style={{ flexDirection: 'row', gap: 12 }}>{tile(colors.purple, 'stats-chart', 'Statistics', 'StatsHub')}{tile(colors.good, 'flag', 'Fantasy', 'FantasyHub')}</View></Reveal>
       {st.resume.length ? <ContinueRow navigation={navigation} st={st} pins={pins} toggle={toggle} /> : null}
       {pins.length ? <PinnedRow navigation={navigation} st={st} pins={pins} toggle={toggle} /> : null}
-      <Hero i={2} color={colors.accent} icon="flag" kicker="FANTASY" title="Fantasy seasons" info={fInfo} onPress={() => navigation.navigate('FantasyHub')} />
-      <Hero i={3} color={colors.gold} icon="game-controller" kicker="GAMES" title="Games and quizzes" info={`${GAMES.length} games: quizzes, puzzles, arcade, two-player and what-ifs`} onPress={() => navigation.navigate('FunGames')} />
-      <Hero i={4} color={colors.red} icon="albums" kicker="COLLECT" title="Driver cards" info="Open packs and build your collection" onPress={() => navigation.navigate('Cards')} height={110} />
-      <Hero i={5} color={colors.purple} icon="ribbon" kicker="ACHIEVE" title="Trophy room" info="Your achievements and personal bests" onPress={() => navigation.navigate('TrophyRoom')} height={100} />
+      <Reveal index={3}><View style={{ gap: 12 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' }}><Text style={{ color: colors.muted, fontSize: 11, letterSpacing: 1.8, fontWeight: '700' }}>GAMES</Text><Pressable onPress={() => navigation.navigate('FunGames')} hitSlop={8}><Text style={{ color: colors.accentText, fontWeight: '700', fontSize: 14 }}>{`All ${GAMES.length}`}</Text></Pressable></View>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12 }}>
+          {gtile(colors.gold, 'DAILY', 'Daily puzzle', () => navigation.navigate('DailyPuzzle'))}
+          {gtile(colors.good, 'DAILY', 'Daily challenges', () => navigation.navigate('DailyChallenges'))}
+          {GAMES.slice(0, 12).map((g, gi) => gtile([colors.gold, colors.good, colors.purple, colors.accent][gi % 4], KICK[g.c] || String(g.c || 'GAME').toUpperCase(), g.n, () => navigation.navigate(g.r), g.r))}
+        </ScrollView>
+      </View></Reveal>
+      <Reveal index={4}><Text style={{ color: colors.muted, fontSize: 11, letterSpacing: 1.8, fontWeight: '700' }}>YOU</Text></Reveal>
+      <Reveal index={5}><View style={{ gap: 8 }}>
+        {row(colors.accent, 'person', 'Edit profile', null, 'Profile')}
+        {row(colors.gold, 'ribbon', 'Trophy room', 'Your achievements and personal bests', 'TrophyRoom')}
+        {row(colors.red, 'albums', 'Driver cards', 'Open packs and build your collection', 'Cards')}
+        {row(colors.purple, 'game-controller', 'Games and quizzes', `${GAMES.length} games: quizzes, puzzles, arcade, two-player`, 'FunGames')}
+        {row(colors.good, 'flag', 'Fantasy seasons', fInfo, 'FantasyHub')}
+      </View></Reveal>
       <Reveal index={6}><Note>Just for fun: nothing here touches the real data.</Note></Reveal>
     </Screen>
   );
@@ -75,7 +127,7 @@ export function FunHome({ navigation }) {
 /* ------------------------------------------------------------------ own profile */
 export function FunProfile({ navigation }) {
   const fun = useFun(); const { prefs } = usePrefs(); const meta = usePaddockMeta(); const real = realNumbers(meta);
-  const base = fun.profile || { name: prefs.opts.name || '', number: '', team: 'My Team', color: colors.accent, photo: null, seasons: [] };
+  const base = fun.profile || { name: prefs.opts.name || '', number: '', team: 'My Team', color: colors.accentText, photo: null, seasons: [] };
   const [d, setD] = useState(base); const [msg, setMsg] = useState(''); const [dirty, setDirty] = useState(false); const init = useRef(false);
   useEffect(() => { if (fun.loaded && !init.current) { init.current = true; if (fun.profile) setD(fun.profile); } }, [fun.loaded]);
   const set = (k, v) => { setD((x) => ({ ...x, [k]: v })); setDirty(true); };
@@ -128,7 +180,7 @@ export function FunProfile({ navigation }) {
         <StatGrid cols={3} items={[['Seasons', dash(stats.seasons)], ['Races', dash(stats.races)], ['Wins', dash(stats.wins)], ['Podiums', dash(stats.podiums)], ['Poles', dash(stats.poles)], ['Best finish', stats.best ? `P${stats.best}` : '—'], ['Points', dash(stats.points)], ['DNF', dash(stats.dnf)], ['First year', dash(stats.first)]]} />
         <Note>Counts the seasons you add below and every fantasy season where you are the marked driver.</Note>
       </Card>
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}><Eyebrow>Seasons raced</Eyebrow><Pressable onPress={addSeason} hitSlop={8}><Text style={{ color: colors.accent, fontWeight: '700', fontSize: 16 }}>+ Add season</Text></Pressable></View>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}><Eyebrow>Seasons raced</Eyebrow><Pressable onPress={addSeason} hitSlop={8}><Text style={{ color: colors.accentText, fontWeight: '700', fontSize: 16 }}>+ Add season</Text></Pressable></View>
       {d.seasons.length === 0 && <Note>Add the seasons you raced in, then your results race by race.</Note>}
       {d.seasons.map((s) => <SeasonEditor key={s.id} s={s} color={d.color} onChange={(fn) => upSeason(s.id, fn)} onDelete={() => set('seasons', d.seasons.filter((x) => x.id !== s.id))} />)}
       {dirty ? <Note>You have unsaved changes: tap Save driver.</Note> : null}

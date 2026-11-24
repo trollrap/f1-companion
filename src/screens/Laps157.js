@@ -38,7 +38,7 @@ export default function LapChartScreen() {
   const race = done.find((r) => r.round === round);
   return (
     <Screen header={false}>
-      <StatHeader title="Lap chart" icon="pulse" color={colors.accent} note="Watch a race unfold: every car's position from the grid to the flag. Press play or drag the lap buttons. Tap a driver to follow them." />
+      <StatHeader title="Lap chart" icon="pulse" color={colors.accentText} note="Watch a race unfold: every car's position from the grid to the flag. Press play or drag the lap buttons. Tap a driver to follow them." />
       <Card style={{ gap: 10 }}>
         <Dropdown value={year} options={YEARS.map((y) => [y, String(y)])} onChange={(v) => { setYear(Number(v)); setRound(null); }} prefix="Season" />
         {done.length ? <Dropdown value={round || done[done.length - 1].round} options={done.map((r) => [r.round, `R${r.round} · ${r.raceName.replace(' Grand Prix', '')}`])} onChange={(v) => setRound(Number(v))} prefix="Race" /> : null}
@@ -79,7 +79,7 @@ export default function LapChartScreen() {
             <Text style={{ width: 26, color: colors.fg, fontWeight: '800' }}>{i + 1}</Text>
             <View style={{ width: 4, height: 22, borderRadius: 2, backgroundColor: teamColor(c.teamId) }} />
             <Text style={{ flex: 1, color: colors.fg, fontWeight: '700' }} numberOfLines={1}>{c.name}</Text>
-            {lap > 0 ? <Text style={{ color: d > 0 ? colors.good : d < 0 ? colors.accent : colors.muted, fontWeight: '800', fontSize: 13 }}>{d > 0 ? `▲${d}` : d < 0 ? `▼${-d}` : '–'}</Text> : <Text style={{ color: colors.muted, fontSize: 12 }}>{`P${i + 1}`}</Text>}
+            {lap > 0 ? <Text style={{ color: d > 0 ? colors.good : d < 0 ? colors.accentText : colors.muted, fontWeight: '800', fontSize: 13 }}>{d > 0 ? `▲${d}` : d < 0 ? `▼${-d}` : '–'}</Text> : <Text style={{ color: colors.muted, fontSize: 12 }}>{`P${i + 1}`}</Text>}
           </Pressable>); })}</View>
         {race ? <Note>{`${race.raceName} ${year}. Positions come from the official lap timing. A car disappears from the chart when it retires.`}</Note> : null}
       </>) : null}

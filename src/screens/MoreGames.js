@@ -182,7 +182,7 @@ export function WinnerGuessScreen() {
   return (
     <Screen header={false}>
       <Card hero><Eyebrow>{`Race ${i + 1} of ${total}  ·  score ${score}`}</Eyebrow><Text style={{ color: colors.fg, fontSize: 24, fontWeight: '900', marginTop: 10 }}>{`${cur.y} ${cur.race}`}</Text><Text style={{ color: colors.muted, marginTop: 4 }}>Who won?</Text>
-        {hint ? <Text style={{ color: colors.gold, marginTop: 8, fontWeight: '700' }}>{`Clue: the winner drove for ${cur.team}.`}</Text> : !pick ? <Pressable accessibilityRole="button" onPress={() => setHint(true)} style={{ marginTop: 8 }}><Text style={{ color: colors.accent, fontWeight: '800' }}>Show the team clue (half a point)</Text></Pressable> : null}</Card>
+        {hint ? <Text style={{ color: colors.gold, marginTop: 8, fontWeight: '700' }}>{`Clue: the winner drove for ${cur.team}.`}</Text> : !pick ? <Pressable accessibilityRole="button" onPress={() => setHint(true)} style={{ marginTop: 8 }}><Text style={{ color: colors.accentText, fontWeight: '800' }}>Show the team clue (half a point)</Text></Pressable> : null}</Card>
       {cur.opts.map((o) => <Pressable key={o} accessibilityRole="button" onPress={() => answer(o)} style={({ pressed }) => [optStyle(pick && o === cur.ans, pick === o && o !== cur.ans), pressed && { opacity: 0.8 }]}><Text style={{ color: colors.fg, fontSize: 17, fontWeight: '700' }}>{o}</Text></Pressable>)}
       {pick ? <Note>{`${cur.ans} won it, starting from P${cur.grid}.`}</Note> : null}
     </Screen>);

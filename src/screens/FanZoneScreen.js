@@ -83,7 +83,7 @@ export default function FanZoneScreen() {
               <Pressable key={r.driverId} onPress={() => vote(r)} style={({ pressed }) => [{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10, paddingHorizontal: 10, borderRadius: 12, backgroundColor: on ? alpha(colors.accent, 0.18) : 'transparent' }, pressed && { opacity: 0.7 }]}>
                 <Text style={{ width: 26, color: colors.muted, fontWeight: '700' }}>{r.position}</Text>
                 <Text style={{ flex: 1, color: colors.fg, fontSize: 18, fontWeight: on ? '800' : '600' }}>{`${r.first || ''} ${r.last || r.name || ''}`}</Text>
-                {on ? <Ionicons name="checkmark-circle" size={22} color={colors.accent} /> : null}
+                {on ? <Ionicons name="checkmark-circle" size={22} color={colors.accentText} /> : null}
               </Pressable>); })}
             <Note>Your vote stays on this phone. Tap another driver to change it.</Note>
           </View>)}

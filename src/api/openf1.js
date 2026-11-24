@@ -115,7 +115,7 @@ export async function racePenalties(sessionKey) {
     if (!t || /SERVED|DELETED|NO FURTHER|NO INVESTIGATION|NOTED|UNDER INVESTIGATION|WILL BE INVESTIGATED|REVIEW|WARNING|WITHDRAWN|CANCELLED/.test(t)) return;
     const num = m.driver_number ?? Number((/CAR (\d+)/.exec(t) || [])[1]); if (!num) return;
     let x, p = null;
-    if ((x = /(\d+) PLACE GRID PENALTY/.exec(t))) p = { kind: 'grid', places: Number(x[1]), text: `Grid −${x[1]}` };
+    if ((x = /(\d+)[ -](?:GRID )?PLACES?[ -](?:GRID )?(?:PENALTY|DROP)/.exec(t) || /GRID (?:PENALTY|DROP) OF (\d+)/.exec(t) || /(\d+)[ -]GRID PLACES?/.exec(t))) p = { kind: 'grid', places: Number(x[1]), text: `Grid −${x[1]}` };
     else if (/BACK OF THE GRID/.test(t)) p = { kind: 'back', text: 'Back of the grid' };
     else if (/PIT ?LANE/.test(t) && /START/.test(t)) p = { kind: 'pit', text: 'Pit lane start' };
     else if ((x = /(\d+) SECOND TIME PENALTY/.exec(t))) p = { kind: 'time', secs: Number(x[1]), text: `+${x[1]}s penalty` };

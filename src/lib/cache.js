@@ -35,10 +35,13 @@ function refresh(url, key, stale, signal, trackIt = true, low = false) {
   if (ui.offline) return stale ? Promise.resolve(stale) : Promise.reject(new Error('Offline mode is on and nothing is saved for this yet.'));
   if (inflight.has(url)) return inflight.get(url);
   const p = throttled(url, async () => {
-    const ctrl = signal ? null : new AbortController(); const timer = ctrl && setTimeout(() => ctrl.abort(), 15000);
+    const ctrl = signal ? null : new AbortController(); const timer = ctrl && setTimeout(() => ctrl.abort(), 25000);
     try {
       let r;
-      try { r = await fetchRetry(url, signal || ctrl.signal); } catch (e) { netFail(); throw e; }
+      try { r = await fetchRetry(url, signal || ctrl.signal); } catch (e) {
+        // a hung or dropped request gets one more try with a fresh clock before the screen is told it failed
+        if (!signal && !stale) { try { clearTimeout(timer); const c2 = new AbortController(); const t2 = setTimeout(() => c2.abort(), 20000); try { r = await fetchRetry(url, c2.signal); } finally { clearTimeout(t2); } } catch (e2) { netFail(); throw e2; } } else { netFail(); throw e; }
+      }
       netOk(); // the server answered, so the device is online even if the answer is an error
       if (!r.ok) { if (stale) return stale; throw new Error(`HTTP ${r.status}`); } // serve stale data on error
       const v = await r.json();

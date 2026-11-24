@@ -11,5 +11,5 @@ module.exports = ({ config }) => {
   const fp = JSON.stringify([Object.keys(deps).sort().map((k) => [k, deps[k]]), [...permissions].sort(), (config.plugins || []).map((p) => (Array.isArray(p) ? p[0] : p)).sort()]);
   const runtimeVersion = crypto.createHash('sha1').update(fp).digest('hex').slice(0, 10);
   // Updates are never downloaded or applied behind your back: the app only looks when you open Settings or the banner, and installs when you tap it.
-  return { ...config, runtimeVersion, updates: { ...(config.updates || {}), checkAutomatically: 'NEVER' }, android: { ...(config.android || {}), permissions } };
+  return { ...config, runtimeVersion, updates: { ...(config.updates || {}), url: 'https://u.expo.dev/4b842ba8-89bf-43a1-87f3-43da42bd0735', checkAutomatically: 'NEVER' }, extra: { ...(config.extra || {}), eas: { ...((config.extra || {}).eas || {}), projectId: '4b842ba8-89bf-43a1-87f3-43da42bd0735' } }, android: { ...(config.android || {}), permissions } };
 };

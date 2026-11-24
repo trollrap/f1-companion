@@ -622,7 +622,7 @@ function NewsCard({ a, compact, full, onPress }) {
   const col = a.color || colors.accent; const body = Array.isArray(a.body) ? a.body : [a.body];
   const SERIF = { fontFamily: 'sans-serif' }; // the phone's normal reading font, not the app's display font
   const inner = full ? (
-    <View style={{ gap: 14 }}>
+    <View style={{ gap: 12 }}>
       <Text style={{ color: col, fontFamily: 'label', fontSize: 11, letterSpacing: 1.8 }}>{`${a.kicker} · ${a.kind.toUpperCase()} · SEASON ${a.season}`}</Text>
       <RNText style={{ ...SERIF, color: colors.fg, fontSize: 27, fontWeight: '800', lineHeight: 33 }}>{a.title}</RNText>
       <View style={{ height: 3, width: 48, borderRadius: 2, backgroundColor: col }} />
@@ -676,7 +676,7 @@ export function FantasyRace({ route, navigation }) {
     return <ResultLine key={r.driverId} pos={r.pos} first={d.first} last={d.last} color={tcol(v, d.teamId)} right={r.time} sub={sub} tags={tags} fav={d.me} fastest={!!r.fl} flash={focus === d.id} photoSrc={driverPic(d)} logoSrc={teamPic(t)} index={anim ? Math.min(i, 8) : undefined} onPress={anim ? () => navigation.navigate('FantasyDriver', { id, driverId: d.id, season: season || seasonNo(f) }) : undefined} />;
   };
   const cardRows = rows.map((r) => { const d = drv(r.driverId); return { key: r.driverId, pos: r.pos, color: tcol(v, d?.teamId), name: d ? surname(d) : '?', photo: d ? driverPic(d) : null, code: d ? codeOf(d) : '', logo: teamPic(team(d?.teamId)), team: team(d?.teamId)?.name || '', right: !isQ && r.points ? `${r.time}  +${r.points}` : r.time }; });
-  const chip = (icon, text) => <View key={text} style={{ flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, height: 30, borderRadius: 15, backgroundColor: colors.surface2, borderWidth: 1, borderColor: colors.line }}><Ionicons name={icon} size={14} color={colors.accent} /><Text style={{ color: colors.fg, fontSize: 13, fontWeight: '600' }}>{text}</Text></View>;
+  const chip = (icon, text) => <View key={text} style={{ flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, height: 30, borderRadius: 15, backgroundColor: colors.surface2, borderWidth: 1, borderColor: colors.line }}><Ionicons name={icon} size={14} color={colors.accentText} /><Text style={{ color: colors.fg, fontSize: 13, fontWeight: '600' }}>{text}</Text></View>;
   return (
     <Screen header={false}>
       <Grad color={colors.accent} from={0.3} to={0.03} border={0.4} style={{ padding: 14 }}>
@@ -711,7 +711,7 @@ function Fold({ items, limit = 5, label, render, gap = 8 }) {
           <View pointerEvents="none" style={{ opacity: 0.28 }}>{render(items[limit], limit)}</View>
           <View style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 6 }}><Text style={{ color: colors.fg, fontSize: 16, fontWeight: '800' }}>{label}</Text><Ionicons name="chevron-down" size={18} color={colors.fg} /></View>
         </Pressable>) : null}
-      {more && open ? <Pressable onPress={() => setOpen(false)} style={{ alignSelf: 'center', flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 6 }}><Text style={{ color: colors.accent, fontWeight: '700', fontSize: 15 }}>Show fewer</Text><Ionicons name="chevron-up" size={16} color={colors.accent} /></Pressable> : null}
+      {more && open ? <Pressable onPress={() => setOpen(false)} style={{ alignSelf: 'center', flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 6 }}><Text style={{ color: colors.accentText, fontWeight: '700', fontSize: 15 }}>Show fewer</Text><Ionicons name="chevron-up" size={16} color={colors.accentText} /></Pressable> : null}
     </View>
   );
 }
@@ -762,7 +762,7 @@ function AllStats({ f, v, n, closed, navigation }) {
         {sx ? <><SummaryCard shotRef={shotS} title={`${f.name} · season ${n}`} sub={`${sm.races} races`} hero={hero} rows={rows} /><ExportBar target={shotS} /></> : null}
       </Section>);
   }
-  return (<View style={{ gap: 16 }}>
+  return (<View style={{ gap: 12 }}>
     {hofCard}
     {f.steward?.total ? <Card><Eyebrow>Race Director record</Eyebrow><Text style={{ color: colors.fg, fontSize: 16, fontWeight: '700', marginTop: 6 }}>{`${f.steward.right} of ${f.steward.total} steward calls right (${Math.round((f.steward.right / f.steward.total) * 100)}%)`}</Text></Card> : null}
     {f.ended ? <Grad color={colors.gold} from={0.3} to={0.04} border={0.5} style={{ padding: 14 }}><Text style={{ color: colors.gold, fontFamily: 'label', fontSize: 11, letterSpacing: 2 }}>FINAL STATS</Text><Text style={{ color: colors.fg, fontSize: 22, fontWeight: '800', marginTop: 4 }}>{f.name}</Text><Text style={{ color: colors.muted, fontSize: 15 }}>{`${a.seasons} season${a.seasons > 1 ? 's' : ''} · ${a.races} races`}</Text></Grad> : null}
@@ -807,7 +807,7 @@ function AllStats({ f, v, n, closed, navigation }) {
     </Section>
     {(a.rec.wins || a.rec.points) && (
       <Section title="Records">
-        <Card><View style={{ gap: 10 }}>
+        <Card><View style={{ gap: 12 }}>
           {a.rec.wins ? <Text style={{ color: colors.fg, fontSize: 16 }}>{`Most wins in a season: ${a.rec.wins.val} · ${a.rec.wins.name} (S${a.rec.wins.n})`}</Text> : null}
           {a.rec.points ? <Text style={{ color: colors.fg, fontSize: 16 }}>{`Most points in a season: ${a.rec.points.val} · ${a.rec.points.name} (S${a.rec.points.n})`}</Text> : null}
           {a.rec.margin && a.champs.length > 1 ? <Text style={{ color: colors.fg, fontSize: 16 }}>{`Biggest title margin: ${a.rec.margin.val} pts · ${a.rec.margin.name} (S${a.rec.margin.n})`}</Text> : null}

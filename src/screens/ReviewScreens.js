@@ -59,7 +59,7 @@ export function SeasonReviewScreen() {
           <Tile icon="flag" k="RACES" v={String(F.races)} s={`${F.winners} different winners`} color={colors.good} />
           <Tile icon="trophy" k="MOST WINS" v={F.mostWins ? `${F.mostWins.name} (${F.mostWins.n})` : '-'} color={colors.gold} name={F.mostWins?.name} />
           <Tile icon="shield" k="TOP TEAM" v={F.mostTeamWins ? `${F.mostTeamWins.name} (${F.mostTeamWins.n})` : '-'} color={tcol} name={F.mostTeamWins?.name} />
-          <Tile icon="flash" k="MOST POLES" v={F.mostPoles ? `${F.mostPoles.name} (${F.mostPoles.n})` : '-'} color={colors.accent} name={F.mostPoles?.name} />
+          <Tile icon="flash" k="MOST POLES" v={F.mostPoles ? `${F.mostPoles.name} (${F.mostPoles.n})` : '-'} color={colors.accentText} name={F.mostPoles?.name} />
           <Tile icon="podium" k="MOST PODIUMS" v={S.mostPodiums ? `${S.mostPodiums.name} (${S.mostPodiums.n})` : '-'} color={colors.purple} name={S.mostPodiums?.name} />
           <Tile icon="checkmark-done" k="FINISH RATE" v={`${Math.round(F.finishRate * 100)}%`} s={`${F.avgCars.toFixed(0)} cars per race`} color={colors.good} />
         </View>
@@ -115,7 +115,7 @@ export function CircuitCompareScreen() {
       {A && B ? (
         <ShareCard title={`${A.name} vs ${B.name}`}>
           <Card>
-            <View style={{ flexDirection: 'row', paddingBottom: 4 }}><View style={{ flex: 1 }}><Text style={{ color: colors.accent, fontWeight: '900', fontSize: 16 }} numberOfLines={2}>{A.name}</Text><Text style={{ color: colors.muted, fontSize: 12 }}>{A.place}</Text></View><View style={{ width: 10 }} /><View style={{ flex: 1 }}><Text style={{ color: colors.gold, fontWeight: '900', fontSize: 16 }} numberOfLines={2}>{B.name}</Text><Text style={{ color: colors.muted, fontSize: 12 }}>{B.place}</Text></View></View>
+            <View style={{ flexDirection: 'row', paddingBottom: 4 }}><View style={{ flex: 1 }}><Text style={{ color: colors.accentText, fontWeight: '900', fontSize: 16 }} numberOfLines={2}>{A.name}</Text><Text style={{ color: colors.muted, fontSize: 12 }}>{A.place}</Text></View><View style={{ width: 10 }} /><View style={{ flex: 1 }}><Text style={{ color: colors.gold, fontWeight: '900', fontSize: 16 }} numberOfLines={2}>{B.name}</Text><Text style={{ color: colors.muted, fontSize: 12 }}>{B.place}</Text></View></View>
             {rows.map(([k, label]) => { const x = statOf(A, k), y = statOf(B, k); return (
               <View key={k} style={{ paddingVertical: 8, borderTopWidth: 1, borderTopColor: colors.line }}><Text style={{ color: colors.muted, fontSize: 11, fontWeight: '800' }}>{label.toUpperCase()}</Text>
                 <View style={{ flexDirection: 'row', marginTop: 2 }}><Text style={{ flex: 1, color: colors.fg, fontWeight: '800' }}>{x}</Text><View style={{ width: 10 }} /><Text style={{ flex: 1, color: colors.fg, fontWeight: '800' }}>{y}</Text></View>{bar(k, x, y)}</View>); })}

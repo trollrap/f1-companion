@@ -55,7 +55,7 @@ export function Answer({ label, sub, letter, state = '', onPress, disabled }) {
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderRadius: 16, borderWidth: 1.5, borderColor: tone, backgroundColor: right ? alpha(colors.good, 0.16) : wrong ? alpha(colors.accent, 0.16) : colors.card }}>
           {letter ? <View style={{ width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center', backgroundColor: right ? colors.good : wrong ? colors.accent : alpha(colors.fg, 0.1) }}><Text style={{ color: right || wrong ? '#fff' : colors.onSoft, fontWeight: '800', fontSize: 13 }}>{letter}</Text></View> : null}
           <View style={{ flex: 1 }}><Text style={{ color: colors.fg, fontSize: 16, fontWeight: '700' }}>{label}</Text>{sub ? <Text style={{ color: colors.muted, fontSize: 12, marginTop: 1 }}>{sub}</Text> : null}</View>
-          {right ? <Ionicons name="checkmark-circle" size={22} color={colors.good} /> : wrong ? <Ionicons name="close-circle" size={22} color={colors.accent} /> : null}
+          {right ? <Ionicons name="checkmark-circle" size={22} color={colors.good} /> : wrong ? <Ionicons name="close-circle" size={22} color={colors.accentText} /> : null}
         </View>
       </Press>
     </Animated.View>);
@@ -64,7 +64,7 @@ export function Answer({ label, sub, letter, state = '', onPress, disabled }) {
 // A short line under a question: explains the answer.
 export function Feedback({ ok, children }) {
   return (<View style={{ flexDirection: 'row', gap: 8, padding: 12, borderRadius: 14, backgroundColor: alpha(ok ? colors.good : colors.accent, 0.14) }}>
-    <Ionicons name={ok ? 'checkmark-circle' : 'information-circle'} size={18} color={ok ? colors.good : colors.accent} /><Text style={{ flex: 1, color: colors.fg, fontSize: 14 }}>{children}</Text></View>);
+    <Ionicons name={ok ? 'checkmark-circle' : 'information-circle'} size={18} color={ok ? colors.good : colors.accentText} /><Text style={{ flex: 1, color: colors.fg, fontSize: 14 }}>{children}</Text></View>);
 }
 
 // The result panel at the end of a game.

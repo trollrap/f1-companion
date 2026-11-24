@@ -15,5 +15,5 @@ export function recapOf(race, standings) {
   if (fl) lines.push({ k: 'Fastest lap', v: `${name(fl)} (${fl.team})` });
   lines.push({ k: 'Retirements', v: out ? String(out) : 'None' });
   if (standings && standings.length > 1) { const a = standings[0], b = standings[1]; const g = a.points - b.points; lines.push({ k: 'Title fight', v: g === 0 ? `${a.last} and ${b.last} level on ${a.points}` : `${a.last} leads ${b.last} by ${g}` }); }
-  return { title: race.name, round: race.round, lines };
+  return { title: race.name, round: race.round, lines, win, podium: rows.filter((r) => r.position <= 3) };
 }

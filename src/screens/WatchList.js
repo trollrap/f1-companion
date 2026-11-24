@@ -28,7 +28,7 @@ export default function WatchListScreen({ navigation }) {
             <Ionicons name={x.done ? 'checkmark-circle' : 'ellipse-outline'} size={26} color={x.done ? colors.good : colors.muted} />
           </Pressable>
           <Pressable style={{ flex: 1 }} accessibilityRole="button" onPress={() => navigation.navigate('TimeMachine', { year: x.y, round: x.r })}>
-            <Text style={{ color: x.done ? colors.muted : colors.fg, fontSize: 16, fontWeight: '700' }}>{`${x.y} ${x.name}`}</Text><Text style={{ color: colors.accent, fontSize: 12, fontWeight: '700' }}>Open in Time machine</Text>
+            <Text style={{ color: x.done ? colors.muted : colors.fg, fontSize: 16, fontWeight: '700' }}>{`${x.y} ${x.name}`}</Text><Text style={{ color: colors.accentText, fontSize: 12, fontWeight: '700' }}>Open in Time machine</Text>
           </Pressable>
           <Pressable accessibilityRole="button" accessibilityLabel="Remove from the watch list" hitSlop={8} onPress={() => put(list.filter((y) => y !== x))}><Ionicons name="close" size={20} color={colors.muted} /></Pressable>
         </View>

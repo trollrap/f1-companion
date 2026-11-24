@@ -21,19 +21,19 @@ const FEATURES = [
 export default function WelcomeScreen() {
   const { setOpts } = usePrefs(); const [step, setStep] = useState(0); const [name, setName] = useState(''); const [notif, setNotif] = useState(false); const [note, setNote] = useState('');
   const finish = () => setOpts({ name: name.trim().slice(0, 24), welcomed: true });
-  const Next = ({ label, onPress }) => (<Press onPress={onPress}><View style={{ height: 54, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.accent }}><Text style={{ color: '#fff', fontWeight: '800', fontSize: 18 }}>{label}</Text></View></Press>);
+  const Next = ({ label, onPress }) => (<Press onPress={onPress}><View style={{ height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.accent }}><Text style={{ color: colors.onAccent, fontWeight: '800', fontSize: 18 }}>{label}</Text></View></Press>);
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
       <LinearGradient pointerEvents="none" colors={[alpha(colors.accent, 0.35), 'transparent']} style={{ position: 'absolute', left: 0, right: 0, top: 0, height: 320 }} />
       <ScrollView contentContainerStyle={{ padding: 22, paddingTop: 40, gap: 18, flexGrow: 1 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         {step === 0 && (<>
-          <Reveal><Text style={{ color: colors.accent, fontFamily: 'label', fontSize: 13, letterSpacing: 3 }}>WELCOME</Text></Reveal>
-          <Reveal index={1}><Text style={{ color: colors.fg, fontSize: 38, fontWeight: '800', fontStyle: 'italic', lineHeight: 42 }}>F1 Companion</Text></Reveal>
-          <Reveal index={2}><Text style={{ color: colors.muted, fontSize: 18 }}>Your pocket guide to the grid. Here is what you get:</Text></Reveal>
+          <Reveal><Text style={{ color: colors.accentText, fontFamily: 'label', fontSize: 13, letterSpacing: 3 }}>WELCOME</Text></Reveal>
+          <Reveal index={1}><Text style={{ color: colors.fg, fontSize: 42, fontWeight: '800', lineHeight: 46 }}>F1 Companion</Text></Reveal>
+          <Reveal index={2}><Text style={{ color: colors.muted, fontSize: 18 }}>Your calm pocket guide to the grid. Here is what you get:</Text></Reveal>
           {FEATURES.map(([icon, t, d], i) => (
             <Reveal key={t} index={i + 3}>
-              <View style={{ flexDirection: 'row', gap: 14, padding: 14, borderRadius: 16, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line }}>
-                <View style={{ width: 42, height: 42, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.accentSoft }}><Ionicons name={icon} size={22} color={colors.accent} /></View>
+              <View style={{ flexDirection: 'row', gap: 14, padding: 16, borderRadius: 22, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line }}>
+                <View style={{ width: 46, height: 46, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.accentSoft }}><Ionicons name={icon} size={22} color={colors.accentText} /></View>
                 <View style={{ flex: 1 }}><Text style={{ color: colors.fg, fontSize: 18, fontWeight: '700' }}>{t}</Text><Text style={{ color: colors.muted, fontSize: 15 }}>{d}</Text></View>
               </View>
             </Reveal>))}
@@ -51,7 +51,7 @@ export default function WelcomeScreen() {
           <Reveal index={2}>
             <View style={{ padding: 14, borderRadius: 16, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line, gap: 6 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                <Ionicons name="notifications-outline" size={24} color={colors.accent} />
+                <Ionicons name="notifications-outline" size={24} color={colors.accentText} />
                 <View style={{ flex: 1 }}><Text style={{ color: colors.fg, fontSize: 18, fontWeight: '700' }}>Notifications</Text><Text style={{ color: colors.muted, fontSize: 15 }}>Session reminders, results and news alerts.</Text></View>
                 <Switch value={notif} onValueChange={async (v) => { if (!v) { setNotif(false); return; } const ok = await ensurePermission(); setNotif(ok); setNote(ok ? '' : notificationsAvailable() ? 'Notifications are blocked for this app. You can allow them in the phone settings.' : 'Notifications work in the installed app, not in Expo Go.'); }} trackColor={{ true: colors.accent, false: colors.surface2 }} thumbColor="#fff" />
               </View>
@@ -60,7 +60,7 @@ export default function WelcomeScreen() {
           </Reveal>
           <Reveal index={3}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderRadius: 16, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line }}>
-              <Ionicons name="images-outline" size={24} color={colors.accent} />
+              <Ionicons name="images-outline" size={24} color={colors.accentText} />
               <View style={{ flex: 1 }}><Text style={{ color: colors.fg, fontSize: 18, fontWeight: '700' }}>Photos</Text><Text style={{ color: colors.muted, fontSize: 15 }}>Only asked for when you save a picture, or pick a photo for your own driver.</Text></View>
             </View>
           </Reveal>

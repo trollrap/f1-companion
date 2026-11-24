@@ -37,6 +37,6 @@ export default function TrophyRoomScreen() {
             <Text style={{ color: colors.muted, fontSize: 12 }}>{how}</Text></View></Reveal></View>); })}
       </View>
       <Eyebrow>Personal bests</Eyebrow>
-      <Card>{BESTS.filter(([k]) => typeof best[k] === 'number' && best[k] > 0).length ? BESTS.filter(([k]) => typeof best[k] === 'number' && best[k] > 0).map(([k, l]) => (<View key={k} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 }}><Text style={{ color: colors.fg }}>{l}</Text><Text style={{ color: colors.accent, fontWeight: '800' }}>{String(best[k])}</Text></View>)) : <Note>Play a game and your best scores show up here.</Note>}</Card>
+      <Card>{BESTS.filter(([k]) => typeof best[k] === 'number' && best[k] > 0).length ? BESTS.filter(([k]) => typeof best[k] === 'number' && best[k] > 0).map(([k, l]) => (<View key={k} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 }}><Text style={{ color: colors.fg }}>{l}</Text><Text style={{ color: colors.accentText, fontWeight: '800' }}>{String(best[k])}</Text></View>)) : <Note>Play a game and your best scores show up here.</Note>}</Card>
     </Screen>);
 }

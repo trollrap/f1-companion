@@ -24,13 +24,13 @@ function Game({ g, onPress, ff, onTeam }) {
     <Press onPress={onPress}>
       <View style={[s.game, (ff.has(g.home.id) || ff.has(g.away.id)) && { borderLeftWidth: 3, borderLeftColor: colors.gold }, live && { borderColor: colors.accent, backgroundColor: alpha(colors.accent, 0.12) }]}>
         <View style={{ width: 54, alignItems: 'center' }}>
-          {live ? <Text style={{ color: colors.accent, fontWeight: '800', fontSize: 13 }}>{g.clock || 'LIVE'}</Text> : done ? <Text style={s.sub}>FT</Text> : <Text style={s.when}>{hm(Date.parse(g.date), null)}</Text>}
-          {live ? <Text style={{ color: colors.accent, fontSize: 10, letterSpacing: 1 }}>LIVE</Text> : null}
+          {live ? <Text style={{ color: colors.accentText, fontWeight: '800', fontSize: 13 }}>{g.clock || 'LIVE'}</Text> : done ? <Text style={s.sub}>FT</Text> : <Text style={s.when}>{hm(Date.parse(g.date), null)}</Text>}
+          {live ? <Text style={{ color: colors.accentText, fontSize: 10, letterSpacing: 1 }}>LIVE</Text> : null}
         </View>
         <View style={{ flex: 1, gap: 6 }}>
           {[g.home, g.away].map((t, i) => (
             <View key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <Pressable onPress={() => t.id && onTeam && onTeam(t)} hitSlop={4}><Crest uri={t.logo} /></Pressable><Text style={[s.team, done && !t.winner && { color: colors.muted }]} numberOfLines={1}>{t.name}</Text><Text style={[s.score, live && { color: colors.accent }]}>{sc(t)}</Text>
+              <Pressable onPress={() => t.id && onTeam && onTeam(t)} hitSlop={4}><Crest uri={t.logo} /></Pressable><Text style={[s.team, done && !t.winner && { color: colors.muted }]} numberOfLines={1}>{t.name}</Text><Text style={[s.score, live && { color: colors.accentText }]}>{sc(t)}</Text>
             </View>))}
         </View>
       </View>
@@ -109,7 +109,7 @@ export function FootMatch({ route, navigation }) {
       </Grad>
       <View style={{ flexDirection: 'row', gap: 10 }}>
         {g.state === 'pre' && (
-          <Pressable onPress={ring} style={({ pressed }) => [s.act, bell && { borderColor: colors.accent, backgroundColor: colors.accentSoft }, pressed && { opacity: 0.8 }]}><Ionicons name={bell ? 'notifications' : 'notifications-outline'} size={18} color={colors.accent} /><Text style={s.actT}>{bell ? 'Reminder on' : 'Remind me at kick-off'}</Text></Pressable>)}
+          <Pressable onPress={ring} style={({ pressed }) => [s.act, bell && { borderColor: colors.accent, backgroundColor: colors.accentSoft }, pressed && { opacity: 0.8 }]}><Ionicons name={bell ? 'notifications' : 'notifications-outline'} size={18} color={colors.accentText} /><Text style={s.actT}>{bell ? 'Reminder on' : 'Remind me at kick-off'}</Text></Pressable>)}
         {[hs, as].map((t) => t.id ? (
           <Pressable key={t.id} onPress={() => ff.toggle(t.id)} style={({ pressed }) => [s.act, ff.has(t.id) && { borderColor: colors.gold }, pressed && { opacity: 0.8 }]}><Ionicons name={ff.has(t.id) ? 'star' : 'star-outline'} size={18} color={ff.has(t.id) ? colors.gold : colors.fg} /><Text style={s.actT} numberOfLines={1}>{t.short || t.name}</Text></Pressable>) : null)}
       </View>
@@ -156,7 +156,7 @@ export function FootTeam({ route }) {
       {next.length > 0 && Date.parse(next[0].date) > Date.now() ? (() => { const ms = Date.parse(next[0].date) - Date.now(), d = Math.floor(ms / 86400000), h = Math.floor((ms % 86400000) / 3600000), m = Math.floor((ms % 3600000) / 60000);
         return (<Grad color={col} from={0.25} to={0.04} border={0.4} style={{ padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12 }}><Ionicons name="football-outline" size={26} color={col} /><View style={{ flex: 1 }}><Text style={s.sub}>NEXT MATCH</Text><Text style={{ color: colors.fg, fontSize: 17, fontWeight: '800' }} numberOfLines={1}>{`${next[0].home ? 'vs' : '@'} ${next[0].opp}`}</Text></View><Text style={{ color: colors.fg, fontSize: 20, fontWeight: '800' }}>{d > 0 ? `${d}d ${h}h` : `${h}h ${m}m`}</Text></Grad>); })() : null}
       {next.length > 0 && <Card><Eyebrow>Next matches</Eyebrow><View style={{ marginTop: 8 }}>{next.slice(0, 5).map(line)}</View></Card>}
-      {past.length > 0 && <Card><Eyebrow>Recent results</Eyebrow><View style={{ marginTop: 8 }}>{[...past].reverse().slice(0, all ? 40 : 6).map(line)}</View>{past.length > 6 ? <Pressable onPress={() => setAll(!all)} style={{ paddingTop: 10 }}><Text style={{ color: colors.accent, fontWeight: '700' }}>{all ? 'Show fewer' : 'Show all results'}</Text></Pressable> : null}</Card>}
+      {past.length > 0 && <Card><Eyebrow>Recent results</Eyebrow><View style={{ marginTop: 8 }}>{[...past].reverse().slice(0, all ? 40 : 6).map(line)}</View>{past.length > 6 ? <Pressable onPress={() => setAll(!all)} style={{ paddingTop: 10 }}><Text style={{ color: colors.accentText, fontWeight: '700' }}>{all ? 'Show fewer' : 'Show all results'}</Text></Pressable> : null}</Card>}
       {pl.length > 0 && [...groups, 'Other'].map((g) => shown(g).length ? (
         <Card key={g}><Eyebrow>{g === 'Other' ? 'Squad' : g + 's'}</Eyebrow><View style={{ marginTop: 8 }}>{shown(g).map((p) => (
           <View key={p.id || p.name} style={s.ev}><Text style={[s.min, { width: 32 }]}>{p.number ?? ''}</Text><View style={{ flex: 1 }}><Text style={s.td2} numberOfLines={1}>{p.name}</Text><Text style={s.sub} numberOfLines={1}>{[p.country, p.age ? `${p.age} yrs` : ''].filter(Boolean).join(' · ')}</Text></View></View>))}</View></Card>) : null)}
@@ -169,5 +169,5 @@ const s = StyleSheet.create({
   game: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 10, borderRadius: 14, backgroundColor: colors.surface2, borderWidth: 1, borderColor: colors.line },
   day: { flex: 1, alignItems: 'center', paddingVertical: 8, borderRadius: 12, backgroundColor: colors.surface2, borderWidth: 1, borderColor: colors.line }, dn: { color: colors.muted, fontWeight: '800', fontSize: 16 },
   tr: { flexDirection: 'row', alignItems: 'center', paddingVertical: 7, borderBottomWidth: 1, borderBottomColor: colors.line }, th: { color: colors.muted, fontSize: 11, fontFamily: 'label', textAlign: 'center' }, td: { color: colors.fg, fontSize: 15, textAlign: 'center' },
-  tn: { color: colors.fg, fontSize: 16, fontWeight: '700', textAlign: 'center' }, ev: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 7, borderBottomWidth: 1, borderBottomColor: colors.line }, min: { color: colors.accent, fontWeight: '800', width: 44 }, td2: { color: colors.fg, fontSize: 15, fontWeight: '700' },
+  tn: { color: colors.fg, fontSize: 16, fontWeight: '700', textAlign: 'center' }, ev: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 7, borderBottomWidth: 1, borderBottomColor: colors.line }, min: { color: colors.accentText, fontWeight: '800', width: 44 }, td2: { color: colors.fg, fontSize: 15, fontWeight: '700' },
 });

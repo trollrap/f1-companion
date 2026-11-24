@@ -23,3 +23,14 @@ export async function shareCalendar(kind = 'races', lead = 30) {
   const Sharing = require('expo-sharing'); if (!(await Sharing.isAvailableAsync())) throw new Error('Sharing is not available on this phone.');
   await Sharing.shareAsync(path, { mimeType: 'text/calendar', dialogTitle: 'Add to your calendar', UTI: 'public.calendar-event' }); return `${count} sessions`;
 }
+
+// One race weekend only: every session of this meeting as a calendar file.
+export async function shareMeeting(meeting, sessions) {
+  const FS = require('expo-file-system/legacy');
+  const list = sessions.map((x) => ({ ...x, meeting_name: meeting.meeting_name, session_key: x.session_key || `${meeting.meeting_key}-${x.session_name.replace(/\W/g, '')}` }));
+  const { text, count } = buildIcs(list, 'all', 30);
+  if (!count) throw new Error('This weekend is over, there are no sessions left to add.');
+  const path = `${FS.documentDirectory}f1-${String(meeting.meeting_name || 'weekend').replace(/\W+/g, '-')}.ics`; await FS.writeAsStringAsync(path, text);
+  const Sharing = require('expo-sharing'); if (!(await Sharing.isAvailableAsync())) throw new Error('Sharing is not available on this phone.');
+  await Sharing.shareAsync(path, { mimeType: 'text/calendar', dialogTitle: 'Add to your calendar', UTI: 'public.calendar-event' }); return `${count} sessions`;
+}

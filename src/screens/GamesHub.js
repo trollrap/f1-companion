@@ -21,13 +21,15 @@ export function usePins() {
   const toggle = (route) => { hap.tap(); setPins((cur) => { const n = cur.includes(route) ? cur.filter((x) => x !== route) : [...cur, route]; kvSet('pins:games', n); return n; }); };
   return [pins, toggle];
 }
+// Games that are over in a moment or cannot be paused (a blackjack hand, a snake run, a reflex pattern) never offer Continue.
+const NO_RESUME = new Set(['Blackjack', 'Snake', 'ColourMemory']);
 export function useGameStatus() {
   const [st, setSt] = useState({ best: {}, resume: [], days: [], loaded: false });
   useFocusEffect(useCallback(() => { let off = false; (async () => {
     const best = {}, resume = []; const days = await kvGet('playDays', []);
     await Promise.all(GAMES.map(async (g) => {
       if (g.b) { const v = await kvGet(g.b, 0); if (typeof v === 'number' && v > 0) best[g.r] = v; }
-      if (g.k) { const s = await kvGet(`game:${g.k}`, null); const x = s && s.g; if (x && !x.over && (g.k.startsWith('run:') ? (x.i || 0) > 0 : Object.keys(x).length > 0)) resume.push(g.r); }
+      if (g.k && !NO_RESUME.has(g.r)) { const s = await kvGet(`game:${g.k}`, null); const x = s && s.g; if (x && !x.over && (g.k.startsWith('run:') ? (x.i || 0) > 0 : Object.keys(x).length > 0)) resume.push(g.r); }
     }));
     if (!off) setSt({ best, resume, days: Array.isArray(days) ? days : [], loaded: true });
   })(); return () => { off = true; }; }, []));
@@ -93,11 +95,11 @@ export function DailyBanner({ navigation, st }) {
 }
 export function ContinueRow({ navigation, st, pins, toggle }) {
   const list = st.resume.map((r) => byRoute[r]).filter(Boolean); if (!list.length) return null;
-  return (<View style={{ gap: 10 }}><Head color={colors.accent} title="Continue" sub="Games you left unfinished" /><Strip games={list} st={st} pins={pins} toggle={toggle} navigation={navigation} /></View>);
+  return (<View style={{ gap: 12 }}><Head color={colors.accentText} title="Continue" sub="Games you left unfinished" /><Strip games={list} st={st} pins={pins} toggle={toggle} navigation={navigation} /></View>);
 }
 export function PinnedRow({ navigation, st, pins, toggle }) {
   const list = pins.map((r) => byRoute[r]).filter(Boolean); if (!list.length) return null;
-  return (<View style={{ gap: 10 }}><Head color={colors.gold} title="Pinned" sub="Your favourites" /><Strip games={list} st={st} pins={pins} toggle={toggle} navigation={navigation} /></View>);
+  return (<View style={{ gap: 12 }}><Head color={colors.gold} title="Pinned" sub="Your favourites" /><Strip games={list} st={st} pins={pins} toggle={toggle} navigation={navigation} /></View>);
 }
 
 // ---- the hub ----
@@ -113,7 +115,7 @@ export function GamesHub({ navigation }) {
       <Reveal index={0}>
         <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' }}>
           <View><Text style={{ color: colors.fg, fontSize: 28, fontWeight: '800', fontStyle: 'italic' }}>Games</Text><Text style={{ color: colors.muted, fontSize: 13 }}>{`${GAMES.length} games · saved as you play${played ? ` · ${played} days played` : ''}`}</Text></View>
-          <Press onPress={surprise} scale={0.94} accessibilityLabel="Surprise me"><View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 9, borderRadius: 14, backgroundColor: colors.accent }}><Ionicons name="shuffle" size={16} color="#fff" /><Text style={{ color: '#fff', fontWeight: '800', fontSize: 14 }}>Surprise me</Text></View></Press>
+          <Press onPress={surprise} scale={0.94} accessibilityLabel="Surprise me"><View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 9, borderRadius: 14, backgroundColor: colors.accent }}><Ionicons name="shuffle" size={16} color="#fff" /><Text style={{ color: colors.onAccent, fontWeight: '800', fontSize: 14 }}>Surprise me</Text></View></Press>
         </View>
       </Reveal>
       <Reveal index={1}>
@@ -124,12 +126,12 @@ export function GamesHub({ navigation }) {
         </View>
       </Reveal>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingRight: 12 }}>
-        {[{ id: 'all', label: 'All', color: colors.accent }, ...CATS].map((c) => { const on = cat === c.id; return (
+        {[{ id: 'all', label: 'All', color: colors.accentText }, ...CATS].map((c) => { const on = cat === c.id; return (
           <Pressable key={c.id} accessibilityRole="button" accessibilityState={{ selected: on }} onPress={() => { hap.tap(); setCat(c.id); }} style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 16, backgroundColor: on ? c.color : colors.card, borderWidth: 1, borderColor: on ? c.color : colors.line }}>
             <Text style={{ color: on ? '#000' : colors.fg, fontWeight: '800', fontSize: 13 }}>{c.label}</Text></Pressable>); })}
       </ScrollView>
       {filtering ? (
-        shown.length ? (<View style={{ gap: 10 }}>
+        shown.length ? (<View style={{ gap: 12 }}>
           {Array.from({ length: Math.ceil(shown.length / 2) }, (_, r) => (<View key={r} style={{ flexDirection: 'row', gap: 10 }}>{[shown[r * 2], shown[r * 2 + 1]].map((g, k) => (g ? <GameTile key={g.r} wide g={g} best={st.best[g.r]} resumable={st.resume.includes(g.r)} pinned={pins.includes(g.r)} onPin={() => toggle(g.r)} onOpen={() => navigation.navigate(g.r)} /> : <View key={k} style={{ flex: 1 }} />))}</View>))}
         </View>) : <Note>No game matches that. Try another word.</Note>
       ) : (<>
@@ -138,7 +140,7 @@ export function GamesHub({ navigation }) {
         {st.resume.length ? <ContinueRow navigation={navigation} st={st} pins={pins} toggle={toggle} /> : null}
         {pins.length ? <PinnedRow navigation={navigation} st={st} pins={pins} toggle={toggle} /> : null}
         {CATS.map((c, i) => { const list = GAMES.filter((g) => g.c === c.id); return (
-          <Reveal key={c.id} index={Math.min(i + 3, 8)}><View style={{ gap: 10 }}>
+          <Reveal key={c.id} index={Math.min(i + 3, 8)}><View style={{ gap: 12 }}>
             <Head color={c.color} title={c.label} sub={`${c.blurb} · ${list.length}`} right={<Pressable accessibilityRole="button" hitSlop={8} onPress={() => setCat(c.id)}><Text style={{ color: c.color, fontWeight: '800', fontSize: 13 }}>See all</Text></Pressable>} />
             <Strip games={list} st={st} pins={pins} toggle={toggle} navigation={navigation} />
           </View></Reveal>); })}

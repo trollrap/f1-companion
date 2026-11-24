@@ -63,12 +63,12 @@ export function WeekendScreen({ navigation }) {
     if (gap + here > maxAfter && left > 0 && gap <= maxAfter + here) watch.push({ icon: 'trophy', color: colors.gold, t: `${a.name} can win the title this weekend: he needs to outscore ${b.name} by ${Math.max(1, maxAfter - gap + 1)} point${maxAfter - gap + 1 === 1 ? '' : 's'}.` });
     else if (gap > maxAfter + here) watch.push({ icon: 'trophy', color: colors.gold, t: `${a.name} is already champion: the title cannot be taken away mathematically.` });
     else watch.push({ icon: 'trophy', color: colors.gold, t: `${a.name} leads ${b.name} by ${gap} points with ${left} round${left === 1 ? '' : 's'} left (${left * 25 + afterRaces.filter((r) => r.has_sprint).length * 8 + (next.has_sprint ? 8 : 0)} available).` });
-    if (D[2] && b.points - D[2].points <= 25) watch.push({ icon: 'flag', color: colors.accent, t: `Only ${b.points - D[2].points} points split ${b.name} and ${D[2].name} in the fight for second.` });
+    if (D[2] && b.points - D[2].points <= 25) watch.push({ icon: 'flag', color: colors.accentText, t: `Only ${b.points - D[2].points} points split ${b.name} and ${D[2].name} in the fight for second.` });
   }
   if (C.length > 1) { const g = C[0].points - C[1].points; watch.push({ icon: 'people', color: colors.purple, t: g <= 40 ? `The constructors' race is tight: ${C[0].name} lead ${C[1].name} by only ${g}.` : `${C[0].name} lead the constructors' table by ${g} points.` }); }
   if (hist) {
     if (hist.drivers[0]) watch.push({ icon: 'ribbon', color: colors.good, t: `${hist.drivers[0].name} has won here ${hist.drivers[0].v} time${hist.drivers[0].v === 1 ? '' : 's'}${hist.winners[0] ? `; last year it was ${hist.winners[0].name} (${hist.winners[0].team})` : ''}.` });
-    if (hist.poleConversion != null && hist.poleSample >= 3) watch.push({ icon: 'speedometer', color: colors.accent, t: `Pole position has turned into the win ${hist.poleConversion}% of the time here (last ${hist.poleSample} races).` });
+    if (hist.poleConversion != null && hist.poleSample >= 3) watch.push({ icon: 'speedometer', color: colors.accentText, t: `Pole position has turned into the win ${hist.poleConversion}% of the time here (last ${hist.poleSample} races).` });
   }
   if (next.has_sprint) watch.push({ icon: 'flash', color: colors.sprint || colors.accent, t: 'Sprint weekend: one practice session, then a sprint, so there is little time to find the set-up.' });
   return (
@@ -113,7 +113,7 @@ export function WeekendScreen({ navigation }) {
             <Text style={{ color: colors.muted, fontSize: 14, marginBottom: 6 }}>{`${hist.editions} editions since ${hist.first}`}</Text>
             {hist.winners.slice(0, 6).map((w, i) => (
               <View key={w.year} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 6, borderTopWidth: i ? 1 : 0, borderTopColor: colors.line, gap: 10 }}>
-                <Text style={{ width: 46, color: colors.accent, fontWeight: '800', fontSize: 16 }}>{w.year}</Text>
+                <Text style={{ width: 46, color: colors.accentText, fontWeight: '800', fontSize: 16 }}>{w.year}</Text>
                 <Text style={{ flex: 1, color: colors.fg, fontSize: 16, fontWeight: '600' }} numberOfLines={1}>{w.name}</Text>
                 <Text style={{ color: colors.muted, fontSize: 14 }} numberOfLines={1}>{w.team}</Text>
               </View>))}
@@ -194,7 +194,7 @@ export function LeaderboardScreen() {
       <Reveal index={1}>
         <Card>
           <Eyebrow>Live room</Eyebrow>
-          {R.id ? (<View style={{ gap: 10 }}>
+          {R.id ? (<View style={{ gap: 12 }}>
             <Text style={{ color: colors.muted, fontSize: 14 }}>{`You are in a room with ${R.members.length} ${R.members.length === 1 ? 'player' : 'players'}. Your picks sync by themselves every minute. ${R.status}`}</Text>
             <Text selectable style={{ color: colors.fg, fontSize: 15, fontWeight: '700' }}>{`Code: ${R.id}`}</Text>
             <View style={{ gap: 8 }}>
@@ -202,7 +202,7 @@ export function LeaderboardScreen() {
               <Btn icon="refresh" disabled={R.busy} onPress={R.refresh}>Refresh now</Btn>
               <Btn icon="exit-outline" onPress={() => Alert.alert('Leave room?', 'You stay on friends lists you added by code.', [{ text: 'Cancel' }, { text: 'Leave', style: 'destructive', onPress: R.leave }])}>Leave room</Btn>
             </View>
-          </View>) : (<View style={{ gap: 10 }}>
+          </View>) : (<View style={{ gap: 12 }}>
             <Text style={{ color: colors.muted, fontSize: 14 }}>No account needed. Make a room, send the code to friends, and everyone appears on the leaderboard and updates live. Anyone with the code can see the picks in the room, so only share it with friends.</Text>
             <Btn tone="solid" icon="people" disabled={R.busy} onPress={() => R.create().catch((e) => Alert.alert('Could not make a room', String(e?.message || 'No connection.')))}>Create a room</Btn>
             <TextInput value={roomIn} onChangeText={setRoomIn} placeholder="Or paste a room code" placeholderTextColor={colors.muted} autoCapitalize="none" autoCorrect={false} style={{ color: colors.fg, borderWidth: 1, borderColor: colors.line, borderRadius: 10, padding: 10 }} />
@@ -303,7 +303,7 @@ function OnThisDay() {
   const List = ({ rows }) => rows.map((r, i) => (
     <RowReveal key={r.year + r.race} index={i}>
       <View style={{ flexDirection: 'row', gap: 12, paddingVertical: 9, borderTopWidth: i ? 1 : 0, borderTopColor: colors.line }}>
-        <Text style={{ width: 54, color: colors.accent, fontSize: 20, fontWeight: '800' }}>{r.year}</Text>
+        <Text style={{ width: 54, color: colors.accentText, fontSize: 20, fontWeight: '800' }}>{r.year}</Text>
         <View style={{ flex: 1 }}><Text style={{ color: colors.fg, fontSize: 17, fontWeight: '700' }}>{r.race}</Text><Text style={{ color: colors.muted, fontSize: 14 }}>{`Won by ${r.winner}${r.team ? ` (${r.team})` : ''}${r.pole && r.pole !== r.winner ? ` · pole ${r.pole}` : r.pole ? ' · from pole' : ''}`}</Text></View>
       </View></RowReveal>));
   return (
@@ -346,7 +346,7 @@ function AllTimeDuel() {
   return (
     <View style={{ gap: 12 }}>
       <Card><Eyebrow>All-time duel</Eyebrow><Text style={{ color: colors.muted, fontSize: 14, marginBottom: 10 }}>Any two drivers in Formula 1 history, side by side.</Text>
-        <View style={{ gap: 10 }}><Picker value={a} onPick={setA} label="DRIVER 1" /><Picker value={b} onPick={setB} label="DRIVER 2" /></View></Card>
+        <View style={{ gap: 12 }}><Picker value={a} onPick={setA} label="DRIVER 1" /><Picker value={b} onPick={setB} label="DRIVER 2" /></View></Card>
       {A && B ? (
         <Reveal index={0}><Card>
           <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}><Text style={{ flex: 1, color: colors.fg, fontSize: 17, fontWeight: '800' }} numberOfLines={1}>{A.name}</Text><Text style={{ flex: 1, textAlign: 'right', color: colors.fg, fontSize: 17, fontWeight: '800' }} numberOfLines={1}>{B.name}</Text></View>

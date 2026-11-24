@@ -29,7 +29,7 @@ function Sec({ title, icon, children, open: o0 = false }) {
   return (
     <Card>
       <Pressable onPress={() => { LayoutAnimation.configureNext(LayoutAnimation.create(180, 'easeInEaseOut', 'opacity')); setOpen(!open); }} style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-        <Ionicons name={icon} size={20} color={colors.accent} /><Text style={{ color: colors.fg, fontSize: 18, fontWeight: '700', flex: 1 }}>{title}</Text>
+        <Ionicons name={icon} size={20} color={colors.accentText} /><Text style={{ color: colors.fg, fontSize: 18, fontWeight: '700', flex: 1 }}>{title}</Text>
         <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={18} color={colors.muted} />
       </Pressable>
       {open ? <View style={{ gap: 10, marginTop: 12 }}>{children}</View> : null}
@@ -85,7 +85,7 @@ export default function DevScreen() {
           <View key={k} style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 8 }}>
             <View style={{ width: 46, height: 46, borderRadius: 12, backgroundColor: HEX.test(cv[k] ?? colors[k]) ? (cv[k] ?? colors[k]) : colors.surface2, borderWidth: 1, borderColor: colors.line }} />
             <Field label={k} value={cv[k] ?? colors[k]} onChange={(x) => setCv({ ...cv, [k]: x })} style={{ flex: 1 }} maxLength={7} />
-            <Pressable onPress={() => applyColor(k)} style={{ height: 46, paddingHorizontal: 14, borderRadius: 12, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' }}><Text style={{ color: '#fff', fontWeight: '700' }}>Set</Text></Pressable>
+            <Pressable onPress={() => applyColor(k)} style={{ height: 46, paddingHorizontal: 14, borderRadius: 12, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' }}><Text style={{ color: colors.onAccent, fontWeight: '700' }}>Set</Text></Pressable>
           </View>))}
         <Btn icon="refresh" onPress={() => restartApp().then((ok) => { if (!ok) Alert.alert('Restart', 'This build cannot restart itself. Close the app fully and open it again.'); })}>Restart the app</Btn>
         <Btn icon="trash-outline" onPress={async () => { for (const k of Object.keys(ds.all.colors)) await devClear('colors', k); toast('Colour overrides removed. Restart the app.'); bump(); }}>Remove all colour overrides</Btn>
@@ -150,7 +150,7 @@ export default function DevScreen() {
         {Object.keys(opts).sort().map((k) => (
           <View key={k} style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 8 }}>
             <Field label={k} value={ov[k] ?? (typeof opts[k] === 'string' ? opts[k] : JSON.stringify(opts[k]))} onChange={(x) => setOv({ ...ov, [k]: x })} style={{ flex: 1 }} />
-            <Pressable onPress={() => applyOpt(k)} style={{ height: 46, paddingHorizontal: 14, borderRadius: 12, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' }}><Text style={{ color: '#fff', fontWeight: '700' }}>Set</Text></Pressable>
+            <Pressable onPress={() => applyOpt(k)} style={{ height: 46, paddingHorizontal: 14, borderRadius: 12, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' }}><Text style={{ color: colors.onAccent, fontWeight: '700' }}>Set</Text></Pressable>
           </View>))}
         <Eyebrow>New option</Eyebrow>
         <Field label="Name" value={newK} onChange={setNewK} /><Field label="Value" value={newV} onChange={setNewV} />

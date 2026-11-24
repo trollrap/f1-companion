@@ -52,13 +52,13 @@ export default function PaddockScreen({ navigation }) {
     <Screen swipe={{ index: seg === 'teams' ? 1 : 0, count: 2, onIndex: (i) => setSeg(i ? 'teams' : 'drivers') }}>
       <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
         <View style={{ flex: 1 }}><Segmented value={seg} onChange={setSeg} items={[['drivers', 'Drivers'], ['teams', 'Teams']]} /></View>
-        <Pressable onPress={() => navigation.navigate('Rules')} style={({ pressed }) => [s.rules, pressed && { opacity: 0.8 }]} accessibilityLabel="F1 rules"><Ionicons name="book-outline" size={18} color={colors.accent} /><Text style={s.rulesText}>Rules</Text></Pressable>
+        <Pressable onPress={() => navigation.navigate('Rules')} style={({ pressed }) => [s.rules, pressed && { opacity: 0.8 }]} accessibilityLabel="F1 rules"><Ionicons name="book-outline" size={18} color={colors.accentText} /><Text style={s.rulesText}>Rules</Text></Pressable>
       </View>
       <SearchBox value={q} onChange={setQ} placeholder="Search any driver or team, ever" />
       {q ? <Segmented value={kind} onChange={setKind} items={[['all', 'All'], ['drivers', 'Drivers'], ['teams', 'Teams']]} /> : null}
       {searching && (everyD.loading || everyT.loading) && !hitsD.length && <Skeleton rows={3} />}
       {searching && everyD.loading && hitsD.length ? <Note>Looking through every driver since 1950…</Note> : null}
-      {searching && (everyD.error || everyT.error) ? <Pressable onPress={() => { everyD.reload(); everyT.reload(); }}><Text style={{ color: colors.accent, fontSize: 15 }}>The full list could not be loaded (rate limit or connection). Tap to try again.</Text></Pressable> : null}
+      {searching && (everyD.error || everyT.error) ? <Pressable onPress={() => { everyD.reload(); everyT.reload(); }}><Text style={{ color: colors.accentText, fontSize: 15 }}>The full list could not be loaded (rate limit or connection). Tap to try again.</Text></Pressable> : null}
       {searching && !everyD.loading && !everyD.error && !everyT.loading && !hitsD.length && !hitsT.length && <Text style={{ color: colors.muted, fontSize: 15 }}>Nothing found.</Text>}
       {searching && hitsD.map((x, i) => { const cur = drivers.find((y) => y.driverId === x.driverId);
         return <ResultLine key={`d${x.driverId}`} index={i} pos={cur ? cur.position : '–'} first={x.first} last={x.last} color={cur ? tc(cur.teamId) : colors.muted} right={x.code || ''} sub={cur ? cur.team : x.nationality} photoId={x.driverId} logoId={cur?.teamId} fav={favs.isDriver(x.driverId)} onPress={() => navigation.navigate('Driver', { driverId: x.driverId, name: x.name, first: x.first, last: x.last, teamId: cur?.teamId, team: cur?.team })} />; })}
@@ -69,7 +69,7 @@ export default function PaddockScreen({ navigation }) {
       {!searching && seg === 'drivers' && (
         <Press onPress={() => navigation.navigate('Grid')}>
           <View style={{ height: 48, borderRadius: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: colors.accentSoft, borderWidth: 1, borderColor: colors.accent }}>
-            <Ionicons name="people-outline" size={18} color={colors.accent} /><Text style={{ color: colors.fg, fontWeight: '700', fontSize: 16 }}>{`View the ${YEAR + 1} grid`}</Text>
+            <Ionicons name="people-outline" size={18} color={colors.accentText} /><Text style={{ color: colors.fg, fontWeight: '700', fontSize: 16 }}>{`View the ${YEAR + 1} grid`}</Text>
           </View>
         </Press>)}
       {!searching && (st.loading || lu.loading) && <Skeleton rows={4} />}

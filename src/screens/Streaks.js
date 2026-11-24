@@ -18,7 +18,7 @@ export default function StreaksScreen() {
     <Screen header={false}>
       <StatHeader title="Streaks" icon="flash" note={`Longest runs of consecutive races entered with a win, a podium or a points finish, from the built-in history up to the last race in it. A race a driver skips does not break a run.`} />
       <Segmented value={t} items={TABS} onChange={setT} />
-      {live.length ? (<Card><Eyebrow>Running now</Eyebrow>{live.map((x) => (<View key={x.id || x.name} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5 }}><Text style={{ color: colors.fg, fontWeight: '600' }}>{x.name}</Text><Text style={{ color: colors.accent, fontWeight: '800' }}>{x.current}</Text></View>))}</Card>) : null}
+      {live.length ? (<Card><Eyebrow>Running now</Eyebrow>{live.map((x) => (<View key={x.id || x.name} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5 }}><Text style={{ color: colors.fg, fontWeight: '600' }}>{x.name}</Text><Text style={{ color: colors.accentText, fontWeight: '800' }}>{x.current}</Text></View>))}</Card>) : null}
       <SectionLabel>Longest ever</SectionLabel>
       {top.map((x, i) => (
         <StatRow key={`${t}${x.id || x.name}`} i={i} medal title={x.name} sub={`${x.from} to ${x.to}${x.current ? ' · still running' : ''}`} value={String(x.len)} frac={x.len / max} color={x.current ? colors.good : colors.accent} />))}

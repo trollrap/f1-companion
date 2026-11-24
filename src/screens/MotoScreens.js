@@ -115,7 +115,7 @@ export function MotoCalendar({ navigation }) {
                 <Text style={s.name} numberOfLines={1}>{`${flagOf(e.iso)} ${e.short || e.name}`}</Text>
                 <Text style={s.sub} numberOfLines={1}>{`${mgDate(e)} · ${e.circuit}`}</Text>
               </View>
-              {live ? <Pill color={colors.accent} solid>In progress</Pill> : isNext ? <Pill color={colors.accent}>Next</Pill> : done ? (win.v?.[e.id] ? <View style={{ alignItems: 'flex-end' }}><Text style={{ color: colors.gold, fontSize: 18, fontWeight: '800', letterSpacing: 1 }}>{win.v[e.id].code}</Text><Text style={{ color: colors.muted, fontSize: 10 }}>WINNER</Text></View> : <Ionicons name="checkmark-circle" size={20} color={colors.good} />) : null}
+              {live ? <Pill color={colors.accentText} solid>In progress</Pill> : isNext ? <Pill color={colors.accentText}>Next</Pill> : done ? (win.v?.[e.id] ? <View style={{ alignItems: 'flex-end' }}><Text style={{ color: colors.gold, fontSize: 18, fontWeight: '800', letterSpacing: 1 }}>{win.v[e.id].code}</Text><Text style={{ color: colors.muted, fontSize: 10 }}>WINNER</Text></View> : <Ionicons name="checkmark-circle" size={20} color={colors.good} />) : null}
             </Grad>
           </Press>);
       })}
@@ -311,7 +311,7 @@ function Schedule({ list, now }) {
                 <View style={{ width: 4, alignSelf: 'stretch', borderRadius: 2, backgroundColor: c }} />
                 <Text style={{ width: 54, color: colors.fg, fontSize: 17, fontWeight: '800' }}>{hm(x.a, null)}</Text>
                 <Text style={{ flex: 1, color: colors.fg, fontSize: x.kind === 'warm' ? 14 : 17, fontWeight: x.kind === 'race' || x.kind === 'sprint' ? '800' : '600' }} numberOfLines={1}>{x.name}</Text>
-                {live ? <Pill color={colors.accent} solid>Live</Pill> : over ? <Ionicons name="checkmark-circle" size={18} color={colors.good} /> : nxt ? <Pill color={c}>Next</Pill> : null}
+                {live ? <Pill color={colors.accentText} solid>Live</Pill> : over ? <Ionicons name="checkmark-circle" size={18} color={colors.good} /> : nxt ? <Pill color={c}>Next</Pill> : null}
                 {alertName(x.type) ? (() => { const an = alertName(x.type), on = !!prefs.types[an]; return (<Pressable onPress={() => toggle(an)} hitSlop={8} accessibilityLabel={`Notify for ${an}`} style={{ width: 34, height: 34, borderRadius: 9, alignItems: 'center', justifyContent: 'center', backgroundColor: on ? colors.accentSoft : 'transparent' }}><Ionicons name={on ? 'notifications' : 'notifications-outline'} size={19} color={on ? colors.accent : colors.muted} /></Pressable>); })() : null}
               </View>); })}
         </View>))}

@@ -208,6 +208,14 @@ export function raceRowsOf(year, round) {
 }
 export const roundsOf = (year) => { load(); return (H.r[year] || []).map((rc) => ({ round: rc[0], name: rc[1], date: rc[3] })); };
 // Driver DNA: six 0-100 scores from every race the driver started in the history.
+// Wet ability: positions gained against the grid in a list of well-known rain-affected races (the history has no weather data, so this is an estimate).
+const WET = { 1993: ['European'], 1996: ['Spanish'], 1998: ['Belgian', 'British'], 2003: ['Brazilian'], 2007: ['Japanese', 'European', 'Chinese'], 2008: ['British', 'Brazilian', 'Monaco'], 2009: ['Malaysian', 'Chinese'], 2010: ['Australian', 'Korean'], 2011: ['Canadian'], 2012: ['Brazilian'], 2014: ['Japanese'], 2016: ['Brazilian', 'Monaco'], 2017: ['Singapore'], 2018: ['German'], 2019: ['German'], 2021: ['Belgian', 'Russian', 'Turkish'], 2022: ['Japanese'], 2024: ['Brazilian', 'British', 'Canadian', 'Monaco'], 2025: ['Belgian', 'British', 'Australian'] };
+function wetScore(rows, id) {
+  const i = dIdx(id); const wet = driverRows(i).filter(({ year, rc, row }) => row[2] > 0 && row[3] > 0 && /^\d+$/.test(String(row[4])) && (WET[year] || []).some((k) => String(rc[1]).includes(k)));
+  if (!wet.length) return 50;
+  const gain = wet.reduce((a, { row }) => a + (row[2] - row[3]), 0) / wet.length; const w = Math.min(1, wet.length / 5); // few wet races pull the score back toward the middle
+  return Math.max(0, Math.min(100, Math.round(50 + gain * 9 * w)));
+}
 export function dnaOf(id) {
   const i = dIdx(id); if (i < 0) return null; const rows = driverRows(i).map((x) => x.row).filter((r) => r[3] != null);
   if (rows.length < 8) return null;
@@ -218,7 +226,7 @@ export function dnaOf(id) {
   const clamp = (v) => Math.max(0, Math.min(100, Math.round(v)));
   return { races: n, axes: [
     ['Qualifying', clamp(100 - (avgGrid - 1) * 6)], ['Racecraft', clamp(50 + avgGain * 10)], ['Consistency', clamp(100 - sd * 7)],
-    ['Reliability', clamp((fin.length / n) * 100)], ['Podiums', clamp((rows.filter((r) => r[3] > 0 && r[3] <= 3 && /^\d+$/.test(String(r[4]))).length / n) * 170)], ['Fast laps', clamp((rows.filter((r) => r[7] === 1).length / n) * 500)] ] };
+    ['Pace', clamp((rows.filter((r) => (r[5] || 0) > 0).length / n) * 140)], ['Race pace', clamp(100 - (mean - 1) * 5.5)], ['Wet ability', wetScore(rows, id)]] };
 }
 
 // Every team a driver raced for, as stints (consecutive seasons with one team), with wins and the seasons they won the title.
@@ -824,7 +832,7 @@ let _ent = null;
 export function entityByName(name) {
   if (!name) return null; load();
   if (!_ent) {
-    const dr = {}, tm = {}; H.d.forEach((d) => { const k = `${d[1]} ${d[2]}`.toLowerCase(); if (!dr[k]) dr[k] = { type: 'driver', driverId: d[0], name: `${d[1]} ${d[2]}`, first: d[1], last: d[2] }; });
+    const dr = {}, tm = {}; H.d.forEach((d, di) => { const k = `${d[1]} ${d[2]}`.toLowerCase(); if (!dr[k]) dr[k] = { type: 'driver', driverId: IX.idOf[di] || d[0], name: `${d[1]} ${d[2]}`, first: d[1], last: d[2] }; });
     H.t.forEach((t) => { const k = String(t[1]).toLowerCase(); if (!tm[k]) tm[k] = { type: 'team', teamId: t[0], name: t[1] }; }); _ent = { dr, tm };
   }
   const k = String(name).trim().toLowerCase(); return _ent.dr[k] || _ent.tm[k] || null;
@@ -833,6 +841,6 @@ export function entityByName(name) {
 // Team-mate battles for a finished season, from the built-in history. The grid slot stands in for qualifying (a grid penalty can differ from the lap-time order).
 export function localBattles(year) {
   load(); const rs = H.r[String(year)]; if (!rs) return null;
-  const per = rs.map((rc) => { const rows = rc[4].map((r) => { const d = H.d[r[0]]; return { driverId: d[0], driver: `${d[1]} ${d[2]}`, last: d[2], teamId: H.t[r[1]][0], team: H.t[r[1]][1], grid: r[2] > 0 ? r[2] : 99, position: /^\d+$/.test(String(r[4])) ? Number(r[4]) : 99 }; }); return { round: rc[0], name: rc[1], x: rows, q: rows.map((x) => ({ ...x, position: x.grid })) }; });
+  const per = rs.map((rc) => { const rows = rc[4].map((r) => { const d = H.d[r[0]]; return { driverId: IX.idOf[r[0]] || d[0], driver: `${d[1]} ${d[2]}`, last: d[2], teamId: H.t[r[1]][0], team: H.t[r[1]][1], grid: r[2] > 0 ? r[2] : 99, position: /^\d+$/.test(String(r[4])) ? Number(r[4]) : 99 }; }); return { round: rc[0], name: rc[1], x: rows, q: rows.map((x) => ({ ...x, position: x.grid })) }; });
   return per;
 }

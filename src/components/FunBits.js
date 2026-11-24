@@ -27,7 +27,7 @@ export function Field({ label, value, onChange, placeholder, keyboardType, maxLe
   );
 }
 export function Stepper({ label, value, min, max, onChange, step = 1 }) {
-  const B = ({ icon, d }) => (<Pressable onPress={() => onChange(Math.max(min, Math.min(max, value + d)))} hitSlop={6} style={({ pressed }) => [{ width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface2, borderWidth: 1, borderColor: colors.line }, pressed && { opacity: 0.6 }]}><Ionicons name={icon} size={20} color={colors.accent} /></Pressable>);
+  const B = ({ icon, d }) => (<Pressable onPress={() => onChange(Math.max(min, Math.min(max, value + d)))} hitSlop={6} style={({ pressed }) => [{ width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface2, borderWidth: 1, borderColor: colors.line }, pressed && { opacity: 0.6 }]}><Ionicons name={icon} size={20} color={colors.accentText} /></Pressable>);
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
       <Text style={{ color: colors.fg, fontSize: 17, fontWeight: '600', flex: 1 }}>{label}</Text>
@@ -39,7 +39,7 @@ export function Btn({ icon, children, onPress, tone = 'soft', disabled, style })
   const solid = tone === 'solid';
   return (
     <Pressable onPress={onPress} disabled={disabled} style={({ pressed }) => [{ height: 48, marginVertical: 4, borderRadius: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 14, backgroundColor: solid ? colors.accent : colors.accentSoft, borderWidth: 1, borderColor: colors.accent, opacity: disabled ? 0.45 : pressed ? 0.8 : 1 }, style]}>
-      {icon ? <Ionicons name={icon} size={18} color={solid ? '#fff' : colors.accent} /> : null}
+      {icon ? <Ionicons name={icon} size={18} color={solid ? '#fff' : colors.accentText} /> : null}
       <Text style={{ color: solid ? '#fff' : colors.fg, fontWeight: '700', fontSize: 16 }}>{children}</Text>
     </Pressable>
   );
@@ -150,6 +150,6 @@ export function UndoChip({ depth = 0, show, onPress }) {
   const seen = React.useRef(depth); // only a change made while this screen is open shows the chip, not the history that already existed
   React.useEffect(() => { if (!depth) { seen.current = 0; setOn(false); return undefined; } if (depth <= seen.current) { seen.current = depth; return undefined; } seen.current = depth; setOn(true); const t = setTimeout(() => setOn(false), 9000); return () => clearTimeout(t); }, [depth]);
   if (!(show ?? depth > 0) || !on) return null;
-  return (<Pressable onPress={onPress} accessibilityRole="button" style={({ pressed }) => [{ alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, height: 34, borderRadius: 17, backgroundColor: colors.surface2, borderWidth: 1, borderColor: colors.accent }, pressed && { opacity: 0.7 }]}><Ionicons name="arrow-undo" size={16} color={colors.accent} /><Text style={{ color: colors.fg, fontWeight: '700', fontSize: 14 }}>Undo last change</Text></Pressable>);
+  return (<Pressable onPress={onPress} accessibilityRole="button" style={({ pressed }) => [{ alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, height: 34, borderRadius: 17, backgroundColor: colors.surface2, borderWidth: 1, borderColor: colors.accent }, pressed && { opacity: 0.7 }]}><Ionicons name="arrow-undo" size={16} color={colors.accentText} /><Text style={{ color: colors.fg, fontWeight: '700', fontSize: 14 }}>Undo last change</Text></Pressable>);
 }
 UndoChip.ghost = true;

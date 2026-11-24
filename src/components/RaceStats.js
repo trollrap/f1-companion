@@ -30,7 +30,7 @@ export default function RaceStats({ rows, sessionKey, colorOf }) {
       {down.length > 0 && (<View style={{ marginTop: 10 }}><Text style={{ color: colors.red, fontWeight: '800', fontSize: 12, letterSpacing: 1.5, marginBottom: 2 }}>BIGGEST FALLERS</Text>
         {down.map((x) => <Line key={x.r.driverId} left={x.r.last} mid={`P${x.r.grid} to P${x.r.position}`} right={`${x.d}`} color={col(x.r)} />)}</View>)}
       {pit.loading ? <View style={{ marginTop: 10 }}><Skeleton rows={2} /></View> : null}
-      {pr.length > 0 && (<View style={{ marginTop: 10 }}><Text style={{ color: colors.accent, fontWeight: '800', fontSize: 12, letterSpacing: 1.5, marginBottom: 2 }}>{pit.v.stat ? 'FASTEST PIT STOPS' : 'FASTEST PIT LANE TIMES'}</Text>
+      {pr.length > 0 && (<View style={{ marginTop: 10 }}><Text style={{ color: colors.accentText, fontWeight: '800', fontSize: 12, letterSpacing: 1.5, marginBottom: 2 }}>{pit.v.stat ? 'FASTEST PIT STOPS' : 'FASTEST PIT LANE TIMES'}</Text>
         {pr.slice(0, 5).map((p, i) => <Line key={`${p.number}-${p.lap}-${i}`} left={p.last} mid={`${p.team || ''} · lap ${p.lap}`} right={`${p.dur.toFixed(2)}s`} color={p.color} />)}
         <Note>{`${pit.v.total} stops in the race. ${pit.v.stat ? 'Time stationary.' : 'Time in the pit lane, so it includes the drive through.'}`}</Note></View>)}
       {!mv.length && !pr.length && !pit.loading ? <Note>No stats are available for this race yet.</Note> : null}

@@ -44,7 +44,7 @@ export default function GuessDriverScreen() {
         </View>); })}
       {done ? (
         <Card>
-          <Text style={{ color: won ? colors.good : colors.accent, fontSize: 22, fontWeight: '800' }}>{won ? `Got it in ${guesses.length}!` : 'Out of guesses'}</Text>
+          <Text style={{ color: won ? colors.good : colors.accentText, fontSize: 22, fontWeight: '800' }}>{won ? `Got it in ${guesses.length}!` : 'Out of guesses'}</Text>
           <Text style={{ color: colors.fg, marginTop: 4 }}>{`${secret.name} · ${secret.nat} · ${secret.team} · ${secret.first}-${secret.last} · ${secret.wins} wins`}</Text>
           {got ? <Note>You earned a card pack.</Note> : null}
           <View style={{ marginTop: 10 }}><Btn tone="solid" onPress={again}>Play again</Btn></View>

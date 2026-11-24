@@ -43,7 +43,7 @@ import AlertScheduler from './components/AlertScheduler';
 import { navRef } from './lib/navRef';
 import ErrorBoundary, { guardScreen } from './components/ErrorBoundary';
 import { shortName } from './lib/time';
-import { tr } from './lib/i18n';
+import { tr, setLang } from './lib/i18n';
 import { ui } from './lib/motion';
 import { NavBar } from './components/TabBar';
 
@@ -57,7 +57,7 @@ const MICONS = { Home: 'home', Calendar: 'calendar', Standings: 'trophy', Paddoc
 function MotoTabs() {
   return (
     <MTab.Navigator tabBar={(p) => <NavBar {...p} icons={MICONS} />} screenOptions={({ route }) => ({
-      headerShown: false, animation: 'fade', tabBarActiveTintColor: colors.accent, tabBarInactiveTintColor: colors.muted,
+      headerShown: false, animation: 'fade', tabBarStyle: { position: 'absolute', backgroundColor: 'transparent', borderTopWidth: 0, elevation: 0 }, tabBarActiveTintColor: colors.accent, tabBarInactiveTintColor: colors.muted,
       
       tabBarLabelStyle: { fontFamily: ui.lang === 'el' ? 'RobotoCondensed_600SemiBold' : ui.font === 'classic' ? 'Rajdhani_600SemiBold' : 'Exo2_600SemiBold', fontSize: 13 },
       tabBarLabel: tr(route.name), tabBarIcon: ({ color, size }) => <Ionicons name={MICONS[route.name]} size={size} color={color} />,
@@ -73,7 +73,7 @@ const FTab = createBottomTabNavigator();
 function FootTabs() {
   return (
     <FTab.Navigator tabBar={(p) => <NavBar {...p} icons={{ Scores: 'football', Tables: 'list' }} />} screenOptions={({ route }) => ({
-      headerShown: false, animation: 'fade', tabBarActiveTintColor: colors.accent, tabBarInactiveTintColor: colors.muted,
+      headerShown: false, animation: 'fade', tabBarStyle: { position: 'absolute', backgroundColor: 'transparent', borderTopWidth: 0, elevation: 0 }, tabBarActiveTintColor: colors.accent, tabBarInactiveTintColor: colors.muted,
       
       tabBarLabelStyle: { fontFamily: ui.lang === 'el' ? 'RobotoCondensed_600SemiBold' : ui.font === 'classic' ? 'Rajdhani_600SemiBold' : 'Exo2_600SemiBold', fontSize: 13 },
       tabBarLabel: tr(route.name), tabBarIcon: ({ color, size }) => <Ionicons name={route.name === 'Scores' ? 'football' : 'list'} size={size} color={color} />,
@@ -86,11 +86,11 @@ function FootTabs() {
 function Tabs() {
   return (
     <Tab.Navigator tabBar={(p) => <NavBar {...p} icons={ICONS} />} screenOptions={({ route }) => ({
-      headerShown: false, animation: 'fade', tabBarActiveTintColor: colors.accent, tabBarInactiveTintColor: colors.muted,
+      headerShown: false, animation: 'fade', tabBarStyle: { position: 'absolute', backgroundColor: 'transparent', borderTopWidth: 0, elevation: 0 }, tabBarActiveTintColor: colors.accent, tabBarInactiveTintColor: colors.muted,
       
       tabBarLabelStyle: { fontFamily: ui.lang === 'el' ? 'RobotoCondensed_600SemiBold' : ui.font === 'classic' ? 'Rajdhani_600SemiBold' : 'Exo2_600SemiBold', fontSize: 13 },
-      tabBarLabel: tr(route.name),
-      tabBarIcon: ({ color, size }) => <Ionicons name={ICONS[route.name]} size={size} color={color} />,
+      tabBarLabel: tr(route.name === 'Fun' ? 'Other' : route.name),
+      tabBarIcon: ({ color, size }) => <Ionicons name={route.name === 'Fun' ? 'apps' : ICONS[route.name]} size={size} color={color} />,
     })}>
       <Tab.Screen name="Home" component={guardScreen(HomeScreen, 'HomeScreen')} />
       <Tab.Screen name="Calendar" component={guardScreen(CalendarScreen, 'CalendarScreen')} />
@@ -101,7 +101,7 @@ function Tabs() {
     </Tab.Navigator>
   );
 }
-const detailBase = { headerStyle: { backgroundColor: colors.bg }, headerTintColor: colors.fg, headerShadowVisible: false, animation: 'slide_from_right', animationDuration: 280, contentStyle: { backgroundColor: colors.bg }, get headerTitleStyle() { return { fontFamily: ui.lang === 'el' ? 'RobotoCondensed_600SemiBold' : 'ChakraPetch_600SemiBold', fontSize: 16 }; }, headerBackButtonDisplayMode: 'minimal' };
+const detailBase = { headerStyle: { backgroundColor: colors.bg }, headerTintColor: colors.fg, headerShadowVisible: false, animation: 'slide_from_right', animationDuration: 240, contentStyle: { backgroundColor: colors.bg }, get headerTitleStyle() { return { fontFamily: ui.lang === 'el' ? 'RobotoCondensed_600SemiBold' : 'ChakraPetch_600SemiBold', fontSize: 16 }; }, headerBackButtonDisplayMode: 'minimal' };
 // Every inner screen has a back arrow (left) and a home button (right): one tap back to the first tab screen instead of going back page after page.
 const detail = ({ navigation }) => ({ ...detailBase, headerLeft: (p) => (p.canGoBack ? <HeaderBackButton {...p} tintColor={colors.fg} onPress={() => navigation.goBack()} /> : null), headerRight: () => <HomeBtn /> });
 
@@ -115,6 +115,7 @@ function Shell() {
     let away = 0; const sub = AppState.addEventListener('change', (st) => { if (st !== 'active') away = Date.now(); else if (away && Date.now() - away > 3 * 60000) { away = 0; refreshAll(); } });
     return () => sub.remove();
   }, []);
+  setLang(prefs.opts.lang === 'el' ? 'el' : 'en'); // set before this render so no screen is drawn with the previous language
   if (!ready) return <View style={{ flex: 1, backgroundColor: colors.bg }} />;
   if (!prefs.opts.welcomed) return <WelcomeScreen />;
   return (

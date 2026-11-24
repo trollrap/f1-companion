@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Text } from '../components/Text';
 import Screen, { Card, Note } from '../components/Screen';
+import { Avatar, useProfile } from '../components/Avatar';
 import { NotifPrefs } from '../components/Shared';
 import Dropdown from '../components/Dropdown';
 import { usePrefs, SESSION_TYPES, OPTS } from '../hooks/usePrefs';
@@ -25,7 +26,7 @@ import { Segmented } from '../components/Shared';
 import { exportBackup, findBackups, restoreFrom } from '../lib/backup';
 import { Alert } from '../lib/dialog';
 import CodePrompt from '../components/CodePrompt';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { colors, alpha, teamColors } from '../theme';
 import { CHANGELOG, LATEST } from '../data/changelog';
 import { kvGet, kvSet } from '../lib/kv';
@@ -60,22 +61,31 @@ function NewsStatus({ tick }) {
     </View>);
 }
 // Settings search: the box at the top sets this; every section reads all the text inside it (titles, labels, hints) and hides itself when nothing matches.
+let OPEN = ''; // a section named by the screen that opened Settings (the Alerts bell) starts expanded
+let SCROLL = null; // the page's scroll view, so the opened section can be scrolled into view
 let FIND = ''; // set on every render of the screen, so sections can stay direct children of it (keeps the page spacing)
 const textOf = (n) => { if (n == null || typeof n === 'boolean') return ''; if (typeof n === 'string' || typeof n === 'number') return String(n); if (Array.isArray(n)) return n.map(textOf).join(' '); const p = n.props || {}; return [p.label, p.hint, p.title, p.placeholder, textOf(p.children)].filter(Boolean).join(' '); };
 const Group = ({ children }) => (FIND.trim() ? null : <Text style={s.group}>{children}</Text>);
 function Section({ icon, title, summary, children, start = false }) {
   const q = FIND.trim().toLowerCase();
   if (q && !`${title} ${summary || ''} ${textOf(children)}`.toLowerCase().includes(q)) return null;
-  return <SectionBody icon={icon} title={title} summary={summary} start={start || !!q} forceOpen={!!q}>{children}</SectionBody>;
+  return <SectionBody icon={icon} title={title} summary={summary} start={start || !!q || (!!OPEN && title === OPEN)} forceOpen={!!q}>{children}</SectionBody>;
 }
 function SectionBody({ icon, title, summary, children, start = false, forceOpen }) {
-  const [open0, setOpen] = useState(start); const open = open0 || forceOpen; const rot = React.useRef(new Animated.Value(start ? 1 : 0)).current;
+  const [open0, setOpen] = useState(start); React.useEffect(() => { if (start) setOpen(true); }, [start]);
+  const open = open0 || forceOpen; const rot = React.useRef(new Animated.Value(start ? 1 : 0)).current;
+  const box = React.useRef(null); const isTarget = !!OPEN && title === OPEN;
+  React.useEffect(() => {
+    if (!isTarget) return undefined;
+    const t = setTimeout(() => { try { const sc = SCROLL && SCROLL.current; if (sc && box.current && sc.getInnerViewNode) box.current.measureLayout(sc.getInnerViewNode(), (x, y) => sc.scrollTo({ y: Math.max(0, y - 70), animated: true }), () => {}); } catch {} }, 450);
+    return () => clearTimeout(t);
+  }, [isTarget]);
   const flip = () => { LayoutAnimation.configureNext(LayoutAnimation.create(220, 'easeInEaseOut', 'opacity')); Animated.timing(rot, { toValue: open ? 0 : 1, duration: 200, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start(); setOpen(!open); };
   return (
-    <View style={s.sec}>
-      <LinearGradient pointerEvents="none" colors={[colors.cardA, colors.cardB]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
+    <View ref={box} collapsable={false} style={s.sec}>
+      <LinearGradient pointerEvents="none" colors={[alpha(colors.fg, 0.045), alpha(colors.fg, 0.01)]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
       <Pressable onPress={flip} style={({ pressed }) => [s.secHead, pressed && { opacity: 0.8 }]} accessibilityRole="button" accessibilityState={{ expanded: open }}>
-        <View style={s.ico}><Ionicons name={icon} size={20} color={colors.accent} /></View>
+        <View style={s.ico}><Ionicons name={icon} size={20} color={colors.accentText} /></View>
         <View style={{ flex: 1 }}><Text style={s.secTitle}>{title}</Text>{summary ? <Text style={s.hint} numberOfLines={1}>{summary}</Text> : null}</View>
         <Animated.View style={{ transform: [{ rotate: rot.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '180deg'] }) }] }}><Ionicons name="chevron-down" size={20} color={colors.muted} /></Animated.View>
       </Pressable>
@@ -83,7 +93,7 @@ function SectionBody({ icon, title, summary, children, start = false, forceOpen 
     </View>
   );
 }
-const SWATCHES = ['#F0141E', '#FF6A00', '#F5C400', '#22C55E', '#14B8A6', '#2D8CFF', '#7C5CFF', '#FF2D87', '#E5E7EB'];
+const SWATCHES = ['#F43F4B', '#FF6A00', '#F5C400', '#22C55E', '#14B8A6', '#2D8CFF', '#7C5CFF', '#FF2D87', '#E5E7EB'];
 const GAPS = [['leader', 'To the leader'], ['ahead', 'Interval (to the car ahead)']];
 const HOURS = Array.from({ length: 24 }, (_, h) => { const t = `${String(h).padStart(2, '0')}:00`; return [t, t]; });
 const TEAM_NAMES = { red_bull: 'Red Bull', rb: 'Racing Bulls', aston_martin: 'Aston Martin', alpine: 'Alpine', haas: 'Haas', mclaren: 'McLaren', mercedes: 'Mercedes', ferrari: 'Ferrari', williams: 'Williams', sauber: 'Sauber', audi: 'Audi', cadillac: 'Cadillac' };
@@ -92,21 +102,27 @@ export default function SettingsScreen() {
   const [results, setResults] = useState([]); const [running, setRunning] = useState(false); const [msg, setMsg] = useState(''); const [upd, setUpd] = useState('');
   const [find, setFind] = useState(''); FIND = find; const [msgT, setMsgT] = useState(''); const [bk, setBk] = useState('');
   // Secret: five quick taps on About, then the code, open the developer menu.
-  const nav = useNavigation(); const taps = useRef({ n: 0, t: 0 }); const [codeOpen, setCodeOpen] = useState(false);
+  const nav = useNavigation(); const [prof] = useProfile(); const route = useRoute(); OPEN = route?.params?.open || ''; const scrollRef = useRef(null); SCROLL = scrollRef; const taps = useRef({ n: 0, t: 0 }); const [codeOpen, setCodeOpen] = useState(false);
   const aboutTap = () => { const now = Date.now(); const k = taps.current; k.n = now - k.t < 1500 ? k.n + 1 : 1; k.t = now; if (k.n >= 5) { k.n = 0; setCodeOpen(true); } };
   const check = async () => { setResults([]); setRunning(true); try { await runDiagnostics((r) => setResults((x) => [...x, r])); } finally { setRunning(false); } };
   const on = SESSION_TYPES.filter((t) => prefs.types[t]).length;
   const [pickC, setPickC] = useState(o.accent || colors.accent); const [custom, setCustom] = useState(false);
   const applyColour = async (hex) => { setMsg('Saving the colour…'); await setOpt('accent', hex).catch(() => {}); setMsg('Colour saved. The app restarts to use it everywhere. If it does not, close it completely and open it again.'); setTimeout(async () => { const r = await restartApp(); if (!r) setMsg('Colour saved. Close the app completely (swipe it away) and open it again to see it everywhere.'); }, 900); };
   return (
-    <Screen header={false}>
+    <Screen header={false} scrollRef={scrollRef}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, borderRadius: 14, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.line }}>
         <Ionicons name="search" size={18} color={colors.muted} />
         <TextInput value={find} onChangeText={setFind} placeholder="Search settings" placeholderTextColor={colors.muted} accessibilityLabel="Search settings" autoCorrect={false} style={{ flex: 1, color: colors.fg, fontSize: 16, paddingVertical: 12 }} />
         {find ? <Pressable accessibilityRole="button" accessibilityLabel="Clear search" hitSlop={10} onPress={() => setFind('')}><Ionicons name="close-circle" size={18} color={colors.muted} /></Pressable> : null}
       </View>
       <Group>You</Group>
-      <Btn onPress={() => nav.navigate('Profile')}>My profile: name, photo, favourites and number</Btn>
+      <Pressable onPress={() => nav.navigate('Profile')} accessibilityRole="button" accessibilityLabel="My profile" style={({ pressed }) => [{ marginBottom: 0, opacity: pressed ? 0.7 : 1 }]}>
+        <LinearGradient colors={[colors.accent + '55', colors.accent + '0D']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderRadius: 16, borderWidth: 1, borderColor: colors.accent + '66' }}>
+          {prof.photo ? <Avatar p={prof} size={48} /> : <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: colors.accent + '44', alignItems: 'center', justifyContent: 'center' }}><Ionicons name="person" size={22} color={colors.fg} /></View>}
+          <View style={{ flex: 1 }}><Text style={{ color: colors.fg, fontSize: 17, fontWeight: '800' }}>{(prefs.opts.profile && prefs.opts.profile.name) || 'Create your profile'}</Text><Text style={{ color: colors.onSoft, fontSize: 13 }}>Name, photo, favourites and number</Text></View>
+          <Ionicons name="chevron-forward" size={18} color={colors.muted} />
+        </LinearGradient>
+      </Pressable>
       <Group>Look and feel</Group>
       <Section icon="contrast-outline" title="Theme" summary={o.theme === 'light' ? 'White' : o.theme === 'amoled' ? 'AMOLED black' : 'Dark'}>
         {[['dark', 'Dark', 'The default look.'], ['amoled', 'AMOLED black', 'Pure black background. Saves battery on OLED screens.'], ['light', 'White', 'A light theme. Some screens with photos are still tuned for dark.']].map(([k, label, hint]) => { const on = (o.theme || 'dark') === k; return (
@@ -118,13 +134,13 @@ export default function SettingsScreen() {
       </Section>
       <Section icon="color-palette-outline" title="Accent colour" summary={o.accent ? o.accent : 'Default red'}>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 6 }}>
-          {SWATCHES.map((c) => { const sel = (o.accent || '#F0141E').toUpperCase() === c; return (
+          {SWATCHES.map((c) => { const sel = (o.accent || '#F43F4B').toUpperCase() === c; return (
             <Pressable key={c} onPress={() => { setPickC(c); setCustom(false); }} accessibilityLabel={`Colour ${c}`} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: c, borderWidth: pickC.toUpperCase() === c ? 3 : 1, borderColor: pickC.toUpperCase() === c ? '#fff' : colors.line, alignItems: 'center', justifyContent: 'center' }}>{sel ? <Ionicons name="checkmark" size={20} color="#000" /> : null}</Pressable>); })}
-          <Pressable onPress={() => setCustom(!custom)} accessibilityLabel="Pick any colour" style={{ height: 44, paddingHorizontal: 14, borderRadius: 22, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.surface2, flexDirection: 'row', alignItems: 'center', gap: 6 }}><Ionicons name="color-wand-outline" size={18} color={colors.accent} /><Text style={{ color: colors.fg, fontWeight: '700' }}>Custom</Text></Pressable>
+          <Pressable onPress={() => setCustom(!custom)} accessibilityLabel="Pick any colour" style={{ height: 44, paddingHorizontal: 14, borderRadius: 22, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.surface2, flexDirection: 'row', alignItems: 'center', gap: 6 }}><Ionicons name="color-wand-outline" size={18} color={colors.accentText} /><Text style={{ color: colors.fg, fontWeight: '700' }}>Custom</Text></Pressable>
         </View>
         {custom ? <View style={{ marginTop: 12 }}><ColorPicker value={pickC} onChange={setPickC} /></View> : null}
         <Btn onPress={() => applyColour(pickC)}>Apply this colour</Btn>
-        <Btn onPress={() => { setPickC('#F0141E'); applyColour(null); }}>Back to the default red</Btn>
+        <Btn onPress={() => { setPickC('#F43F4B'); applyColour(null); }}>Back to the default red</Btn>
         <Note>The app restarts once so the colour is used on every screen.</Note>
         {msg ? <Note>{msg}</Note> : null}
       </Section>
@@ -141,7 +157,6 @@ export default function SettingsScreen() {
       <Section icon="options-outline" title="Display" summary={`${o.clock24 ? '24-hour' : '12-hour'} clock · gaps ${GAPS.find(([k]) => k === o.gap)[1].toLowerCase()}`}>
         <Sw label="24-hour clock" value={o.clock24} onChange={(v) => setOpt('clock24', v)} />
         <Sw label="Start race pages in track time" hint="Otherwise they open in your device's time." value={o.trackTime} onChange={(v) => setOpt('trackTime', v)} />
-        <Sw label="Pull down to refresh" hint="Off by default. A refresh button sits at the top instead." value={o.pullRefresh === true} onChange={(v) => setOpt('pullRefresh', v)} />
         <Sw label="Team principal on Paddock cards" value={o.padPrincipal !== false} onChange={(v) => setOpt('padPrincipal', v)} />
         <Sw label="Driver position and points on Paddock cards" value={o.padStats !== false} onChange={(v) => setOpt('padStats', v)} />
         <Text style={[s.label, { marginTop: 12, marginBottom: 8 }]}>Home shows first</Text>
@@ -194,7 +209,7 @@ export default function SettingsScreen() {
         <Sw label="Results: only when my drivers are in it" hint="Race, sprint and qualifying result alerts are skipped unless one of the drivers below is in the results. The alert then lists their finishes." value={!!o.resultsFavOnly} onChange={(v) => setOpt('resultsFavOnly', v)} />
         <FavAlertChips o={o} setOpt={setOpt} />
         <Sw label="Quiet hours" hint="No alerts between the times below." value={!!o.quiet?.on} onChange={(v) => setOpt('quiet', { from: '23:00', to: '07:00', raceOk: true, ...(o.quiet || {}), on: v })} />
-        {o.quiet?.on ? (<View style={{ gap: 10 }}>
+        {o.quiet?.on ? (<View style={{ gap: 12 }}>
           <Dropdown value={o.quiet.from || '23:00'} options={HOURS} onChange={(v) => setOpt('quiet', { ...o.quiet, from: v })} prefix="From" />
           <Dropdown value={o.quiet.to || '07:00'} options={HOURS} onChange={(v) => setOpt('quiet', { ...o.quiet, to: v })} prefix="Until" />
           <Sw label="Still alert me for the race" hint="Race start alerts ignore quiet hours." value={o.quiet.raceOk !== false} onChange={(v) => setOpt('quiet', { ...o.quiet, raceOk: v })} />
@@ -229,7 +244,7 @@ export default function SettingsScreen() {
             <Pressable key={k} onPress={() => setOpt('lang', k)} style={({ pressed }) => [s.row, { paddingVertical: 12 }, pressed && { opacity: 0.7 }]} accessibilityRole="radio" accessibilityState={{ selected: on }}>
               <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                 <Text style={[s.label, on && { color: colors.fg, fontWeight: '700' }]}>{label}</Text>
-                {tag ? <View style={{ backgroundColor: colors.accentSoft, borderColor: colors.accent, borderWidth: 1, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 1 }}><Text style={{ color: colors.accent, fontFamily: 'label', fontWeight: '700', fontSize: 10, letterSpacing: 1.2 }}>{tag}</Text></View> : null}
+                {tag ? <View style={{ backgroundColor: colors.accentSoft, borderColor: colors.accent, borderWidth: 1, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 1 }}><Text style={{ color: colors.accentText, fontFamily: 'label', fontWeight: '700', fontSize: 10, letterSpacing: 1.2 }}>{tag}</Text></View> : null}
               </View>
               <Ionicons name={on ? 'radio-button-on' : 'radio-button-off'} size={22} color={on ? colors.accent : colors.muted} />
             </Pressable>);
@@ -278,7 +293,7 @@ export default function SettingsScreen() {
         <Btn icon="bug-outline" onPress={() => nav.navigate('CrashLog')}>Crash log</Btn>
         <Btn icon="mail-outline" onPress={() => nav.navigate('Report')}>Send a report</Btn>
         <Pressable onPress={aboutTap} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 6 }}>
-          <View style={s.ico}><Ionicons name="information-circle-outline" size={22} color={colors.accent} /></View>
+          <View style={s.ico}><Ionicons name="information-circle-outline" size={22} color={colors.accentText} /></View>
           <View style={{ flex: 1 }}><Text style={s.secTitle}>About</Text><Text style={s.hint}>{`F1 Companion v${currentVersion()}`}</Text></View>
         </Pressable>
         <View style={s.bubble}><Text style={{ color: colors.fg, fontSize: 16, fontWeight: '600' }}>👋 Hi from trollrap!</Text><Text style={s.hint}>Every bug you find is a hidden feature. Probably.</Text></View>
@@ -300,11 +315,11 @@ function Changelog() {
     </Section>);
 }
 const s = StyleSheet.create({
-  sec: { borderRadius: 18, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.surface, overflow: 'hidden' },
+  sec: { borderRadius: 22, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.surface, overflow: 'hidden' },
   secHead: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 }, secBody: { paddingHorizontal: 14, paddingBottom: 14 },
-  ico: { width: 38, height: 38, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.accentSoft },
+  ico: { width: 38, height: 38, borderRadius: 13, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.accentSoft },
   secTitle: { color: colors.fg, fontSize: 19, fontWeight: '700' },
-  group: { color: colors.muted, fontSize: 12, fontWeight: '800', letterSpacing: 2, textTransform: 'uppercase', marginTop: 10, marginLeft: 4 },
+  group: { color: colors.onSoft, fontSize: 12, fontWeight: '800', letterSpacing: 1.8, textTransform: 'uppercase', marginTop: 10, marginLeft: 6 },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.line },
   label: { color: colors.fg, fontSize: 17, fontWeight: '600' }, hint: { color: colors.muted, fontSize: 14 },
   btn: { marginTop: 12, backgroundColor: colors.surface2, borderRadius: 12, padding: 12, alignItems: 'center', borderWidth: 1, borderColor: colors.line }, btnText: { color: colors.fg, fontWeight: '700', fontSize: 16 },

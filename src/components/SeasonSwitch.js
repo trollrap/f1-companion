@@ -7,7 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useTint } from '../lib/tint';
 import { colors, alpha } from '../theme';
 // The season shown in the middle. Tapping it opens a menu with every year, newest first.
-export default function SeasonSwitch({ year, onChange, min = 1950, max, years: list, caption, compact }) {
+export default function SeasonSwitch({ year, onChange, min = 1950, max, years: list, caption, compact, pill }) {
   const tint = useTint();
   const v = useRef(new Animated.Value(1)).current; const [open, setOpen] = useState(false); const m = useRef(new Animated.Value(0)).current;
   useEffect(() => { v.setValue(0); Animated.timing(v, { toValue: 1, duration: 260, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start(); }, [year]);
@@ -16,6 +16,11 @@ export default function SeasonSwitch({ year, onChange, min = 1950, max, years: l
   const years = list || []; if (!list) for (let y = max; y >= min; y--) years.push(y);
   return (
     <>
+      {pill ? (
+      <Pressable onPress={() => setOpen(true)} accessibilityRole="button" accessibilityLabel={`Season ${year}. Tap to choose another season.`} style={({ pressed }) => [{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 99, backgroundColor: 'rgba(255,255,255,0.07)', borderWidth: 1, borderColor: colors.line }, pressed && { opacity: 0.8 }]}>
+        <Text style={{ color: colors.fg, fontWeight: '800', fontSize: 13 }}>{year}</Text><Ionicons name="chevron-down" size={14} color={colors.muted} />
+      </Pressable>
+      ) : (
       <Pressable onPress={() => setOpen(true)} accessibilityRole="button" accessibilityLabel={`Season ${year}. Tap to choose another season.`} style={({ pressed }) => [{ borderRadius: 18, overflow: 'hidden', paddingHorizontal: 16, paddingVertical: compact ? 8 : 10, borderWidth: 1, borderColor: alpha(tint, 0.35) }, pressed && { opacity: 0.85 }]}>
         <LinearGradient pointerEvents="none" colors={[colors.cardC, colors.cardB]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }} />
         <Animated.View style={{ alignItems: 'center', opacity: v, transform: [{ scale: v.interpolate({ inputRange: [0, 1], outputRange: [0.92, 1] }) }] }}>
@@ -26,6 +31,7 @@ export default function SeasonSwitch({ year, onChange, min = 1950, max, years: l
           <Text style={{ color: !caption && year === YEAR_OF(max) ? tint : colors.muted, fontSize: 12, letterSpacing: 2, fontWeight: '700' }} numberOfLines={1}>{caption ? up(String(caption)) : year === YEAR_OF(max) ? 'CURRENT SEASON' : year > YEAR_OF(max) ? 'UPCOMING' : 'TAP TO CHANGE SEASON'}</Text>
         </Animated.View>
       </Pressable>
+      )}
       <Modal visible={open} transparent animationType="none" onRequestClose={() => close()} statusBarTranslucent>
         <Animated.View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.72)', opacity: m, justifyContent: 'center', padding: 20 }}>
           <Pressable style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }} onPress={() => close()} />

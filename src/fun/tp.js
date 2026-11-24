@@ -13,7 +13,7 @@ export const UPGRADES = {
 export const EXTEND_COST = 12;
 const field = (t, k) => (k === 'car' ? t.car ?? 65 : TA(t)[k]);
 const rank = (f) => [...f.teams].sort((a, b) => (b.car ?? 65) - (a.car ?? 65));
-export const costOf = (f, k) => 14 + (f.tp?.levels?.[k] || 0) * 8;
+export const costOf = (f, k) => 14 + (f.tp?.levels?.[k] || 0) * 10;
 const stand = (f) => {
   const pts = {}; f.teams.forEach((t) => { pts[t.id] = 0; });
   f.races.forEach((r) => { const res = f.results?.[r.id]; if (!res) return; ['Sprint', 'Race'].forEach((k) => (res[k] || []).forEach((x) => { const d = f.drivers.find((y) => y.id === x.driverId); if (d && pts[d.teamId] != null) pts[d.teamId] += x.points || 0; })); });
@@ -34,7 +34,9 @@ export function settle(f) {
   const mine = (f.drivers || []).filter((d) => d.teamId === t.teamId).map((d) => d.id);
   f.races.forEach((r) => { const res = f.results?.[r.id]?.Race; if (!res || t.paid[r.id]) return;
     const pts = res.filter((x) => mine.includes(x.driverId)).reduce((a, x) => a + (x.points || 0), 0); const staffN = Object.keys(t.staff || {}).filter((k) => t.staff[k]).length; const income = r1(4 + pts * 0.5 + (t.hype - 50) / 10 + (t.staff?.commercial ? 1.5 : 0) - staffN * 1);
-    t.paid[r.id] = true; t.budget = r1(t.budget + income); t.log = note(t, `${r.name}: ${pts} points, ${income} in prize and sponsor money.`); changed = true; });
+    t.paid[r.id] = true; t.budget = r1(t.budget + income);
+    // Rivals keep developing: every race the other teams gain a little (leaders and big spenders a bit more), so standing still means falling behind.
+    f = { ...f, teams: f.teams.map((x) => (x.id === t.teamId ? x : { ...x, car: clamp(r1((x.car ?? 65) + 0.04 + Math.random() * 0.16 * (((x.car ?? 65) > 75) ? 1.4 : 1)), 30, 99) })) }; t.log = note(t, `${r.name}: ${pts} points, ${income} in prize and sponsor money.`); changed = true; });
   // sponsor goal: paid as soon as the points target is reached, lost when the deadline race has passed
   const sp = t.sponsor; if (sp && !sp.done) { const raced = f.races.filter((r) => f.results?.[r.id]?.Race).length; const pts = teamPoints(f, t.teamId);
     if (pts >= sp.target) { t = { ...t, budget: r1(t.budget + sp.reward), hype: clamp(t.hype + 3, 0, 100), sponsor: { ...sp, done: 'won' }, log: note(t, `${sp.name}: target reached, ${sp.reward} bonus paid.`) }; changed = true; }

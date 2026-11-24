@@ -31,7 +31,7 @@ export function LibDriverPicker({ onPick, onClose }) {
     <View style={{ gap: 8, padding: 10, borderRadius: 14, backgroundColor: colors.surface2, borderWidth: 1, borderColor: colors.accent }}>
       <View style={{ flexDirection: 'row', alignItems: 'center' }}><Text style={{ flex: 1, color: colors.fg, fontWeight: '700', fontSize: 16 }}>My saved drivers</Text><Pressable onPress={onClose} hitSlop={8}><Ionicons name="close" size={22} color={colors.muted} /></Pressable></View>
       {!list.length ? <Text style={{ color: colors.muted }}>Nothing saved yet. Make drivers in Fun → Presets.</Text> : null}
-      {list.map((d) => (<Press key={d.id} onPress={() => onPick(d)}><View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 4 }}><Avatar source={driverPic(d)} color={colors.accent} label={d.number} size={38} /><View style={{ flex: 1 }}><Text style={{ color: colors.fg, fontSize: 16, fontWeight: '600' }} numberOfLines={1}>{d.name}</Text><Text style={{ color: colors.muted, fontSize: 13 }}>{`${d.nat ? flagOfCountry(d.nat) + ' ' : ''}overall ${ovr(d)} · age ${A(d).age}`}</Text></View><Ionicons name="add-circle-outline" size={22} color={colors.accent} /></View></Press>))}
+      {list.map((d) => (<Press key={d.id} onPress={() => onPick(d)}><View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 4 }}><Avatar source={driverPic(d)} color={colors.accent} label={d.number} size={38} /><View style={{ flex: 1 }}><Text style={{ color: colors.fg, fontSize: 16, fontWeight: '600' }} numberOfLines={1}>{d.name}</Text><Text style={{ color: colors.muted, fontSize: 13 }}>{`${d.nat ? flagOfCountry(d.nat) + ' ' : ''}overall ${ovr(d)} · age ${A(d).age}`}</Text></View><Ionicons name="add-circle-outline" size={22} color={colors.accentText} /></View></Press>))}
     </View>
   );
 }
@@ -41,7 +41,7 @@ export function LibRacePicker({ onPick, onClose }) {
     <View style={{ gap: 8, padding: 10, borderRadius: 14, backgroundColor: colors.surface2, borderWidth: 1, borderColor: colors.accent }}>
       <View style={{ flexDirection: 'row', alignItems: 'center' }}><Text style={{ flex: 1, color: colors.fg, fontWeight: '700', fontSize: 16 }}>My saved races</Text><Pressable onPress={onClose} hitSlop={8}><Ionicons name="close" size={22} color={colors.muted} /></Pressable></View>
       {!list.length ? <Text style={{ color: colors.muted }}>Nothing saved yet. Make races in Fun → Presets.</Text> : null}
-      {list.map((r) => (<Press key={r.id} onPress={() => onPick(r)}><View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 4 }}><Text style={{ fontSize: 22 }}>{r.flag || ''}</Text><Text style={{ flex: 1, color: colors.fg, fontSize: 16, fontWeight: '600' }} numberOfLines={1}>{`${r.name} · ${r.laps} laps${r.sprint ? ' · sprint' : ''}`}</Text><Ionicons name="add-circle-outline" size={22} color={colors.accent} /></View></Press>))}
+      {list.map((r) => (<Press key={r.id} onPress={() => onPick(r)}><View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 4 }}><Text style={{ fontSize: 22 }}>{r.flag || ''}</Text><Text style={{ flex: 1, color: colors.fg, fontSize: 16, fontWeight: '600' }} numberOfLines={1}>{`${r.name} · ${r.laps} laps${r.sprint ? ' · sprint' : ''}`}</Text><Ionicons name="add-circle-outline" size={22} color={colors.accentText} /></View></Press>))}
     </View>
   );
 }
@@ -60,7 +60,7 @@ function DriverPreset({ d, fun }) {
         <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={18} color={colors.muted} />
       </Pressable>
       {open ? (
-        <View style={{ gap: 10 }}>
+        <View style={{ gap: 12 }}>
           <View style={{ flexDirection: 'row', gap: 10 }}><Field label="First name" value={d.first || ''} onChange={(v) => name(v, d.last || '')} maxLength={16} style={{ flex: 1 }} /><Field label="Surname" value={d.last || ''} onChange={(v) => name(d.first || '', v)} maxLength={18} style={{ flex: 1 }} /></View>
           <View style={{ flexDirection: 'row', gap: 10, alignItems: 'flex-end' }}>
             <Field label="Number" value={String(d.number ?? '')} onChange={(v) => { const x = v.replace(/[^0-9]/g, ''); if (x) set({ number: Number(x) }); }} keyboardType="number-pad" maxLength={2} style={{ width: 90 }} />

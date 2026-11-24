@@ -12,7 +12,7 @@ export default function CalendarPicker({ visible, onClose, onDone }) {
   const flip = (t) => { hap.tap(); setTypes((l) => (l.includes(t) ? l.filter((x) => x !== t) : [...l, t])); };
   const Chip = ({ on, label, onPress, icon }) => (
     <Pressable onPress={onPress} accessibilityRole="checkbox" accessibilityState={{ checked: on }} style={({ pressed }) => [{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 14, minHeight: 44, borderRadius: 14, borderWidth: 1, borderColor: on ? colors.accent : colors.line, backgroundColor: on ? alpha(colors.accent, 0.18) : colors.card }, pressed && { opacity: 0.8 }]}>
-      <Ionicons name={on ? (icon || 'checkbox') : (icon ? 'ellipse-outline' : 'square-outline')} size={20} color={on ? colors.accent : colors.muted} /><Text style={{ color: colors.fg, fontWeight: '700', fontSize: 15 }}>{label}</Text>
+      <Ionicons name={on ? (icon || 'checkbox') : (icon ? 'ellipse-outline' : 'square-outline')} size={20} color={on ? colors.accentText : colors.muted} /><Text style={{ color: colors.fg, fontWeight: '700', fontSize: 15 }}>{label}</Text>
     </Pressable>);
   return (
     <Modal transparent visible={visible} animationType="fade" statusBarTranslucent onRequestClose={onClose}>

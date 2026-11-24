@@ -1,6 +1,6 @@
 export const colors = {
-  bg: '#0A0506', surface: '#140B0D', card: '#140B0D', surface2: '#1E1215', line: '#2E1B20', fg: '#F7F1F2', muted: '#9E8D92',
-  accent: '#F0141E', accentSoft: '#3B0C11', cardA: '#2A1318', cardB: '#160C0F', cardC: '#34121A', deep: '#0A0506', red: '#F0141E', good: '#22C55E', gold: '#F5C400', purple: '#B26BFF', sprint: '#FF2D87', onSoft: 'rgba(255,255,255,0.75)', isLight: false,
+  bg: '#0D0F13', surface: '#14171D', card: '#14171D', surface2: '#1B1F27', line: '#262B35', fg: '#F4F6F8', muted: '#8E96A4',
+  accent: '#F43F4B', accentText: '#FF6B75', onAccent: '#FFFFFF', accentSoft: '#2A1519', cardA: '#1C2028', cardB: '#12151A', cardC: '#222733', deep: '#0D0F13', red: '#F43F4B', good: '#34D399', gold: '#F5C542', purple: '#A78BFA', sprint: '#FF5C9D', onSoft: 'rgba(244,246,248,0.74)', isLight: false,
 };
 // Constructor colours by Jolpica constructorId. These are fallbacks: the app overrides them at runtime with the colours OpenF1
 // reports for the current season (see src/api/paddock.js), so new teams get their real colour without a code change.
@@ -25,9 +25,15 @@ const hueOf = ([r, g, b]) => { r /= 255; g /= 255; b /= 255; const mx = Math.max
 export function applyAccent(hex) {
   const c = rgb(hex); if (!c) return false;
   const h = hueOf(c), neutral = Math.max(...c) - Math.min(...c) < 30; // grey, white or black accents get untinted greys
-  const t = (s, l) => hsl(h, neutral ? 4 : s, l);
-  colors.accent = '#' + c.map((x) => x.toString(16).padStart(2, '0')).join('').toUpperCase(); colors.red = colors.accent;
-  colors.accentSoft = hsl(h, neutral ? 6 : 62, 14);
+  const t = (s, l) => hsl(h, neutral ? 4 : Math.min(s, 12), l); // clean modern: only a hint of the accent hue in the greys
+  colors.accent = '#' + c.map((x) => x.toString(16).padStart(2, '0')).join('').toUpperCase(); colors.red = '#F0535B'; // red here means bad news (DNF, slipping), so it stays a real red whatever accent the user picked
+  colors.accentSoft = hsl(h, neutral ? 6 : 40, 14);
+  colors.onAccent = (0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]) > 165 ? '#0B0C10' : '#FFFFFF'; // text and icons that sit on the accent colour stay readable on a light accent
+  // Accent used as TEXT or icon colour on dark surfaces: lighten until it clears ~5.5:1 contrast against the background.
+  const lum = (v) => { const f = (x) => { x /= 255; return x <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4); }; return 0.2126 * f(v[0]) + 0.7152 * f(v[1]) + 0.0722 * f(v[2]); };
+  let at = c.slice(); const bgL = lum([12, 12, 14]);
+  for (let i = 0; i < 40 && (lum(at) + 0.05) / (bgL + 0.05) < 5.5; i++) at = at.map((x) => Math.min(255, Math.round(x + (255 - x) * 0.12)));
+  colors.accentText = '#' + at.map((x) => x.toString(16).padStart(2, '0')).join('').toUpperCase();
   Object.assign(colors, { bg: t(30, 3.6), deep: t(30, 3.6), surface: t(24, 6.2), surface2: t(22, 9), line: t(20, 14), cardA: t(30, 12), cardB: t(26, 7), cardC: t(34, 14.5) });
   return true;
 }
@@ -39,6 +45,7 @@ export function applyTheme(mode) {
   if (mode === 'amoled') {
     Object.assign(colors, { bg: '#000000', deep: '#000000', surface: '#0B0B0C', card: '#0B0B0C', surface2: '#151517', line: '#232326', cardA: '#121214', cardB: '#08080A', cardC: '#1A1A1D', muted: '#9A9AA2', isLight: false });
   } else {
+    colors.accentText = colors.accent;
     Object.assign(colors, { bg: '#F3F4F7', deep: '#0B0C10', surface: '#FFFFFF', card: '#FFFFFF', surface2: '#E9EBF0', line: '#D5D9E1', fg: '#13151A', muted: '#5B6372', cardA: '#FFFFFF', cardB: '#F6F7FA', cardC: '#EEF0F5', accentSoft: hsl(h, neutral ? 6 : 80, 90), onSoft: 'rgba(19,21,26,0.72)', good: '#15803D', gold: '#B7791F', isLight: true });
   }
   return true;

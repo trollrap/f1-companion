@@ -67,10 +67,10 @@ export function GuessCircuitScreen() {
     <Screen header={false}>
       <Card>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}><Eyebrow>{`Circuit ${round + 1} of ${ROUNDS}`}</Eyebrow><Text style={{ color: colors.gold, fontWeight: '800' }}>{`${score} pts`}</Text></View>
-        <View style={{ marginTop: 10, gap: 6 }}>{list.slice(0, clues).map((t, i) => (<View key={i} style={{ flexDirection: 'row', gap: 8 }}><Text style={{ color: colors.accent, fontWeight: '800' }}>{i + 1}</Text><Text style={{ flex: 1, color: colors.fg, fontSize: 16 }}>{t}</Text></View>))}</View>
-        {clues < 5 && !pick ? <Pressable accessibilityRole="button" onPress={() => setClues(clues + 1)} hitSlop={8} style={{ marginTop: 10 }}><Text style={{ color: colors.accent, fontWeight: '800' }}>{`Another clue (worth ${5 - clues} point${5 - clues === 1 ? '' : 's'} if right)`}</Text></Pressable> : null}
+        <View style={{ marginTop: 10, gap: 6 }}>{list.slice(0, clues).map((t, i) => (<View key={i} style={{ flexDirection: 'row', gap: 8 }}><Text style={{ color: colors.accentText, fontWeight: '800' }}>{i + 1}</Text><Text style={{ flex: 1, color: colors.fg, fontSize: 16 }}>{t}</Text></View>))}</View>
+        {clues < 5 && !pick ? <Pressable accessibilityRole="button" onPress={() => setClues(clues + 1)} hitSlop={8} style={{ marginTop: 10 }}><Text style={{ color: colors.accentText, fontWeight: '800' }}>{`Another clue (worth ${5 - clues} point${5 - clues === 1 ? '' : 's'} if right)`}</Text></Pressable> : null}
       </Card>
-      <View style={{ gap: 10 }}>{cur.opts.map((o) => { const shown = !!pick; const right = o.key === cur.c.key; const mine = pick === o.key; return (
+      <View style={{ gap: 12 }}>{cur.opts.map((o) => { const shown = !!pick; const right = o.key === cur.c.key; const mine = pick === o.key; return (
         <Pressable key={o.key} accessibilityRole="button" onPress={() => answer(o)} style={({ pressed }) => [{ padding: 16, borderRadius: 14, borderWidth: 1.5, borderColor: shown ? (right ? colors.good : mine ? colors.red : colors.line) : colors.line, backgroundColor: shown && right ? alpha(colors.good, 0.15) : colors.card }, pressed && { opacity: 0.85 }]}><Text style={{ color: colors.fg, fontSize: 17, fontWeight: '700' }}>{o.name}</Text><Text style={{ color: colors.muted, fontSize: 13 }}>{shown ? o.place : ' '}</Text></Pressable>); })}</View>
       <Note>Built from the circuit facts stored in the app, so it works offline.</Note>
     </Screen>);

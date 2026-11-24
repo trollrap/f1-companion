@@ -28,8 +28,8 @@ export default function NewsScreen({ navigation }) {
     <Screen>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
         <Text style={{ color: colors.fg, fontSize: 24, fontWeight: '800', fontStyle: 'italic' }}>News</Text>
-        <Pressable onPress={() => navigation.navigate('SavedNews')} hitSlop={10} accessibilityLabel="Saved articles" style={({ pressed }) => [{ flexDirection: 'row', alignItems: 'center', gap: 6 }, pressed && { opacity: 0.6 }]}><Ionicons name="bookmark-outline" size={20} color={colors.accent} /><Text style={{ color: colors.accent, fontWeight: '700' }}>Saved</Text></Pressable>
-        <Pressable onPress={() => setN(n + 1)} hitSlop={10} accessibilityLabel="Reload news" style={({ pressed }) => [{ flexDirection: 'row', alignItems: 'center', gap: 6 }, pressed && { opacity: 0.6 }]}><Ionicons name="refresh" size={18} color={colors.accent} /><Text style={{ color: colors.accent, fontWeight: '700', fontSize: 15 }}>Reload</Text></Pressable>
+        <Pressable onPress={() => navigation.navigate('SavedNews')} hitSlop={10} accessibilityLabel="Saved articles" style={({ pressed }) => [{ flexDirection: 'row', alignItems: 'center', gap: 6 }, pressed && { opacity: 0.6 }]}><Ionicons name="bookmark-outline" size={20} color={colors.accentText} /><Text style={{ color: colors.accentText, fontWeight: '700' }}>Saved</Text></Pressable>
+        <Pressable onPress={() => setN(n + 1)} hitSlop={10} accessibilityLabel="Reload news" style={({ pressed }) => [{ flexDirection: 'row', alignItems: 'center', gap: 6 }, pressed && { opacity: 0.6 }]}><Ionicons name="refresh" size={18} color={colors.accentText} /><Text style={{ color: colors.accentText, fontWeight: '700', fontSize: 15 }}>Reload</Text></Pressable>
       </View>
       <Pressable accessibilityRole="switch" accessibilityState={{ checked: only }} onPress={() => setOpt('newsFav', !only)} style={({ pressed }) => [{ flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-start', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 99, borderWidth: 1, borderColor: only ? colors.gold : colors.line, backgroundColor: only ? alpha(colors.gold, 0.18) : 'transparent' }, pressed && { opacity: 0.7 }]}><Ionicons name={only ? 'star' : 'star-outline'} size={16} color={only ? colors.gold : colors.muted} /><Text style={{ color: only ? colors.fg : colors.muted, fontWeight: '700', fontSize: 14 }}>My favourites only</Text></Pressable>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
@@ -58,7 +58,7 @@ const Story = React.memo(function Story({ x, i, saved }) {
             {x.image && i === 0 ? img({ width: '100%', aspectRatio: 16 / 9, backgroundColor: colors.surface2 }) : null}
             <View style={{ flexDirection: 'row', gap: 12, padding: 12, alignItems: 'center' }}>
               <View style={{ flex: 1, gap: 4 }}>
-                <Text style={{ color: colors.accent, fontFamily: 'label', fontSize: 11, letterSpacing: 1.4 }}>{`${x.sourceName.toUpperCase()}${x.date ? ` · ${ago(x.date).toUpperCase()}` : ''}`}</Text>
+                <Text style={{ color: colors.accentText, fontFamily: 'label', fontSize: 11, letterSpacing: 1.4 }}>{`${x.sourceName.toUpperCase()}${x.date ? ` · ${ago(x.date).toUpperCase()}` : ''}`}</Text>
                 <Text style={{ color: colors.fg, fontSize: i === 0 ? 21 : 18, fontWeight: '700', lineHeight: i === 0 ? 25 : 22 }} numberOfLines={4}>{x.title}</Text>
               </View>
               {x.image && i !== 0 ? img({ width: 86, height: 86, borderRadius: 12, backgroundColor: colors.surface2 }) : null}
@@ -75,12 +75,12 @@ export function ArticleScreen({ route }) {
   useEffect(() => { if (body.v && body.v.length && isSaved) attachBody(item, body.v); }, [body.v, isSaved]);
   return (
     <Screen header={false}>
-      {item.image ? <Image source={{ uri: item.image }} resizeMode="cover" style={{ width: '100%', aspectRatio: 16 / 9, borderRadius: 16, backgroundColor: colors.surface2 }} /> : null}
+      {item.image ? <Image source={{ uri: item.image }} resizeMode="cover" style={{ width: '100%', aspectRatio: 16 / 9, borderRadius: 24, backgroundColor: colors.surface2 }} /> : null}
       <View style={{ gap: 6 }}>
-        <Text style={{ color: colors.accent, fontFamily: 'label', fontSize: 12, letterSpacing: 1.6 }}>{`${item.sourceName.toUpperCase()}${item.date ? ` · ${ago(item.date).toUpperCase()}` : ''}`}</Text>
+        <Text style={{ color: colors.accentText, fontFamily: 'label', fontSize: 12, letterSpacing: 1.6 }}>{`${item.sourceName.toUpperCase()}${item.date ? ` · ${ago(item.date).toUpperCase()}` : ''}`}</Text>
         <RNText style={{ fontFamily: 'sans-serif', color: colors.fg, fontSize: 26, fontWeight: '800', lineHeight: 32 }}>{item.title}</RNText>
       </View>
-      <Press onPress={() => toggleSaved(item, body.v)}><View style={{ height: 44, borderRadius: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1, borderColor: colors.line, backgroundColor: isSaved ? alpha(colors.accent, 0.15) : colors.surface }}><Ionicons name={isSaved ? 'bookmark' : 'bookmark-outline'} size={18} color={colors.accent} /><Text style={{ color: colors.fg, fontWeight: '700' }}>{isSaved ? 'Saved for later' : 'Save for later'}</Text></View></Press>
+      <Press onPress={() => toggleSaved(item, body.v)}><View style={{ height: 44, borderRadius: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1, borderColor: colors.line, backgroundColor: isSaved ? alpha(colors.accent, 0.15) : colors.surface }}><Ionicons name={isSaved ? 'bookmark' : 'bookmark-outline'} size={18} color={colors.accentText} /><Text style={{ color: colors.fg, fontWeight: '700' }}>{isSaved ? 'Saved for later' : 'Save for later'}</Text></View></Press>
       {body.loading && <Skeleton rows={5} />}
       {(body.v || []).map((b, i) => b.t === 'img'
         ? <Image key={i} source={{ uri: b.v }} resizeMode="cover" style={{ width: '100%', aspectRatio: 16 / 9, borderRadius: 14, backgroundColor: colors.surface2 }} />
@@ -90,7 +90,7 @@ export function ArticleScreen({ route }) {
       {item.link ? (
         <Press onPress={() => Linking.openURL(item.link).catch(() => {})}>
           <View style={{ height: 48, borderRadius: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: colors.accentSoft, borderWidth: 1, borderColor: colors.accent }}>
-            <Ionicons name="open-outline" size={18} color={colors.accent} /><Text style={{ color: colors.fg, fontWeight: '700', fontSize: 16 }}>{`Read the original on ${item.sourceName}`}</Text>
+            <Ionicons name="open-outline" size={18} color={colors.accentText} /><Text style={{ color: colors.fg, fontWeight: '700', fontSize: 16 }}>{`Read the original on ${item.sourceName}`}</Text>
           </View>
         </Press>) : null}
     </Screen>
@@ -106,7 +106,7 @@ export function SavedNewsScreen({ navigation }) {
       {!list.length ? <Note>Nothing saved yet.</Note> : list.map((x) => (
         <Press key={x.id} onPress={() => navigation.navigate('Article', { item: x })}>
           <Card>
-            <Text style={{ color: colors.accent, fontFamily: 'label', fontSize: 11, letterSpacing: 1.4 }}>{`${String(x.sourceName || '').toUpperCase()}${x.body ? ' · OFFLINE' : ''}`}</Text>
+            <Text style={{ color: colors.accentText, fontFamily: 'label', fontSize: 11, letterSpacing: 1.4 }}>{`${String(x.sourceName || '').toUpperCase()}${x.body ? ' · OFFLINE' : ''}`}</Text>
             <Text style={{ color: colors.fg, fontSize: 18, fontWeight: '700', marginTop: 4 }}>{x.title}</Text>
             <Pressable onPress={() => toggleSaved(x)} hitSlop={8} accessibilityRole="button" style={{ marginTop: 8 }}><Text style={{ color: colors.muted, fontSize: 13 }}>Remove</Text></Pressable>
           </Card>
