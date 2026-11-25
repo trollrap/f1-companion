@@ -1,5 +1,10 @@
 // Newest first. Plain language, one line per change.
 export const CHANGELOG = [
+  { v: '1.76.1', items: [
+    'Past seasons: driver photos now show even when they are saved under another name than the one the season table uses, including the champion card.',
+    'Standings: a driver without a photo shows their number (or code for old drivers) in the colour of the team they drove for that season.',
+    'Photo tool now saves under the ids the app looks up, and renames results from the first version.',
+  ] },
   { v: '1.76.0', items: [
     'Race control: every flag, safety car, penalty and steward note of any session, with key moments and counts.',
     'Top speeds and sectors: speed trap, intermediates, best sectors and ideal lap per driver for any session.',

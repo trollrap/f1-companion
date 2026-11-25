@@ -608,3 +608,6 @@ driverStandings falls back to local history (year, then year-1) when Jolpica fai
 
 ## 1.76.0 (JS-only)
 New: screens/Race176.js (RaceControl, TopSpeeds, SeasonPace on OpenF1 race_control/laps; pace summaries cached in AsyncStorage `pace:<session_key>` via liveJSON), lib/offlinePack.js (Save offline button on RaceDetail), screens/Fun176.js (FriendBoard via lib/weekBoard.js on ntfy topic `<room>-wk`; weekly ledger `wk:<ISO week>` written by lib/kv.js touch(); Rewind day from local history, 24 hand-written headlines). OpenF1 endpoints unverified live (fixtures offline).
+
+## 1.76.1 (JS-only)
+media.js driverPhoto tries history.driverAliases(id) (app id, f1db id, first_last, learned Jolpica ids); Standings: leader card shows photo for past seasons, no-photo rows show number/code in team colour; tools/media-fetch/ids.js = app id rule (surname if unique else first_last), fetch.js migrates old nino-farina style files/state. Sandbox was reset once; project restored from the 1.76.0 zip, so this version was only syntax-checked (esbuild), not lint/exported/swept.

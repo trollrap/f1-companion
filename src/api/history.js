@@ -64,6 +64,13 @@ const seasonRowOf = (rc, row) => ({
   round: rc[0], race: rc[1], country: rc[2], date: rc[3], grid: row[2], position: row[3], positionText: row[4], points: row[5], status: row[6], fastest: row[7] === 1,
   teamId: H.t[row[1]][0], team: H.t[row[1]][1],
 });
+// Every file name a photo of this driver could have: the app's id, the ids the history file and the live feed use, and first_last / first-last.
+export function driverAliases(id) {
+  const i = dIdx(id); if (i < 0) return [id]; const d = H.d[i]; const out = new Set([id, IX.idOf[i], d[0]]);
+  const f = IX.norm(d[1]).replace(/ /g, '_'), l = IX.norm(d[2]).replace(/ /g, '_'); out.add(`${f}_${l}`); out.add(`${f}-${l}`.replace(/_/g, '-')); out.add(l);
+  Object.keys(IX.learned).forEach((k) => { if (IX.learned[k] === i) out.add(k); });
+  return [...out].filter(Boolean);
+}
 export function localDriverInfo(id) {
   const i = dIdx(id); if (i < 0) return null; const d = H.d[i];
   return { id, name: `${d[1]} ${d[2]}`, number: d[5] != null ? String(d[5]) : undefined, code: d[6], born: d[3] || null, nationality: d[4], url: null };

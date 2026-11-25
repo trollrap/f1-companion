@@ -22,6 +22,8 @@ import CountUp from '../components/CountUp';
 import Reveal from '../components/Reveal';
 import { Image } from 'react-native';
 import { driverPhoto } from '../lib/media';
+import { PERM_NUMBERS } from '../api/paddock';
+import { localDriverInfo } from '../api/history';
 import { HeadShot, TeamBadge } from '../components/Shared';
 
 // One tappable label that cycles through the ways of showing the gap.
@@ -46,7 +48,9 @@ export default function StandingsScreen({ navigation }) {
   const sub = (r, i) => (i === 0 ? 'Leader' : `−${mode === 'leader' ? rows[0].points - r.points : rows[i - 1].points - r.points}`);
   const next = () => { const k = M[(M.findIndex(([k]) => k === mode) + 1) % M.length][0]; setMode(k); if (k === 'leader' || k === 'ahead') setOpt('gap', k); };
   // Past seasons: the final table, so the leader is the champion. This season: only once it is mathematically decided.
-  const leadPhoto = !teams && rows[0] && cur ? driverPhoto(rows[0].driverId) : null;
+  // No photo: the driver's number (or code when no number is known for old drivers) in the colour of the team they drove for that season.
+  const numOf = (r) => { try { return r.permNumber || PERM_NUMBERS[r.driverId] || (localDriverInfo(r.driverId) || {}).number || ''; } catch { return ''; } };
+  const leadPhoto = !teams && rows[0] ? driverPhoto(rows[0].driverId) : null;
   const won = rows.length > 0 && (cur ? rows.length > 1 && clinched(rows, teams ? 'constructor' : 'driver', season.races?.length, season.races) : true);
   return (
     <Screen swipe={{ index: teams ? 1 : 0, count: 2, onIndex: (i) => switchSeg(i ? 'teams' : 'drivers') }}>
@@ -76,7 +80,7 @@ export default function StandingsScreen({ navigation }) {
           <Press onPress={() => (teams ? navigation.navigate('Team', { teamId: rows[0].teamId, name: rows[0].name, year: cur ? undefined : year }) : navigation.navigate('Driver', { driverId: rows[0].driverId, name: rows[0].name, first: rows[0].first, last: rows[0].last, teamId: rows[0].teamId, team: rows[0].team, year: cur ? undefined : year }))} accessibilityLabel="Open the leader">
             <Grad color={tc(rows[0].teamId)} from={0.28} to={0.02} radius={28} border={0.4} style={{ padding: 18, minHeight: 138 }}>
               {!teams ? <View pointerEvents="none" style={{ position: 'absolute', right: -8, bottom: 0, width: 160, height: 160, alignItems: 'center', justifyContent: 'flex-end' }}>
-                {leadPhoto ? <Image source={leadPhoto} resizeMode="contain" resizeMethod="resize" fadeDuration={0} style={{ width: 160, height: 160 }} /> : null}
+                {leadPhoto ? <Image source={leadPhoto} resizeMode="contain" resizeMethod="resize" fadeDuration={0} style={{ width: 160, height: 160 }} /> : !teams && rows[0] ? <View style={{ width: 160, height: 160, alignItems: 'center', justifyContent: 'center' }}><Text style={{ color: tc(rows[0].teamId), opacity: 0.9, fontFamily: 'display', fontStyle: 'italic', fontWeight: '900', fontSize: numOf(rows[0]) ? 84 : 58, includeFontPadding: false }} numberOfLines={1}>{numOf(rows[0]) || (rows[0].code || rows[0].last || '').slice(0, 3).toUpperCase()}</Text></View> : null}
               </View> : null}
               {teams ? <View pointerEvents="none" style={{ position: 'absolute', right: 14, top: 14, opacity: 0.95 }}><TeamBadge teamId={rows[0].teamId} name={rows[0].name} size={84} /></View> : null}
               <View style={{ paddingRight: teams ? 90 : 130 }}>
@@ -102,7 +106,7 @@ export default function StandingsScreen({ navigation }) {
                   style={({ pressed }) => [{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: teams ? 10 : 0, paddingLeft: 12, paddingRight: 14, minHeight: 76, overflow: 'hidden', borderRadius: 18, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line, borderLeftWidth: 4, borderLeftColor: c }, fav && { borderRightWidth: 4, borderRightColor: colors.gold }, pressed && { opacity: 0.85, transform: [{ scale: 0.99 }] }]}>
                   <Text style={{ width: 24, color: colors.muted, fontWeight: '800', fontSize: 15 }}>{r.position}</Text>
                   {teams ? <TeamBadge teamId={r.teamId} name={r.name} size={38} /> : <View style={{ width: 74, height: 74, overflow: 'hidden', alignItems: 'center', alignSelf: 'flex-end' }}>
-                    {r.driverId && driverPhoto(r.driverId) ? <Image source={driverPhoto(r.driverId)} resizeMode="cover" resizeMethod="resize" fadeDuration={0} style={{ width: 92, height: 92, marginTop: -6 }} /> : <Text style={{ position: 'absolute', bottom: 12, color: colors.fg, fontWeight: '800', fontSize: 12 }}>{(r.code || r.last || '').slice(0, 3).toUpperCase()}</Text>}
+                    {r.driverId && driverPhoto(r.driverId) ? <Image source={driverPhoto(r.driverId)} resizeMode="cover" resizeMethod="resize" fadeDuration={0} style={{ width: 92, height: 92, marginTop: -6 }} /> : <View style={{ flex: 1, alignSelf: 'stretch', alignItems: 'center', justifyContent: 'center' }}><Text style={{ color: c, fontFamily: 'display', fontStyle: 'italic', fontWeight: '900', fontSize: numOf(r) ? 34 : 24, includeFontPadding: false }} numberOfLines={1}>{numOf(r) || (r.code || r.last || '').slice(0, 3).toUpperCase()}</Text></View>}
                   </View>}
                   <View style={{ flex: 1 }}>
                     <Text style={{ color: colors.fg, fontWeight: '700', fontSize: 16 }} numberOfLines={1}>{teams ? r.name : `${r.first} ${r.last}`}</Text>

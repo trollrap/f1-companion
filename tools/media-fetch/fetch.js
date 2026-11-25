@@ -7,7 +7,7 @@
 //   node fetch.js --redo            ignore earlier results and start again
 // Output: out/drivers/<id>.png (500x500, transparent), out/logos/<id>.png (512x512, transparent), out/review.html, out/report.json
 const fs = require('fs'), path = require('path'), { fork } = require('child_process');
-const L = require('./lib'); const sharp = require('sharp');
+const L = require('./lib'); const sharp = require('sharp'); const { appIds } = require('./ids');
 const root = path.join(__dirname, '..', '..'), OUT = path.join(__dirname, 'out'), CACHE = path.join(OUT, 'cache');
 const arg = (k) => process.argv.includes(k), val = (k, d) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : d; };
 const doDrivers = !arg('--logos'), doLogos = !arg('--drivers'), limit = Number(val('--limit', 0)) || Infinity, since = Number(val('--since', 0)) || 0;
@@ -69,6 +69,19 @@ const H = JSON.parse(fs.readFileSync(path.join(root, 'src', 'data', 'history.jso
 const lastYear = {}; for (const y of Object.keys(H.r)) for (const race of H.r[y]) for (const row of race[4]) lastYear[row[0]] = Math.max(lastYear[row[0]] || 0, +y);
 const have = (dir) => new Set(fs.existsSync(path.join(root, 'assets', dir)) ? fs.readdirSync(path.join(root, 'assets', dir)).map((f) => f.replace(/\.(png|jpe?g|webp)$/i, '')) : []);
 const haveDrivers = have('drivers'), haveLogos = have('logos');
+const APP = appIds(H); // the id the app looks photos up by
+// Earlier versions of this tool saved files under the history file's own ids (nino-farina); move them to the app's ids.
+(() => {
+  let moved = 0;
+  H.d.forEach((d, i) => {
+    if (d[0] === APP[i]) return;
+    const oldK = 'drivers:' + d[0], newK = 'drivers:' + APP[i];
+    if (STATE[oldK]) { STATE[newK] = { ...STATE[oldK], id: APP[i] }; delete STATE[oldK]; moved++; }
+    const o = path.join(OUT, 'drivers', d[0] + '.png'), n = path.join(OUT, 'drivers', APP[i] + '.png');
+    if (fs.existsSync(o)) { try { fs.renameSync(o, n); } catch {} }
+  });
+  if (moved) { save(); console.log(`renamed ${moved} earlier results to the app's ids`); }
+})();
 
 async function doDriver(d, idx) {
   const [id, first, last, dob] = d, name = `${first} ${last}`;
@@ -154,7 +167,7 @@ code{color:#9aa}i{color:#e8a317;font-style:normal;font-size:12px}small{color:#88
 (async () => {
   const tally = () => { const c = {}; for (const s of Object.values(STATE)) c[s.kind + ' ' + s.status] = (c[s.kind + ' ' + s.status] || 0) + 1; return c; };
   if (doDrivers) {
-    const ds = H.d.map((d, i) => [d, i]).filter(([d, i]) => (only ? only.includes(d[0]) : (arg('--all-drivers') || !haveDrivers.has(d[0])) && (!since || (lastYear[i] || 0) >= since))).map(([d]) => d);
+    const ds = H.d.map((d, i) => [[APP[i], d[1], d[2], d[3]], i, d[0]]).filter(([d, i, d0]) => (only ? only.includes(d[0]) || only.includes(d0) : (arg('--all-drivers') || !(haveDrivers.has(d[0]) || haveDrivers.has(d0))) && (!since || (lastYear[i] || 0) >= since))).map(([d]) => d);
     console.log(`drivers to look up: ${ds.length}`); await run('drivers', ds, (d) => doDriver(d), (d) => `${d[1]} ${d[2]}`);
   }
   if (doLogos) {

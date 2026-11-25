@@ -19,7 +19,17 @@ export async function loadRemoteMedia() {
 const remote = (kind, id) => ({ uri: `${BASE}/${kind}/${id}.png?v=${R.v}` });
 // Photos are optional: every screen has a designed fallback (team gradient + big number / initials) when a file is missing.
 // Looked up through the whole module so an older generated index (before principals, engineers, numbers) still works until `npm run media` is run again.
-export const driverPhoto = (driverId) => devPhoto('drivers', driverId) || (M.drivers || {})[driverId] || (R.drivers.has(driverId) ? remote('drivers', driverId) : null);
+const pick = (id) => devPhoto('drivers', id) || (M.drivers || {})[id] || (R.drivers.has(id) ? remote('drivers', id) : null);
+// A photo may be saved under another id than the one a screen has (past seasons use the history file's ids): try the driver's other names too, remembering misses.
+const memo = new Map(); let memoV = -1;
+export const driverPhoto = (driverId) => {
+  const hit = pick(driverId); if (hit || !driverId) return hit;
+  if (memoV !== R.v) { memo.clear(); memoV = R.v; }
+  if (memo.has(driverId)) { const k = memo.get(driverId); return k ? pick(k) : null; }
+  let found = null;
+  try { const { driverAliases } = require('../api/history'); for (const a of driverAliases(driverId)) { if (a !== driverId && pick(a)) { found = a; break; } } } catch {}
+  memo.set(driverId, found); return found ? pick(found) : null;
+};
 export const teamCar = (teamId) => devPhoto('cars', teamId) || (M.cars || {})[teamId] || null;
 export const teamLogo = (teamId) => devPhoto('logos', teamId) || (R.override.has(teamId) && R.logos.has(teamId) ? remote('logos', teamId) : null) || (M.logos || {})[teamId] || (R.logos.has(teamId) ? remote('logos', teamId) : null);
 export const principalPhoto = (teamId) => devPhoto('principals', teamId) || (M.principals || {})[teamId] || null;
