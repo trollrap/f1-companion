@@ -1,3 +1,4 @@
+import { saveWeekend } from '../lib/offlinePack';
 import { up } from '../lib/i18n';
 import React, { useEffect, useState } from 'react';
 import { View, StyleSheet } from 'react-native';
@@ -35,6 +36,8 @@ export default function RaceDetailScreen({ route, navigation }) {
   const t = sessions.length ? targetOf(meeting, sessions, now) : null;
   const done = sessions.filter((x) => Date.parse(x.date_end) < now); const shown = (picked && done.find((x) => x.session_name === picked)) || done.at(-1);
   const full = (x) => navigation.navigate('Round', { meeting: { ...meeting, year: meeting.year || new Date().getFullYear() }, session: x.session_name });
+  const [saving, setSaving] = useState(false);
+  const saveOffline = async () => { if (saving) return; setSaving(true); try { const r = await saveWeekend(meeting); Alert.alert('Saved for offline', r.failed.length ? `Saved: ${r.ok.join(', ')}.\n\nCould not save: ${r.failed.join(', ')}. Try again when the connection is better.` : `Saved: ${r.ok.join(', ')}. This weekend now opens without a signal.`); } catch (e) { Alert.alert('Could not save', String((e && e.message) || e)); } finally { setSaving(false); } };
   const raceDone = sessions.some((x) => /^race$/i.test(x.session_name) && Date.parse(x.date_end) < now); // no lap chart before the race has been run
   const nextAlert = plannedAlerts(sessions, prefs, now)[0];
   return (
@@ -53,6 +56,12 @@ export default function RaceDetailScreen({ route, navigation }) {
       {sessions.length ? <Timeline sessions={sessions} now={now} off={off} onOpen={(x) => (Date.parse(x.date_end) < now ? setPicked(x.session_name) : full(x))} selected={shown?.session_name} /> : <Note>Session times appear here once the weekend is published.</Note>}
       <View style={{ flexDirection: 'row', gap: 8 }}>
         {[['Add to calendar', 'calendar-outline', () => shareMeeting(meeting, sessions).catch((e) => Alert.alert('Could not make the calendar', String(e?.message || e)))], ['Lap chart', 'git-branch-outline', () => navigation.navigate('LapChart', { year: meeting.year || new Date().getFullYear(), round: Number(meeting.round) })], ['Alerts', 'notifications-outline', () => navigation.navigate('AlertsInbox')]].filter(([l]) => l !== 'Lap chart' || raceDone).map(([l, ic, fn]) => (
+          <Pressable key={l} onPress={fn} accessibilityRole="button" style={({ pressed }) => [{ flex: 1, alignItems: 'center', gap: 4, paddingVertical: 12, paddingHorizontal: 6, borderRadius: 14, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line }, pressed && { opacity: 0.8 }]}>
+            <Ionicons name={ic} size={17} color={colors.accentText} /><Text style={{ color: colors.fg, fontWeight: '700', fontSize: 13, textAlign: 'center' }}>{l}</Text>
+          </Pressable>))}
+      </View>
+      <View style={{ flexDirection: 'row', gap: 8 }}>
+        {[...(sessions.some((x) => Date.parse(x.date_start) < now) ? [['Race control', 'flag-outline', () => navigation.navigate('RaceControl', { meetingKey: meeting.meeting_key })], ['Top speeds', 'speedometer-outline', () => navigation.navigate('TopSpeeds', { meetingKey: meeting.meeting_key })]] : []), ['Save offline', saving ? 'hourglass-outline' : 'download-outline', () => saveOffline()]].map(([l, ic, fn]) => (
           <Pressable key={l} onPress={fn} accessibilityRole="button" style={({ pressed }) => [{ flex: 1, alignItems: 'center', gap: 4, paddingVertical: 12, paddingHorizontal: 6, borderRadius: 14, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line }, pressed && { opacity: 0.8 }]}>
             <Ionicons name={ic} size={17} color={colors.accentText} /><Text style={{ color: colors.fg, fontWeight: '700', fontSize: 13, textAlign: 'center' }}>{l}</Text>
           </Pressable>))}

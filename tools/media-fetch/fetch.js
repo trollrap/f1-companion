@@ -73,21 +73,33 @@ const haveDrivers = have('drivers'), haveLogos = have('logos');
 async function doDriver(d, idx) {
   const [id, first, last, dob] = d, name = `${first} ${last}`;
   const want = { name, first, last, dob };
-  let best = null;
-  for (const text of [name, `${last} ${first}`]) {
+  let best = null, person = null;
+  for (const text of [name, `${last} ${first}`, `${name} racing driver`]) {
     const ents = await entities((await search(text)).slice(0, 8));
-    for (const e of ents) { const sc = L.scoreDriver(e, want); if (sc >= 6 && (!best || sc > best.sc) && L.pickFile(e.claims, 'P18')) best = { sc, e }; }
+    for (const e of ents) { const sc = L.scoreDriver(e, want); if (sc >= 6) { if (!person || sc > person.sc) person = { sc, e }; if (L.pickFile(e.claims, 'P18') && (!best || sc > best.sc)) best = { sc, e }; } }
     if (best) break;
   }
-  if (!best) return { status: 'none', note: 'no Wikidata match with a photo' };
-  const file = L.pickFile(best.e.claims, 'P18'), info = await fileInfo(file), flags = [];
+  let file = best && L.pickFile(best.e.claims, 'P18'), fromCat = false;
+  if (!file && person) { // person found but Wikidata has no photo: look in their Commons category for a portrait-like file
+    const cat = ((person.e.claims.P373 || [])[0] || {}).mainsnak; const catName = cat && cat.datavalue && cat.datavalue.value;
+    if (catName) {
+      const j = await http(`${CM}?${q({ action: 'query', list: 'categorymembers', cmtitle: 'Category:' + catName, cmtype: 'file', cmlimit: 60, format: 'json' })}`, { cacheKey: 'c_' + catName });
+      const bad = /\b(car|ferrari|maserati|alfa|cooper|lotus|brm|vanwall|lancia|mercedes|talbot|gordini|connaught|grand prix|gp|trophy|race|crash|pit|podium|monument|grave|signature|autograph|stamp)\b/i;
+      const names = ((j.query && j.query.categorymembers) || []).map((m) => m.title.replace(/^File:/, '')).filter((n) => /\.(jpe?g|png)$/i.test(n) && !bad.test(n));
+      file = names.find((n) => L.fold(n).includes(L.fold(last))) || names[0] || null; fromCat = !!file;
+    }
+    if (file) best = person;
+  }
+  if (!file) return { status: 'none', note: person ? `found on Wikidata (${person.e.id}) but no photo anywhere` : 'not found on Wikidata with a matching birth date' };
+  const flagsPre = fromCat ? ['from Commons category, check'] : [];
+  const info = await fileInfo(file), flags = [...flagsPre];
   if (info.mime && !/^image\/(jpeg|png|webp|tiff|gif)/.test(info.mime)) return { status: 'none', note: 'photo file type ' + info.mime };
   if (info.width && info.width < 300) flags.push('low-res source');
   const raw = await http(fileUrl(file, 1000), { json: false });
   const inP = path.join(OUT, 'src', id + '.png'), cutP = path.join(OUT, 'src', id + '.cut.png');
   fs.writeFileSync(inP, await sharp(raw).rotate().resize({ width: 1000, height: 1400, fit: 'inside', withoutEnlargement: true }).png().toBuffer());
   const r = await cutout(inP, cutP); if (r.error) return { status: 'error', note: r.error };
-  const c = await L.squareCrop(fs.readFileSync(cutP), 500); if (!c) return { status: 'error', note: 'cut-out came back empty' };
+  const c = await L.squareCrop(fs.readFileSync(cutP), 500); if (!c) return { status: 'error', note: 'could not find a person in the photo (group, car or very small figure)' };
   if (c.ratio < 0.2) flags.push('small subject'); if (c.ratio > 0.88) flags.push('background may remain');
   fs.writeFileSync(path.join(OUT, 'drivers', id + '.png'), c.buf);
   try { fs.unlinkSync(cutP); } catch {}
@@ -115,7 +127,7 @@ async function run(kind, items, fn, labelOf) {
   let n = 0;
   for (const it of items) {
     const id = it[0], key = kind + ':' + id;
-    if (STATE[key] && ['ok', 'check', 'none'].includes(STATE[key].status) && !only) { continue; }
+    if (STATE[key] && ['ok', 'check'].includes(STATE[key].status) && !only) { continue; }
     if (++n > limit) break;
     try { STATE[key] = { kind, id, name: labelOf(it), ...(await fn(it)) }; }
     catch (e) { STATE[key] = { kind, id, name: labelOf(it), status: 'error', note: String((e && e.message) || e) }; }

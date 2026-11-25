@@ -1,6 +1,7 @@
 // OpenF1: schedule and sessions (free), gmt_offset for track time, track outline from /location. Live timing needs the paid Sponsor tier.
 // Field names below were checked against openf1.org/docs on 27 Oct 2026. Historical data is free; real-time data is paid.
-import { cachedJSON, HOUR, DAY } from '../lib/cache';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { cachedJSON, liveJSON, HOUR, DAY } from '../lib/cache';
 import { nicePart, splitName } from '../lib/names';
 export const OPENF1 = 'https://api.openf1.org/v1';
 export const YEAR = 2026;
@@ -138,3 +139,60 @@ export async function sessionBestLaps(sessionKey) {
   return rows.map((r, i) => { const d = drv.find((x) => x.driver_number === r.n) || {}; const nm = d.last_name ? { first: nicePart(d.first_name), last: nicePart(d.last_name, true) } : splitName(d.full_name || `#${r.n}`);
     return { position: i + 1, number: r.n, first: nm.first, last: nm.last, driver: `${nm.first} ${nm.last}`.trim(), team: d.team_name, color: d.team_colour ? `#${d.team_colour}` : null, time: lapFmt(r.t), gap: i ? `+${(r.t - rows[0].t).toFixed(3)}` : '' }; });
 }
+
+// ---- race control messages, lap statistics, season pace (1.76) ----
+// Drivers of a session by number: name, team, colour.
+export async function sessionDrivers(sessionKey) {
+  const drv = await get(`/drivers?session_key=${sessionKey}`, DAY); const out = {};
+  (Array.isArray(drv) ? drv : []).forEach((d) => {
+    const nm = d.last_name ? { first: nicePart(d.first_name), last: nicePart(d.last_name, true) } : splitName(d.full_name || `#${d.driver_number}`);
+    out[d.driver_number] = { number: d.driver_number, first: nm.first, last: nm.last, code: d.name_acronym, team: d.team_name, color: d.team_colour ? `#${d.team_colour}` : null };
+  });
+  return out;
+}
+// Flags, safety cars, penalties and investigations of one session, oldest first.
+export async function sessionRaceControl(sessionKey) {
+  const [msgs, drv] = await Promise.all([get(`/race_control?session_key=${sessionKey}`, 10 * 60e3), sessionDrivers(sessionKey).catch(() => ({}))]);
+  if (!Array.isArray(msgs)) throw new Error('Unexpected OpenF1 response');
+  return msgs.sort((a, b) => Date.parse(a.date) - Date.parse(b.date)).map((m) => ({
+    time: m.date, lap: m.lap_number, category: m.category, flag: m.flag, scope: m.scope, sector: m.sector, text: String(m.message || '').replace(/\s+/g, ' ').trim(),
+    driver: m.driver_number != null && drv[m.driver_number] ? drv[m.driver_number].last : null, color: m.driver_number != null && drv[m.driver_number] ? drv[m.driver_number].color : null }));
+}
+// Top speeds (speed trap, intermediates) and best sectors of one session, per driver, from every timed lap.
+export async function sessionLapStats(sessionKey) {
+  const [laps, drv] = await Promise.all([get(`/laps?session_key=${sessionKey}`, 30 * 60e3), sessionDrivers(sessionKey).catch(() => ({}))]);
+  if (!Array.isArray(laps)) throw new Error('Unexpected OpenF1 response');
+  const by = {};
+  laps.forEach((l) => {
+    const o = (by[l.driver_number] ||= { number: l.driver_number, trap: 0, i1: 0, i2: 0, s1: null, s2: null, s3: null });
+    if (l.st_speed > o.trap) o.trap = l.st_speed; if (l.i1_speed > o.i1) o.i1 = l.i1_speed; if (l.i2_speed > o.i2) o.i2 = l.i2_speed;
+    ['s1', 's2', 's3'].forEach((k, i) => { const v = l[`duration_sector_${i + 1}`]; if (typeof v === 'number' && v > 0 && (o[k] == null || v < o[k])) o[k] = v; });
+  });
+  return Object.values(by).map((o) => ({ ...o, ...(drv[o.number] || { last: `#${o.number}` }), ideal: o.s1 && o.s2 && o.s3 ? o.s1 + o.s2 + o.s3 : null }));
+}
+// Race pace of every team in one finished race: median of the clean laps of both cars, as the gap to the quickest team in percent.
+// Only this small summary is stored on the phone (the full lap data is several hundred kB per race).
+async function racePaceOne(sessionKey) {
+  const key = `pace:${sessionKey}`;
+  try { const c = JSON.parse(await AsyncStorage.getItem(key)); if (c && c.teams) return c; } catch {}
+  const tryTwice = async (u) => { let r = await liveJSON(u); if (r.status !== 200) { await new Promise((ok) => setTimeout(ok, 1500)); r = await liveJSON(u); } return r; };
+  const L = await tryTwice(`${OPENF1}/laps?session_key=${sessionKey}`); const D = await tryTwice(`${OPENF1}/drivers?session_key=${sessionKey}`);
+  if (L.status !== 200 || !Array.isArray(L.json) || D.status !== 200 || !Array.isArray(D.json)) throw new Error('Lap data not available');
+  const team = {}; D.json.forEach((d) => { team[d.driver_number] = { name: d.team_name, color: d.team_colour ? `#${d.team_colour}` : null }; });
+  const timed = L.json.filter((l) => typeof l.lap_duration === 'number' && l.lap_duration > 0 && !l.is_pit_out_lap && l.lap_number > 1);
+  if (!timed.length) return { teams: {} };
+  const fastest = Math.min(...timed.map((l) => l.lap_duration)); const by = {};
+  timed.filter((l) => l.lap_duration <= fastest * 1.07).forEach((l) => { const t = team[l.driver_number]; if (t && t.name) (by[t.name] ||= { color: t.color, v: [] }).v.push(l.lap_duration); });
+  const med = (a) => { const s = [...a].sort((x, y) => x - y); return s[Math.floor(s.length / 2)]; };
+  const m = {}; Object.entries(by).forEach(([n, o]) => { if (o.v.length >= 8) m[n] = { med: med(o.v), color: o.color }; });
+  const best = Math.min(...Object.values(m).map((x) => x.med)); const teams = {};
+  Object.entries(m).forEach(([n, o]) => { teams[n] = { gap: Math.round(((o.med / best) - 1) * 10000) / 100, color: o.color }; });
+  const out = { teams }; try { await AsyncStorage.setItem(key, JSON.stringify(out)); } catch {}
+  return out;
+}
+export async function seasonRaceSessions(year = YEAR) {
+  const r = await get(`/sessions?year=${year}&session_name=Race`, HOUR);
+  if (!Array.isArray(r)) throw new Error('Unexpected OpenF1 response');
+  return r.filter((x) => !x.is_cancelled && Date.parse(x.date_end) < Date.now()).sort((a, b) => Date.parse(a.date_start) - Date.parse(b.date_start)).map((x, i) => ({ ...x, round: i + 1 }));
+}
+export { racePaceOne };

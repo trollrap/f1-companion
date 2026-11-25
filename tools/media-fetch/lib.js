@@ -28,7 +28,10 @@ function pickFile(claims, p) {
 function scoreDriver(ent, want) {
   const label = fold(ent.labels && ent.labels.en && ent.labels.en.value), desc = fold(ent.descriptions && ent.descriptions.en && ent.descriptions.en.value);
   const alias = ((ent.aliases && ent.aliases.en) || []).map((a) => fold(a.value));
-  const nameOk = label === fold(want.name) || alias.includes(fold(want.name)) || (label.includes(fold(want.last)) && label.split(' ')[0] === fold(want.first).split(' ')[0]);
+  const dm0 = dobMatches(ent.claims, want.dob);
+  const lastOk = label.includes(fold(want.last)) || alias.some((a) => a.includes(fold(want.last)));
+  // an exact birth date is strong proof, so the name only has to contain the surname ("Bob Gerard" vs "Robert Gerard")
+  const nameOk = label === fold(want.name) || alias.includes(fold(want.name)) || (lastOk && (dm0 === true || label.split(' ')[0] === fold(want.first).split(' ')[0]));
   if (!nameOk) return 0;
   const human = claimIds(ent.claims, 'P31').includes('Q5');
   if (!human) return 0;
@@ -36,7 +39,7 @@ function scoreDriver(ent, want) {
   const dm = dobMatches(ent.claims, want.dob);
   let sc = 0;
   if (dm === true) sc += 6; else if (dm === false) return 0;
-  if (racing) sc += dm === true ? 2 : 4; // without a birth date to check, only accept clear racing drivers
+  if (racing) sc += dm === true ? 2 : 6; // without a birth date on Wikidata, only accept clear racing drivers
   return sc;
 }
 // Score a candidate for a team (constructor).
@@ -82,9 +85,10 @@ async function squareCrop(png, size = 500) {
   if (ix1 <= ix0 || iy1 <= iy0) return null;
   const part = await sharp(png).extract({ left: ix0, top: iy0, width: ix1 - ix0, height: iy1 - iy0 }).png().toBuffer();
   const out = await sharp({ create: { width: side, height: side, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } })
-    .composite([{ input: part, left: ix0 - left, top: iy0 - top }]).resize(size, size).png({ compressionLevel: 9 }).toBuffer();
-  const chk = await subjectBox(out);
-  return { buf: out, ratio: chk ? chk.ratio : 0, subjectW: b.x1 - b.x0 + 1, subjectH: b.y1 - b.y0 + 1 };
+    .composite([{ input: part, left: ix0 - left, top: iy0 - top }]).png().toBuffer();
+  const sized = await sharp(out).resize(size, size).png({ compressionLevel: 9 }).toBuffer(); // sharp resizes before it composites, so resize in a second step
+  const chk = await subjectBox(sized);
+  return { buf: sized, ratio: chk ? chk.ratio : 0, subjectW: b.x1 - b.x0 + 1, subjectH: b.y1 - b.y0 + 1 };
 }
 // Logo: trim empty borders, fit in a transparent square. Near-black single-colour logos are turned white so they show on the app's dark cards.
 async function squareLogo(png, size = 512) {

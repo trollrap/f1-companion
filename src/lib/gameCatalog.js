@@ -10,6 +10,8 @@ export const CATS = [
   { id: 'whatif', label: 'What if', color: '#ff8c42', icon: 'git-compare', blurb: 'Rewrite history' },
 ];
 export const GAMES = [
+  { r: 'Rewind', n: 'Rewind day', s: 'A famous race with real results', i: 'play-back', c: 'daily', nw: true },
+  { r: 'FriendBoard', n: 'Friend scoreboard', s: 'Weekly points vs friends', i: 'people', c: 'predict', nw: true },
   { r: 'Snake', n: 'Snake (DRS trail)', s: 'Collect tokens, grow the trail', i: 'git-branch', c: 'arcade', k: 'snake', b: 'snake:best', f: '{} tokens', nw: true },
   { r: 'Checkers', n: 'Checkers', s: 'Draughts vs the computer', i: 'grid', c: 'two', k: 'chk', b: 'chk:best', f: '{} wins', two: true, nw: true },
   { r: 'ConnectFour', n: 'Connect four', s: 'Drop discs, line up four', i: 'ellipse', c: 'two', k: 'c4', b: 'c4:best', f: '{} wins', two: true },

@@ -43,7 +43,12 @@ export async function sessionResults(year, round, kind /* results | qualifying |
 }
 export async function driverStandings(year) {
   if (LH.localYear(year)) { const l = LH.localDriverStandings(year); if (l && l.length) return l; }
-  const d = await get(`/${year}/driverstandings.json`, ttlFor(year, 10 * MIN));
+  let d;
+  try { d = await get(`/${year}/driverstandings.json`, ttlFor(year, 10 * MIN)); } catch (e) {
+    // The live feed is unreachable (a friend's network, a Jolpica outage): use the saved results so drivers still show, newest season we have.
+    for (const y of [Number(year), Number(year) - 1]) { const l = LH.localDriverStandings(y); if (l && l.length) return l; }
+    throw e;
+  }
   const list = d.StandingsTable.StandingsLists[0];
   return Object.assign((list?.DriverStandings || []).map((s) => (LH.learn(s.Driver.driverId, s.Driver.givenName, s.Driver.familyName), {
     position: Number(s.position), points: Number(s.points), wins: Number(s.wins), driverId: s.Driver.driverId,

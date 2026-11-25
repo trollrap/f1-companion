@@ -599,3 +599,12 @@ Unverified on device: status-bar offset, bell scroll (web sandbox has no insets/
 
 ## 1.75.0 (JS-only)
 tools/media-fetch (own package.json; imgly background removal runs in a forked worker because it crashes if sharp is loaded in the same process): Wikidata search -> verified by birth date (drivers) / logo file P154 (teams) -> Commons FilePath -> cut-out + 1:1 crop -> out/review.html -> publish.js -> remote-media/{drivers,logos}/ + index.json. App: lib/media.js loadRemoteMedia() (cached index in AsyncStorage 'media:idx', raw.githubusercontent.com main) feeds driverPhoto/teamLogo as {uri}. Tested offline with mockfetch.js only; real Wikidata run unverified.
+
+## 1.75.1 (JS-only)
+First real run of tools/media-fetch showed: sharp resizes BEFORE compositing (fixed: resize in a 2nd step), no-dob score threshold, name match relaxed when birth date matches exactly, Commons category (P373) fallback, 'none'/'error' entries are retried on rerun.
+
+## 1.75.2 (JS-only)
+driverStandings falls back to local history (year, then year-1) when Jolpica fails, so Standings/Paddock/lineups are not empty on a friend's network.
+
+## 1.76.0 (JS-only)
+New: screens/Race176.js (RaceControl, TopSpeeds, SeasonPace on OpenF1 race_control/laps; pace summaries cached in AsyncStorage `pace:<session_key>` via liveJSON), lib/offlinePack.js (Save offline button on RaceDetail), screens/Fun176.js (FriendBoard via lib/weekBoard.js on ntfy topic `<room>-wk`; weekly ledger `wk:<ISO week>` written by lib/kv.js touch(); Rewind day from local history, 24 hand-written headlines). OpenF1 endpoints unverified live (fixtures offline).

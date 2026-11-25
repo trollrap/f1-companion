@@ -242,6 +242,11 @@ function Shell() {
               <Stack.Screen name="GridDuel" getComponent={() => guardScreen(require('./screens/Party155').GridDuelScreen, 'GridDuelScreen')} options={{ title: 'Tic-tac-toe grid' }} />
               <Stack.Screen name="ConnectFour" getComponent={() => guardScreen(require('./screens/Table157').ConnectFourScreen, 'ConnectFourScreen')} options={{ title: 'Connect four' }} />
               <Stack.Screen name="Blackjack" getComponent={() => guardScreen(require('./screens/Table157').BlackjackScreen, 'BlackjackScreen')} options={{ title: 'Blackjack 21' }} />
+              <Stack.Screen name="RaceControl" getComponent={() => guardScreen(require('./screens/Race176').RaceControlScreen, 'RaceControlScreen')} options={{ title: 'Race control' }} />
+              <Stack.Screen name="TopSpeeds" getComponent={() => guardScreen(require('./screens/Race176').SpeedsScreen, 'SpeedsScreen')} options={{ title: 'Top speeds and sectors' }} />
+              <Stack.Screen name="SeasonPace" getComponent={() => guardScreen(require('./screens/Race176').SeasonPaceScreen, 'SeasonPaceScreen')} options={{ title: 'Season pace' }} />
+              <Stack.Screen name="FriendBoard" getComponent={() => guardScreen(require('./screens/Fun176').FriendBoardScreen, 'FriendBoardScreen')} options={{ title: 'Friend scoreboard' }} />
+              <Stack.Screen name="Rewind" getComponent={() => guardScreen(require('./screens/Fun176').RewindScreen, 'RewindScreen')} options={{ title: 'Rewind day' }} />
               <Stack.Screen name="LapChart" getComponent={() => guardScreen(require('./screens/Laps157').default, 'default')} options={{ title: 'Lap chart' }} />
               <Stack.Screen name="GameStats" getComponent={() => guardScreen(require('./screens/GameStats').default, 'default')} options={{ title: 'Games stats' }} />
               <Stack.Screen name="Snake" getComponent={() => guardScreen(require('./screens/Arcade158').SnakeScreen, 'SnakeScreen')} options={{ title: 'Snake' }} />

@@ -1,5 +1,19 @@
 // Newest first. Plain language, one line per change.
 export const CHANGELOG = [
+  { v: '1.76.0', items: [
+    'Race control: every flag, safety car, penalty and steward note of any session, with key moments and counts.',
+    'Top speeds and sectors: speed trap, intermediates, best sectors and ideal lap per driver for any session.',
+    'Season pace: each team\'s race pace across the season as a chart, kept on the phone once loaded.',
+    'Save offline: one tap on a race weekend saves its schedule, sessions, track map, standings and results.',
+    'Friend scoreboard: weekly points from the games you play against everyone in your prediction room.',
+    'Rewind day: one famous race a day with the real grid and top ten.',
+  ] },
+  { v: '1.75.2', items: [
+    'Drivers still show when the live results feed cannot be reached (another network, a feed outage): the app falls back to the saved standings.',
+  ] },
+  { v: '1.75.1', items: [
+    'Photo tool fixes: crop crash on wide photos, better matching of older drivers, Commons-category fallback when Wikidata has no photo.',
+  ] },
   { v: '1.75.0', items: [
     'Driver photos and team logos can now be downloaded when they are first needed, so past drivers and defunct teams get pictures without growing the app.',
     'New tool (tools/media-fetch) finds portraits and official logos on Wikidata and Wikimedia Commons, cuts the drivers out to transparent 1:1 and lets you review them before publishing.',

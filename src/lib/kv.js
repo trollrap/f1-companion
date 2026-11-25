@@ -8,8 +8,13 @@ const PLAYED = /^game:|:best$|^daily/;
 let touchDay = '', touchSet = new Set();
 async function touch(k) {
   const t = today(); if (touchDay !== t) { touchDay = t; touchSet = new Set(); try { const r = JSON.parse(await AsyncStorage.getItem('touched')); if (r && r.day === t && Array.isArray(r.keys)) r.keys.forEach((x) => touchSet.add(x)); } catch {} }
-  if (touchSet.has(k)) return; touchSet.add(k); try { await AsyncStorage.setItem('touched', JSON.stringify({ day: t, keys: [...touchSet] })); } catch {}
+  if (touchSet.has(k)) return; touchSet.add(k); weekLedger(t, k); try { await AsyncStorage.setItem('touched', JSON.stringify({ day: t, keys: [...touchSet] })); } catch {}
 }
+// Weekly ledger for the friend scoreboard: which game keys were touched on which day of this ISO week (kept for 3 weeks).
+export const weekId = (d = new Date()) => { const x = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())); const day = x.getUTCDay() || 7; x.setUTCDate(x.getUTCDate() + 4 - day); const y0 = new Date(Date.UTC(x.getUTCFullYear(), 0, 1)); return `${x.getUTCFullYear()}-W${String(Math.ceil(((x - y0) / 86400000 + 1) / 7)).padStart(2, '0')}`; };
+async function weekLedger(day, k) { try { const key = `wk:${weekId()}`; const r = await AsyncStorage.getItem(key); const o = r ? JSON.parse(r) : {}; (o[day] ||= []); if (!o[day].includes(k)) o[day].push(k); await AsyncStorage.setItem(key, JSON.stringify(o)); } catch {} }
+// Points for a week: 10 for every day you played plus 5 for each different game that day (at most 6), so 40 a day and 280 a week.
+export const weekPoints = (o) => Object.values(o || {}).reduce((a, keys) => a + (keys.length ? 10 + 5 * Math.min(keys.length, 6) : 0), 0);
 export const kvSet = (k, v) => { if (PLAYED.test(k)) { markPlayed(); touch(k); } return AsyncStorage.setItem(k, JSON.stringify(v)).catch(() => {}); };
 // Local calendar day, so a daily game rolls over at the player's midnight.
 export const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
