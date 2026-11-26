@@ -1,5 +1,11 @@
 // Newest first. Plain language, one line per change.
 export const CHANGELOG = [
+  { v: '1.77.0', items: [
+    'Driver photos from the photo tool are framed the same way for everyone: head about a third of the width, chest-up, one person only. Cars, groups and wrongly cropped photos are skipped.',
+    'Wide team logos (wordmarks) get a wider slot in lists, and a round badge instead when they would be tiny.',
+    'Settings > About and data > Missing pictures: shares a list of the drivers and logos this phone could not find a picture for.',
+    'Photo tool: finds more team logos (Toro Rosso, HRT, Virgin ...), removes white boxes around logos, prefers photos from the driver\'s own era, and writes out/missing.md with the file name to use for anything it could not find. Your own files go in tools/media-fetch/manual/.',
+  ] },
   { v: '1.76.1', items: [
     'Past seasons: driver photos now show even when they are saved under another name than the one the season table uses, including the champion card.',
     'Standings: a driver without a photo shows their number (or code for old drivers) in the colour of the team they drove for that season.',

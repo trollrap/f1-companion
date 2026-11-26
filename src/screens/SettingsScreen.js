@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Switch, Pressable, StyleSheet, Linking, TextInput, LayoutAnimation, Animated, Easing } from 'react-native';
+import { View, Switch, Pressable, StyleSheet, Linking, TextInput, LayoutAnimation, Animated, Easing, Share } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Text } from '../components/Text';
@@ -17,6 +17,7 @@ import { ensurePermission } from '../lib/notifications';
 import { checkOta, applyOta } from '../lib/ota';
 import { checkUpdate, currentVersion, updatesConfigured, installUpdate, canInstallInApp } from '../lib/update';
 import { clearCache } from '../lib/cache';
+import { missingPictures } from '../lib/media';
 import Reveal from '../components/Reveal';
 import ColorPicker from '../components/ColorPicker';
 import { restartApp } from '../lib/reload';
@@ -107,6 +108,14 @@ export default function SettingsScreen() {
   const check = async () => { setResults([]); setRunning(true); try { await runDiagnostics((r) => setResults((x) => [...x, r])); } finally { setRunning(false); } };
   const on = SESSION_TYPES.filter((t) => prefs.types[t]).length;
   const [pickC, setPickC] = useState(o.accent || colors.accent); const [custom, setCustom] = useState(false);
+  // Lists the drivers and team logos this phone looked for but has no picture of, so they can be added by hand (tools/media-fetch/manual/...).
+  const shareMissing = async () => {
+    const { drivers, logos } = missingPictures();
+    if (!drivers.length && !logos.length) { setMsg('Nothing missing so far. Open some old seasons (Standings, Paddock) first, then check again.'); return; }
+    const nm = (id) => { try { const i = localDriverInfo(id); return i ? `${i.name}  (${id})` : id; } catch { return id; } };
+    const text = `F1 Companion: pictures not found\n\nDRIVERS (${drivers.length}): save as <id>.png in tools/media-fetch/manual/drivers/\n${drivers.map(nm).join('\n') || '-'}\n\nTEAM LOGOS (${logos.length}): save as <id>.png in tools/media-fetch/manual/logos/\n${logos.join('\n') || '-'}`;
+    try { await Share.share({ message: text }); } catch {}
+  };
   const applyColour = async (hex) => { setMsg('Saving the colour…'); await setOpt('accent', hex).catch(() => {}); setMsg('Colour saved. The app restarts to use it everywhere. If it does not, close it completely and open it again.'); setTimeout(async () => { const r = await restartApp(); if (!r) setMsg('Colour saved. Close the app completely (swipe it away) and open it again to see it everywhere.'); }, 900); };
   return (
     <Screen header={false} scrollRef={scrollRef}>
@@ -291,6 +300,7 @@ export default function SettingsScreen() {
       <Section icon="information-circle-outline" title="About and data" summary={`F1 Companion v${currentVersion()}`}>
         <Btn icon="server-outline" onPress={() => nav.navigate('Storage')}>Storage and data</Btn>
         <Btn icon="bug-outline" onPress={() => nav.navigate('CrashLog')}>Crash log</Btn>
+        <Btn onPress={shareMissing}>Missing pictures (share list)</Btn>
         <Btn icon="mail-outline" onPress={() => nav.navigate('Report')}>Send a report</Btn>
         <Pressable onPress={aboutTap} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 6 }}>
           <View style={s.ico}><Ionicons name="information-circle-outline" size={22} color={colors.accentText} /></View>

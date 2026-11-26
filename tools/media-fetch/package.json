@@ -2,13 +2,14 @@
   "name": "f1-media-fetch",
   "private": true,
   "version": "1.0.0",
-  "description": "Finds driver portraits and team logos on Wikidata/Wikimedia Commons, cuts the drivers out and makes them 1:1. Separate from the app so the app's npm install stays small.",
+  "description": "Finds driver portraits and team logos on Wikidata/Wikimedia Commons, cuts the drivers out, finds the face and frames them 1:1. Separate from the app so the app npm install stays small.",
   "scripts": {
     "fetch": "node fetch.js",
     "publish": "node publish.js"
   },
   "dependencies": {
     "@imgly/background-removal-node": "^1.4.5",
+    "onnxruntime-node": "~1.17.0",
     "sharp": "^0.33.5"
   }
 }

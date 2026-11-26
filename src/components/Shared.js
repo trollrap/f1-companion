@@ -13,7 +13,7 @@ import { Card, Eyebrow } from './Screen';
 import Grad, { Scrim } from './Grad';
 import { circuitFor } from '../data/circuits';
 import { flag } from '../lib/time';
-import { driverPhoto, teamLogo, numberImage, principalPhoto } from '../lib/media';
+import { driverPhoto, teamLogo, teamLogoWide, numberImage, principalPhoto } from '../lib/media';
 import { principalsOf } from '../data/principals';
 import { useNavigation } from '@react-navigation/native';
 import { YEAR } from '../api/openf1';
@@ -256,8 +256,11 @@ export const DriverBox = React.memo(function DriverBox({ d, fav, onPress, onStar
   );
 });
 export function TeamBadge({ teamId, name, size = 40 }) {
-  const tc = useTeamColor(); const logo = teamLogo(teamId);
-  if (logo) return <Image source={logo} resizeMode="contain" resizeMethod="resize" style={{ width: size, height: size }} />;
+  const tc = useTeamColor(); const logo = teamLogo(teamId), wide = logo ? teamLogoWide(teamId) : false;
+  // wide wordmark logos: a wider slot that spills a little sideways when there is room, a round badge when the badge is tiny
+  if (logo && !(wide && size < 30)) return wide
+    ? <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}><Image source={logo} resizeMode="contain" resizeMethod="resize" style={{ width: size * 1.6, height: size }} /></View>
+    : <Image source={logo} resizeMode="contain" resizeMethod="resize" style={{ width: size, height: size }} />;
   return <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: alpha(tc(teamId), 0.3), borderWidth: 1, borderColor: alpha(tc(teamId), 0.7), alignItems: 'center', justifyContent: 'center' }}><Text style={{ color: colors.fg, fontFamily: 'label', fontWeight: '700', fontSize: size * 0.38 }}>{String(name || '?').slice(0, 2).toUpperCase()}</Text></View>;
 }
 // Team card for the Paddock: driver numbers and names on the left, team name and points below, big faded logo on the right.

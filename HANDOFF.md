@@ -611,3 +611,10 @@ New: screens/Race176.js (RaceControl, TopSpeeds, SeasonPace on OpenF1 race_contr
 
 ## 1.76.1 (JS-only)
 media.js driverPhoto tries history.driverAliases(id) (app id, f1db id, first_last, learned Jolpica ids); Standings: leader card shows photo for past seasons, no-photo rows show number/code in team colour; tools/media-fetch/ids.js = app id rule (surname if unique else first_last), fetch.js migrates old nino-farina style files/state. Sandbox was reset once; project restored from the 1.76.0 zip, so this version was only syntax-checked (esbuild), not lint/exported/swept.
+
+
+## 1.77.0 (JS-only)
+User screenshots showed cars/groups used as portraits, over-zoomed face crops, white-box and tiny wide logos, missing logos (Toro Rosso, HRT, Virgin).
+- tools/media-fetch: lib.js `frameDriver` (connected-component person selection, group/car rejection, face-based framing: face width ~1/3, bottom fade for head-only), `squareLogo` (white-box removal, aspect), SYN names + `pickLogoFile` Commons search fallback; facenet.js (RFB-320 onnx run in cutout-worker) with pico fallback (faces.js); fetch.js candidates loop (P18 + Commons category, era preference, RULES=3 auto-redo), manual/ drop folder, out/missing.md/csv; publish.js writes `wide[]`, takes down rejected/none ids, rebuilds index from files.
+- app: media.js (`wide` set, `logoPick`, `teamLogoWide`, `missingPictures`), Shared.js TeamBadge (wide logo slot 1.6x, round badge under 30px), SettingsScreen "Missing pictures (share list)".
+- Verified: selftest, mock end-to-end fetch, framing on real faces from screenshots, `expo export --platform android` OK. Not verified on device.

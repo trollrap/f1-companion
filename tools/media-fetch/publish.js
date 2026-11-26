@@ -8,10 +8,11 @@ const rejectFile = path.join(__dirname, 'reject.txt');
 const reject = new Set(fs.existsSync(rejectFile) ? fs.readFileSync(rejectFile, 'utf8').split(/\r?\n/).map((s) => s.trim()).filter((s) => s && !s.startsWith('#')) : []);
 const state = fs.existsSync(path.join(OUT, 'state.json')) ? JSON.parse(fs.readFileSync(path.join(OUT, 'state.json'), 'utf8')) : {};
 const idxFile = path.join(DEST, 'index.json');
-const idx = fs.existsSync(idxFile) ? JSON.parse(fs.readFileSync(idxFile, 'utf8')) : { v: 0, drivers: [], logos: [], override: [] };
+const idx = fs.existsSync(idxFile) ? JSON.parse(fs.readFileSync(idxFile, 'utf8')) : { v: 0, drivers: [], logos: [], override: [], wide: [] };
+idx.wide = idx.wide || [];
 const credits = fs.existsSync(path.join(DEST, 'CREDITS.json')) ? JSON.parse(fs.readFileSync(path.join(DEST, 'CREDITS.json'), 'utf8')) : {};
 const replace = process.argv.includes('--replace-logos');
-let n = { drivers: 0, logos: 0 };
+let n = { drivers: 0, logos: 0, removed: 0 };
 for (const kind of ['drivers', 'logos']) {
   fs.mkdirSync(path.join(DEST, kind), { recursive: true });
   const dir = path.join(OUT, kind); if (!fs.existsSync(dir)) continue;
@@ -21,9 +22,15 @@ for (const kind of ['drivers', 'logos']) {
     if (!idx[kind].includes(id)) idx[kind].push(id);
     if (kind === 'logos' && replace && !idx.override.includes(id)) idx.override.push(id);
     const s = state[kind + ':' + id]; if (s) credits[kind + '/' + id] = { source: s.source, license: s.license, author: s.author };
+    if (kind === 'logos') { idx.wide = idx.wide.filter((x) => x !== id); if (s && s.aspect > 1.7) idx.wide.push(id); } // very wide logos get a wider slot in the app
+  }
+  // pictures published earlier that are now rejected, or that a newer run found unusable (a car photo, a group), are taken down again
+  for (const f of fs.existsSync(path.join(DEST, kind)) ? fs.readdirSync(path.join(DEST, kind)) : []) {
+    const id = f.replace(/\.png$/i, ''), s = state[kind + ':' + id];
+    if (reject.has(id) || reject.has(kind + ':' + id) || (s && (s.status === 'none' || s.status === 'error'))) { try { fs.unlinkSync(path.join(DEST, kind, f)); n.removed = (n.removed || 0) + 1; } catch {} delete credits[kind + '/' + id]; }
   }
 }
-for (const k of ['drivers', 'logos']) { idx[k] = idx[k].filter((id) => fs.existsSync(path.join(DEST, k, id + '.png'))).sort(); }
-idx.override = idx.override.filter((id) => idx.logos.includes(id)).sort(); idx.v = (idx.v || 0) + 1;
+for (const k of ['drivers', 'logos']) { idx[k] = (fs.existsSync(path.join(DEST, k)) ? fs.readdirSync(path.join(DEST, k)) : []).filter((x) => /\.png$/i.test(x)).map((x) => x.replace(/\.png$/i, '')).sort(); } // the list always matches the files
+idx.override = idx.override.filter((id) => idx.logos.includes(id)).sort(); idx.wide = idx.wide.filter((id) => idx.logos.includes(id)).sort(); idx.v = (idx.v || 0) + 1;
 fs.writeFileSync(idxFile, JSON.stringify(idx)); fs.writeFileSync(path.join(DEST, 'CREDITS.json'), JSON.stringify(credits, null, 1));
-console.log(`Published ${n.drivers} driver photos and ${n.logos} logos to remote-media/ (index version ${idx.v}). Now: git add -A && git commit -m "media" && git push`);
+console.log(`Published ${n.drivers} driver photos and ${n.logos} logos to remote-media/${n.removed ? ` (took down ${n.removed} rejected or unusable ones)` : ''} (index version ${idx.v}). Now: git add -A && git commit -m "media" && git push`);
